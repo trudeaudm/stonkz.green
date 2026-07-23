@@ -246,15 +246,22 @@ contract StonkzAuction is IStonkzAuction {
 
         _startIfNeeded();
         _sync();
+        // H1: materialize BEFORE creating the new position. Lazy ACC leaves USD in
+        // pending; materializing after push-as-Active split pending onto a bid that
+        // is immediately OutPrice'd — placeBid's OutPrice path did not reverse
+        // activeSpent, and a later _refreshWeightBasisOnly (Active-only recompute)
+        // dropped the orphan spend → ghost headroom / oversell (fuzz-022 b3).
+        _materialize(msg.sender);
 
         positionId = ++nextPositionId;
+        bool pricedOutNow = maxPrice < price;
         positions[positionId] = Position({
             owner: msg.sender,
             budget: budget,
             maxPrice: maxPrice,
             spent: 0,
             tokens: 0,
-            status: PosStatus.Active,
+            status: pricedOutNow ? PosStatus.OutPrice : PosStatus.Active,
             usdClaimed: false,
             tokensClaimed: false,
             enteredAt: uint64(auctionIndex)
@@ -266,11 +273,10 @@ contract StonkzAuction is IStonkzAuction {
             b.tracked = true;
             uniqueBidders += 1;
         }
-        _materialize(msg.sender);
 
-        // If already priced out at current price, mark immediately (claimable now)
-        if (maxPrice < price) {
-            positions[positionId].status = PosStatus.OutPrice;
+        // If already priced out at current price, mark immediately (claimable now).
+        // Never Active → never receives pending split (H1).
+        if (pricedOutNow) {
             claimableUsd[msg.sender] += budget;
             emit PricedOut(msg.sender, positionId, budget, uint64(auctionIndex));
         } else if (!b.capped) {

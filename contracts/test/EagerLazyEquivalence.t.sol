@@ -41,6 +41,11 @@ contract EagerLazyEquivalenceTest is Test {
         _runMarks("fuzz/fuzz-001");
     }
 
+    /// @notice H1 regression: fuzz-022 (ACC pending × placeBid OutPrice orphan spent).
+    function test_equiv_fuzz022_ghostActive() public {
+        _runMarks("fuzz/fuzz-022");
+    }
+
     function _run(string memory name) internal {
         _runInner(name, false);
     }
@@ -97,6 +102,9 @@ contract EagerLazyEquivalenceTest is Test {
                 uint256 d = ne > nl ? ne - nl : nl - ne;
                 assertLe(d, 1, "active address count razor");
             }
+            // H1: activeSpent must equal Σ Active position.spent (no OutPrice orphan).
+            _assertActiveSpentLedger(eager);
+            _assertActiveSpentLedger(lazy);
 
             _recordWeightDust(eager);
 
@@ -104,6 +112,8 @@ contract EagerLazyEquivalenceTest is Test {
             vm.warp(_t);
             eager.poke();
             lazy.poke();
+            _assertActiveSpentLedger(eager);
+            _assertActiveSpentLedger(lazy);
         }
         assertEq(lazy.price(), eager.price(), "price final");
         if (scheduled) {
@@ -205,6 +215,23 @@ contract EagerLazyEquivalenceTest is Test {
             (,,,,, StonkzAuction.PosStatus se,,,) = eager.positions(id);
             (,,,,, StonkzAuction.PosStatus sl,,,) = lazy.positions(id);
             assertEq(uint256(sl), uint256(se), "position mark drift");
+        }
+    }
+
+    /// @dev H1: bidder.activeSpent == Σ spent of Active positions (OutPrice must not
+    ///      retain credited spend that later refresh would drop as ghost headroom).
+    function _assertActiveSpentLedger(StonkzAuction a) internal view {
+        uint256 n = a.activeAddressCount();
+        for (uint256 i = 0; i < n; i++) {
+            address who = a.activeAddrs(i);
+            (, , , , , uint256 aspent, , ,) = a.bidders(who);
+            uint256 sum;
+            uint256 nPos = a.nextPositionId();
+            for (uint256 id = 1; id <= nPos; id++) {
+                (address o, , , uint256 spent, , StonkzAuction.PosStatus st, , ,) = a.positions(id);
+                if (o == who && st == StonkzAuction.PosStatus.Active) sum += spent;
+            }
+            assertEq(aspent, sum, "H1 activeSpent orphan");
         }
     }
 

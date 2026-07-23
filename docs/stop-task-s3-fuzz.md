@@ -293,4 +293,50 @@ Not the fuzz-001 compound position-mark class (that is green). Suspect SIMPLE AC
 | **H2** | Widen raised TOL (rejects — blinds 1e20-scale) |
 | **H3** | Park production on eager until H1 |
 
-Task T blocked.
+**Human ruling:** execute **H1**; reject H2, H3.
+
+---
+
+## H1 SET-DIFF — fuzz-022 blocks 2→3 (ghost-active)
+
+**Forensics:** `ForensicH1Ghost.t.sol`, `ForensicH1Ghost2.t.sol`  
+**Only bidder:** A (solo). Not a multi-peer redistribution cascade.
+
+### Per-address dump (material)
+
+| Stage | Eager | Lazy |
+|-------|-------|------|
+| POST b1 | aspent=raised on pos1; pendU=0 | aspent=0; pendU≈7.90e20 (ACC) |
+| PRE b2 (after 2nd placeBid) | pos1 spent≈7.90e20; pos2 OutPrice spent=**0** | pendU=0; **pos1 spent≈3.95e20; pos2 OutPrice spent≈3.95e20**; aspent≈7.90e20 |
+| POST b2 | pos1 budLeft=**1**; dustAddr=1; nActive stays 1 until dust exit | pos1 budLeft≈3.95e20; dustAddr=0; aspent recomputed Active-only ≈5.90e20 |
+| PRE b3 | dust → OutBudget; nActive→0 | still Active; ghost headroom≈3.95e20 → oversell |
+
+**(b) Pre-step price operand — REFUTED**  
+`lazy.price == eager.price` at b1–b3 clear starts; both step after full sells; pos2 OutPrice on both when `maxP < price`. Sweep / offer / take use the same post-step `price`. No clear-path pre-step read. **No `priceInForce` fix.**
+
+**(a) Exhaust / ghost capacity within b2 — CONFIRMED (OutPrice orphan spent, not peer cascade)**  
+1. Lazy ACC leaves fill USD in pending after b1.  
+2. `placeBid` created the new position as **Active**, pushed it, then `_materialize` — pending split across pos1 **and** doomed pos2.  
+3. Immediate OutPrice path did **not** reverse `activeSpent` (unlike `_priceOutBidder`).  
+4. b2 budget-constraint WRITE + `_refreshWeightBasisOnly` recomputed `activeSpent` from **Active-only** positions → dropped orphan spend on OutPrice pos2 → **ghost headroom ≈3.95e20**.  
+5. Eager never split pending (already distributed); pos2 spent stayed 0; b2 exhausts to 1 wei dust.
+
+Fixpoint-law water-fill iteration mismatch inside one clear: **not the convict** (solo A; same constraint shape; divergence is ledger orphan before/after refresh). **No separate fixpoint iterator rewrite.** Permanent visibility: `EagerLazyEquivalence._assertActiveSpentLedger` + `test_equiv_fuzz022_ghostActive` + `RegressionH1Ghost`.
+
+### Fix applied
+`placeBid`: `_materialize` **before** creating the new position; priced-out bids born `OutPrice` (never Active → never receive pending split).
+
+### H1 ladder (post-fix)
+| Item | Status |
+|------|--------|
+| Exhaustion (a)+(b) | Green |
+| EagerLazyEquivalence (incl. H1 ledger + fuzz-022 marks) | Green |
+| WriteBudget ALL-SIMPLE warm=8; K-compound | Green |
+| RegressionH1Ghost / OrphanCredit | Green |
+| Full unit suite (excl. GasAttribution / Forensic) | Green |
+| `testFuzzVectors_seed4663_all200` (production=lazy) | Green |
+| Invariant campaign (512 runs, mid-auction claims) | Green (`exactWeiLedger` incl.) |
+
+**(b) price operand** — stayed REFUTED; no `priceInForce` change.
+
+Task T unblocked.
