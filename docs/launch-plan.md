@@ -62,7 +62,7 @@ The stock-market framing maps perfectly: memes are penny stocks, projects are li
 
 **Implementation note:** per-capita allocation permits O(1) per-share accumulator accounting (every active bidder = one share, masterchef-style), with exits bucketed at discrete ladder ticks. Fully custom `StonkzAuction` — DECIDED over building on Uniswap's CCA engine, to keep per-capita fills and full roadmap control (note: deployed contracts are immutable either way; the dependency risks were the not-production-ready release flag and CCA's capital-weighted allocation, not upgrades). Uniswap v4 pools are still the settlement venue — pool contracts themselves are Uniswap's audited code regardless.
 
-**Guarded launch security ladder (replaces "audit when revenue allows"):** fees arrive after launch but exploit risk peaks at launch, so: (1) differential-test the contract against a reference model of the deterministic schedule + Foundry fuzz/invariant suite; (2) launch with hard caps — per-auction raise cap (~$50k) and global TVL cap — raised stepwise; (3) pre-revenue review via audit contest (Code4rena/Sherlock, ~1–2 weeks, cost scales to scope); (4) day-one bug bounty, monitoring, pausability behind a timelock; (5) the ~$1M fee milestone funds the tier-1 audit that publicly removes the caps ("caps off, fully audited" as a marketing moment).
+**Guarded launch security ladder (replaces "audit when revenue allows"):** fees arrive after launch but exploit risk peaks at launch, so: (1) differential-test the contract against a reference model of the deterministic schedule + Foundry fuzz/invariant suite; (2) launch with hard caps — per-auction raise cap (~$50k), global TVL cap, and **`maxUniqueActives` (~300 pending clear-loop gas work; 0 = unlimited)** on new bidder addresses (existing addresses may always add bids) — raised/lifted stepwise alongside TVL caps; (3) pre-revenue review via audit contest (Code4rena/Sherlock, ~1–2 weeks, cost scales to scope); (4) day-one bug bounty, monitoring, pausability behind a timelock; (5) the ~$1M fee milestone funds the tier-1 audit that publicly removes the caps ("caps off, fully audited" as a marketing moment).
 
 **Withdraw IPO (decided).** The creator can cancel an auction at any point before DEX settlement — the on-chain equivalent of an issuer pulling an IPO. All bidders are made fully whole, and the creator covers the refund gas. Mechanics:
 - At filing, the creator posts a **refund bond** sized to the expected refund gas.
@@ -169,7 +169,7 @@ You're building this yourself with AI pair-programming. Realistic and increasing
 - ✅ Tiers: both memes (Pink Sheets) and projects (Blue Chip)
 - ✅ Auction engine: FULLY CUSTOM `StonkzAuction` (Ladder Auction) — Uniswap CCA rejected; v4 pools remain the settlement venue
 - ✅ Deployment: burner-address mainnet dress rehearsal (unannounced, exact production code, caps keep exposure tiny, apers ape at own risk) → fresh scripted production redeploy with hardened admin keys; genesis only on final contracts
-- ✅ Security path: guarded launch (raise/TVL caps) + audit contest pre-revenue → tier-1 audit at ~$1M fees
+- ✅ Security path: guarded launch (raise/TVL caps + `maxUniqueActives`) + audit contest pre-revenue → tier-1 audit at ~$1M fees
 - ✅ Graduation threshold: minimum raise or 100% auto-refund
 - ✅ Launch modes: IPO (custom Stonkz Ladder Auction — per-capita fills, per-wallet caps) + Direct Listing
 - ✅ Anti-sybil baseline: no sponsored gas on bids, flat per-bid fee, minimum bid size

@@ -79,6 +79,7 @@ contract StonkzAuctionInvariantTest is Test {
             durationBlocks: 20,
             epochSeconds: 1,
             maxClearsPerSync: 0,
+            maxUniqueActives: 0,
             baseStepBps: 200,
             walletCapBps: 5_000,
             sizeBonusBps: 1000,

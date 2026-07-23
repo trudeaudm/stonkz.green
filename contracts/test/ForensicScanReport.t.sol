@@ -213,6 +213,7 @@ contract ForensicScanReportTest is Test {
         p.durationBlocks = uint64(json.readUint(".params.blocks"));
         p.epochSeconds = 1;
         p.maxClearsPerSync = 0;
+        p.maxUniqueActives = 0;
         p.baseStepBps = uint16(json.readUint(".params.baseStepBps"));
         p.walletCapBps = uint16(json.readUint(".params.walletCapBps"));
         p.sizeBonusBps = uint16(json.readUint(".params.sizeBonusBps"));

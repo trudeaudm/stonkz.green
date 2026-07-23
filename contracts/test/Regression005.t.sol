@@ -31,6 +31,7 @@ contract Regression005 is Test {
                 durationBlocks: 15,
                 epochSeconds: 1,
                 maxClearsPerSync: 0,
+            maxUniqueActives: 0,
                 baseStepBps: 500, // 5%
                 walletCapBps: 5000, // 50%
                 sizeBonusBps: 1785, // 17.85% → α > 0

@@ -282,6 +282,7 @@ contract StonkzAuctionTest is Test {
             durationBlocks: 10,
             epochSeconds: 1,
             maxClearsPerSync: 0,
+            maxUniqueActives: 0,
             baseStepBps: 1000,
             walletCapBps: 10_000,
             sizeBonusBps: sizeBonusBps,
@@ -304,6 +305,7 @@ contract StonkzAuctionTest is Test {
         p.durationBlocks = uint64(json.readUint(".params.blocks"));
         p.epochSeconds = 1; // 1s/epoch — vm.warp(+1) == one auction block
         p.maxClearsPerSync = 0;
+        p.maxUniqueActives = 0;
         p.baseStepBps = uint16(json.readUint(".params.baseStepBps"));
         p.walletCapBps = uint16(json.readUint(".params.walletCapBps"));
         p.sizeBonusBps = uint16(json.readUint(".params.sizeBonusBps"));

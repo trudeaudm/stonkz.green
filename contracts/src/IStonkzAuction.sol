@@ -27,6 +27,7 @@ interface IStonkzAuction {
         uint64  durationBlocks;      // N auction blocks; production 100..2000; tests/vectors ≥5
         uint32  epochSeconds;        // wall seconds per auction block; 1..3600
         uint16  maxClearsPerSync;    // E1 valve; 0 ⇒ default 64
+        uint16  maxUniqueActives;    // guarded-launch unique-address cap; 0 = unlimited
         uint16  baseStepBps;         // demand-scaled at runtime, clamp >= 0
         uint16  walletCapBps;        // of total supply
         uint16  sizeBonusBps;        // per 2x capital; 0 = pure per-capita

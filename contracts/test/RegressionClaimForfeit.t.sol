@@ -25,6 +25,7 @@ contract RegressionClaimForfeit is Test {
                 durationBlocks: 12,
                 epochSeconds: 1,
                 maxClearsPerSync: 0,
+            maxUniqueActives: 0,
                 baseStepBps: 1000, // 10% steps — cliff hits quickly
                 walletCapBps: 10_000,
                 sizeBonusBps: 0,

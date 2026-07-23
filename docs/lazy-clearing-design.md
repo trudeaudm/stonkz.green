@@ -74,11 +74,12 @@ parity vs full position walk before shipping.
 clear gas after H1+E1+keeper cadence is in production. Design must not weaken
 Task L weight-basis timing (exits before offer/fill at the new price).
 
-### H2 — Lazy harvest
+### H2 — Lazy harvest / H2+ materialization
 
-**Not planned.** Task G: position ledger is canonical; address
-`Bidder.tokens` / `accTokensPerWeight` are weight-coherence helpers only.
-Re-splitting credit paths would fight G.
+**STOPPED after Task P.** Attribution shows bidder-slot SSTOREs dominate (~87%),
+not position fills (~12%). A redesign that skips unconstrained **address**
+refresh/harvest writes (not only position credit) is required before H2+.
+See `docs/gas-attribution.md`.
 
 ## Non-goals
 
@@ -91,3 +92,23 @@ Re-splitting credit paths would fight G.
 
 H1 shipped. Gas numbers recorded. E1 valve verified under dense actives.
 H3/H4 wait on production triggers above.
+
+---
+
+## Milestone 2.5 decision (Tasks P / Q / R)
+
+| Item | Outcome |
+|------|---------|
+| Task P attribution | **Shipped** — `docs/gas-attribution.md` |
+| H2+ lazy materialization (Task Q) | **Refuted / STOPPED** — per-position writes are only ~12% of SSTOREs; **per-address bidder writes ~87%** (`rewardDebt` + double `_refreshWeightBasisOnly` + fill bookkeeping). Do not implement Q as scoped until redesign targets unconstrained address writes. |
+| Task R `maxUniqueActives` | **Shipped** — ctor param, 0 = unlimited; new addresses rejected past cap; existing may re-bid. Lifts with TVL caps (`docs/launch-plan.md`). |
+| E1 + E2 keeper cadence | **Interim catch-up bounds** while H2+ redesign / M5 engine pending |
+
+### Milestone-5 design note (cap removal at scale)
+
+**Segment + heap engine** (not implemented now): closed-form geometric spend under
+constant weight between constraints; exit-threshold priority queue so clears
+touch storage only at constraint events (cap, budget/dust, price-out). That is
+the path to remove `maxUniqueActives` at scale once equivalence-proven. Until
+then: E1 valve + poke-at-least-once-per-epoch + unique-active cap.
+

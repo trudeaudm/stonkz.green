@@ -70,6 +70,7 @@ contract GasBenchmarkTest is Test {
                 durationBlocks: 100,
                 epochSeconds: 1,
                 maxClearsPerSync: maxClears,
+            maxUniqueActives: 0,
                 baseStepBps: 500,
                 walletCapBps: 10_000,
                 sizeBonusBps: 0,

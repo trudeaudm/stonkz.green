@@ -32,6 +32,7 @@ contract StonkzAuction is IStonkzAuction {
     uint64 public immutable durationBlocks;
     uint32 public immutable epochSeconds; // wall seconds per auction block (Task N)
     uint16 public immutable maxClearsPerSync; // E1 overflow valve (default 64)
+    uint16 public immutable maxUniqueActives; // guarded launch; 0 = unlimited (Task R)
     uint16 public immutable baseStepBps;
     uint16 public immutable walletCapBps;
     uint16 public immutable sizeBonusBps;
@@ -66,6 +67,8 @@ contract StonkzAuction is IStonkzAuction {
     uint256 public totalWeight;
 
     uint256 public nextPositionId;
+    /// @dev Distinct addresses that have placed ≥1 bid (Task R cap accounting).
+    uint16 public uniqueBidders;
 
     enum PosStatus {
         Active,
@@ -134,6 +137,7 @@ contract StonkzAuction is IStonkzAuction {
         durationBlocks = p.durationBlocks;
         epochSeconds = p.epochSeconds;
         maxClearsPerSync = p.maxClearsPerSync == 0 ? 64 : p.maxClearsPerSync;
+        maxUniqueActives = p.maxUniqueActives; // 0 = unlimited
         baseStepBps = p.baseStepBps;
         walletCapBps = p.walletCapBps;
         sizeBonusBps = p.sizeBonusBps;
@@ -203,6 +207,13 @@ contract StonkzAuction is IStonkzAuction {
         require(msg.value >= budget + BID_FEE, "value");
         // Fee retained (protocol); never sponsor gas on bids — spec §2
 
+        Bidder storage b = bidders[msg.sender];
+        // Task R: cap NEW addresses only; existing bidders may always add positions.
+        if (!b.tracked) {
+            uint16 cap = maxUniqueActives;
+            require(cap == 0 || uniqueBidders < cap, "max unique actives");
+        }
+
         _startIfNeeded();
         _sync();
 
@@ -220,9 +231,9 @@ contract StonkzAuction is IStonkzAuction {
         _bidderPositions[msg.sender].push(positionId);
         totalEscrowed += budget;
 
-        Bidder storage b = bidders[msg.sender];
         if (!b.tracked) {
             b.tracked = true;
+            uniqueBidders += 1;
         }
         _harvest(msg.sender);
 
