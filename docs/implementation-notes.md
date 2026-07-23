@@ -187,3 +187,11 @@ post M/N; excludes the 300-active stress bench):
 
 Mitigation: E1 valve + E2 keeper cadence; see `docs/lazy-clearing-design.md`.
 Deploy remains ~4.3M gas class / ~22kB runtime size (re-measure on release tag).
+
+### Task F1' — two-channel + spent dust (lazy)
+
+Complement to Task S token `settleDustSurplus`:
+- `settleSpentDust = raised − Σ position.spent` at settle (funds remain in `raised`).
+- `spentAccounted()` mirrors `tokensAccounted()` (includes unrealized residue).
+- On-chain bound: `settleSpentDust ≤ weightDustAccum + nextPositionId` where
+  `weightDustAccum` accumulates `4 × ceil(w/WAD)` per taker per clear (Task S2 algebra).

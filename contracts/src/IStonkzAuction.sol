@@ -9,6 +9,8 @@ interface IStonkzAuction {
     // ---- events (the indexer schema; the_book.exe consumes these) ----
     event BidPlaced(address indexed bidder, uint256 indexed positionId, uint256 budget, uint256 maxPrice, uint64 blockNum);
     event Filled(address indexed bidder, uint256 tokens, uint256 spent, uint256 price, uint64 blockNum);
+    /// @dev Task F1': sold/spent this clear diverged from channel-A + channel-B credit mass.
+    event CreditChannelMismatch(uint256 soldGot, uint256 soldExpect, uint256 spentGot, uint256 spentExpect);
     event PricedOut(address indexed bidder, uint256 indexed positionId, uint256 claimable, uint64 blockNum);
     event Capped(address indexed bidder, uint64 blockNum);
     event AllIn(address indexed bidder, uint256 indexed positionId, uint64 blockNum);

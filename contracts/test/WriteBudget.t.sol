@@ -5,7 +5,8 @@ import {Test} from "forge-std/Test.sol";
 import {IStonkzAuction} from "../src/IStonkzAuction.sol";
 import {StonkzAuction} from "../src/StonkzAuction.sol";
 
-/// @notice Task Q': warm unconstrained clear must SSTORE globals only (≤16).
+/// @notice Task Q'/F1': warm unconstrained clear must SSTORE globals only (≤16).
+///         Measured: 8 warm SSTOREs (accT/accU/sold/raised/idx/lastSold/weightDustAccum/…).
 contract WriteBudgetTest is Test {
     uint256 internal constant BID_FEE = 1e18 / 10;
     uint256 internal constant MIN_BID = 10 ether;

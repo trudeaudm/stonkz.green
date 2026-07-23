@@ -112,3 +112,81 @@ ruling (e.g. F1′: never emit/count take without a credit path).
 Branch `lazy-flip` carries this forensic before any further ruling request
 (`.cursorrules` STOP-push standing rule).
 
+
+---
+
+## RESOLVED — F1' two-channel crediting law
+
+**Ruling:** F1' accepted (orphan = take without credit). Circularity remains REFUTED.
+
+### Law
+Per clear `b`, every participating address is in exactly one channel:
+- **ACC**: unconstrained, no exit mark → global `perWeight` delta over `uncW` only (zero per-bidder writes).
+- **WRITE**: constraint-hit this clear OR exit-marked-and-live (dust/OutBudget/cap/price-out) → block-`b` take/cost written explicitly. Orphan fix: dustExit with `takeAmt>0` and no Active positions → direct credit onto lowest `positionId`.
+
+No promote-all (would destroy WriteBudget). Mixed clears keep both channels; water-fill `sold`/`raised` stay the aggregate oracle.
+
+### Reconciliation
+`soldThisClear` / `spentThisClear` vs `Σ WRITE + mulDiv(accDelta, uncW, …)`:
+- Pure ACC: revert in test profile (chainid 31337) if gap > `nA` wei; emit `CreditChannelMismatch`.
+- Mixed WRITE: emit only (distribute floors below water-fill).
+
+### Conservation (post-remeasure)
+- Token off-by-1: `tokensAccounted` now counts unswept residue mid-auction (dropped `done` gate). Exact after `materializeAll`.
+- Size-tilt `Σspent` vs `raised` Δ=109: under-credit from ACC harvest + exit WRITE / `budLeft` truncations. Swept as `settleSpentDust` at settle. Bound `D = weightDustAccum + P` with `weightDustAccum = Σ_clears Σ_takers 4×ceil(w/WAD)` (single SSTORE per clear). Assert `settleSpentDust ≤ D`.
+
+### Regression
+`test/RegressionOrphanCredit.t.sol` — fuzz-005 block 24: `ΔbidderTokens(B) == Filled` wei-exact.
+
+### WriteBudget
+Warm unconstrained: **8** SSTOREs (was 7; +1 `weightDustAccum`). Bound remains ≤16.
+
+
+---
+
+## HALT — F1' production fuzz (post two-channel)
+
+**Gate:** 	estFuzzVectors_seed4663_all200 after F1' two-channel + conservation sweep.
+
+### Green before this halt
+| Item | Status |
+|------|--------|
+| Exhaustion (a)+(b) | Green |
+| RegressionOrphanCredit (fuzz-005 b24) | Green — Δtok = Filled wei-exact |
+| EagerLazyEquivalence (canonical + fuzz20 + size-tilt) | Green |
+| WriteBudget warm | **8** SSTOREs ≤ 16 |
+| exactWeiLedger canonical + size-tilt | Green (settleSpentDust + spentAccounted) |
+| invariant_exactWeiLedger (often) | Intermittent over-account +1 (see below) |
+
+### HALT — fuzz seed 4663 scenario **1** block **10** (raised)
+
+**Vector:** 	est/vectors/fuzz/fuzz-001.json (.blocks[10] = engine block 11).
+
+**Lockstep** (	est/ForensicFuzz001Raised.t.sol):
+
+| clear b | lazyVsExp raised | eagerVsExp | lazyVsEager raised | lazySold | eagerSold |
+|--------:|-----------------:|-----------:|-------------------:|---------:|----------:|
+| 8 | ~8.7e5 | ~8.7e5 | 1921 | match-class | match-class |
+| 9 | ~1.9e6 | ~1.9e6 | 1282 | match-class | match-class |
+| **10** | **~1.01e21** | ~5.9e5 | **~1.01e21** | **4.350e19** | **4.192e19** |
+
+At b=10 lazy **dRaised ≈ 3.11e21** vs eager/oracle **≈ 2.10e21**. Lazy also **over-sells** (~1.58e18 extra cumulative sold vs eager). Not a dust-bound issue — aggregate water-fill / exit-set divergence.
+
+Eager stays within TOL of the vector; lazy does not. So this is **lazy-path specific**, not oracle/vector drift.
+
+### Related — invariant over-account
+
+invariant_exactWeiLedger: 	okensAccounted == sold + 1 on a shrunk mid-auction claim/poke sequence. Opposite polarity from the pre-F1' under-account (sold = accounted + 1). Likely related to channel / materialize ordering; not widened.
+
+### Ruling needed
+
+| Opt | Action |
+|-----|--------|
+| **G1** | Trace b=10 exit set (who stays Active / dustExit / WRITE) vs eager; fix lazy alive/credit so sold/raised match eager byte-class |
+| **G2** | Treat raised TOL failure as known α≠0 floor until G1 (rejects: blinds 1e21 bug) |
+| **G3** | Keep CI on eager for 200-vector until G1 |
+
+**Task T** still blocked.
+
+### Push
+Branch lazy-flip — this forensic + F1' implementation commits before ruling.

@@ -13,9 +13,9 @@ contract GasAttributionTest is Test {
     uint256 internal constant MIN_BID = 10 ether;
     uint256 internal constant N = 300;
 
-    // Layout bases from `forge inspect StonkzAuction storage-layout` (post Task R)
-    uint256 internal constant SLOT_POSITIONS = 14;
-    uint256 internal constant SLOT_BIDDERS = 15;
+    // Layout bases from `forge inspect StonkzAuction storage-layout` (post F1')
+    uint256 internal constant SLOT_POSITIONS = 15;
+    uint256 internal constant SLOT_BIDDERS = 16;
 
     mapping(bytes32 => uint8) internal _kind; // 1=position, 2=bidder
 

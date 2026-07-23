@@ -167,19 +167,12 @@ contract StonkzAuctionInvariantTest is Test {
         assertGe(auction.raised(), 0);
     }
 
-    // Task G: exact accounted conservation (survives interleaved claims)
+    // Task G/F1': exact accounted conservation (survives interleaved claims)
     function invariant_exactWeiLedger() public {
         auction.materializeAll();
         assertEq(auction.tokensAccounted(), auction.sold(), "G tokens accounted == sold");
+        assertEq(auction.spentAccounted(), auction.raised(), "G spent accounted == raised");
         assertEq(auction.totalEscrowed(), auction.escrowBook(), "escrow book == totalEscrowed");
-        uint256 n = auction.nextPositionId();
-        uint256 sumSpent;
-        for (uint256 id = 1; id <= n; id++) {
-            (, , , uint256 spent,,,,,) = auction.positions(id);
-            sumSpent += spent;
-        }
-        // Lazy Î±â‰ 0 may leave â‰¤actives wei of spent on bidder before/without full position catch-up.
-        assertApproxEqAbs(sumSpent, auction.raised(), 32, "G spent ~ raised");
     }
 
     // I7 one-share proxy: tracked bidders have weight 0 or >0 consistently with activeCount

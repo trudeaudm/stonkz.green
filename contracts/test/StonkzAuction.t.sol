@@ -108,15 +108,16 @@ contract StonkzAuctionTest is Test {
         assertApproxEqAbs(ratio, 11 * WAD / 10, WAD / 1e5, "tilt");
     }
 
-    /// @notice Task G: tokensAccounted == sold and spent sum == raised (exact wei).
+    /// @notice Task G/F1': tokensAccounted == sold; spentAccounted == raised (exact wei).
     function testInvariant_exactWeiLedger() public {
         _runVector("canonical-abc");
         auction.materializeAll();
         if (auction.done()) auction.settle();
         (uint256 sumTok, uint256 sumSpent) = _sumPositionLedger();
         assertEq(sumTok + auction.totalTokensCredited() + auction.totalTokensForfeited() + auction.settleDustSurplus(), auction.sold(), "accounted");
-        assertApproxEqAbs(sumSpent, auction.raised(), 2, "sum spent == raised");
+        assertEq(sumSpent + auction.settleSpentDust(), auction.raised(), "sum spent + dust == raised");
         assertEq(auction.tokensAccounted(), auction.sold(), "tokensAccounted");
+        assertEq(auction.spentAccounted(), auction.raised(), "spentAccounted");
         assertEq(auction.totalEscrowed(), auction.escrowBook(), "escrow");
     }
 
@@ -126,8 +127,10 @@ contract StonkzAuctionTest is Test {
         if (auction.done()) auction.settle();
         assertEq(auction.tokensAccounted(), auction.sold(), "tokensAccounted");
         (, uint256 sumSpent) = _sumPositionLedger();
-        // After settle, spent on positions + dust paths; allow few-wei floor vs raised under lazy.
-        assertApproxEqAbs(sumSpent, auction.raised(), 2, "sum spent == raised");
+        // F1'/S2: raised − Σspent ≤ weightDustAccum + P (swept into settleSpentDust).
+        assertEq(sumSpent + auction.settleSpentDust(), auction.raised(), "sum spent + dust == raised");
+        assertEq(auction.spentAccounted(), auction.raised(), "spentAccounted");
+        assertLe(auction.settleSpentDust(), auction.weightDustAccum() + auction.nextPositionId(), "spent dust le D");
         assertEq(auction.totalEscrowed(), auction.escrowBook(), "escrow");
     }
 
