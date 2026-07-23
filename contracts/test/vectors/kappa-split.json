@@ -1,5 +1,6 @@
 {
   "name": "kappa-split",
+  "quantized": true,
   "params": {
     "blocks": 5,
     "supply": "1000000000000000000000000000",

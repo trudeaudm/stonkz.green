@@ -1,6 +1,7 @@
 {
   "seed": 4663,
   "count": 200,
+  "quantized": true,
   "files": [
     "fuzz-000.json",
     "fuzz-001.json",

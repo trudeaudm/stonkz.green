@@ -6,11 +6,15 @@ import {IStonkzAuction} from "../src/IStonkzAuction.sol";
 import {StonkzAuction} from "../src/StonkzAuction.sol";
 
 /// @notice Differential fuzz: replay all `test/vectors/fuzz/*.json` (seed 4663).
-/// @dev On divergence > 1e18: report seed + index + first block and revert (HALT).
+/// @dev Comparison policy (Task I):
+///   1. Cumulative abs: delta <= TOL (1e18) on price/offered/raised/fills.
+///   2. Per-block delta: sold/raised/fills this clear within max(1e12 wei, 1e-9 · scale).
+/// On divergence: report seed + index + first block and revert (HALT).
 contract StonkzAuctionFuzzVectorsTest is Test {
     using stdJson for string;
 
     uint256 internal constant TOL = 1e18;
+    uint256 internal constant DELTA_ABS_FLOOR = 1e12;
     uint256 internal constant BID_FEE = 1e18 / 10;
     uint256 internal constant SEED = 4663;
 
@@ -90,6 +94,8 @@ contract StonkzAuctionFuzzVectorsTest is Test {
             uint256 fB = auction.bidderTokens(ADDR_B);
             uint256 fC = auction.bidderTokens(ADDR_C);
             uint256 fD = auction.bidderTokens(ADDR_D);
+            uint256 raisedBefore = auction.raised();
+            uint256 soldBefore = auction.sold();
 
             _wall += 1;
             vm.roll(_wall);
@@ -106,6 +112,38 @@ contract StonkzAuctionFuzzVectorsTest is Test {
                         " block=",
                         vm.toString(b),
                         " (raised)"
+                    )
+                );
+            }
+            // Policy 2 — per-block deltas
+            uint256 expSold = json.readUint(string.concat(blk, ".sold"));
+            uint256 gotDSold = auction.sold() - soldBefore;
+            if (_delta(gotDSold, expSold) > _deltaTol(expSold)) {
+                revert(
+                    string.concat(
+                        "FUZZ HALT seed=",
+                        vm.toString(SEED),
+                        " scenario=",
+                        vm.toString(index),
+                        " block=",
+                        vm.toString(b),
+                        " (dSold)"
+                    )
+                );
+            }
+            uint256 gotDRaised = auction.raised() - raisedBefore;
+            uint256 prevRaised = b == 0 ? 0 : json.readUint(string.concat(".blocks[", vm.toString(b - 1), "].raised"));
+            uint256 expDRaised = expRaised > prevRaised ? expRaised - prevRaised : 0;
+            if (_delta(gotDRaised, expDRaised) > _deltaTol(expDRaised)) {
+                revert(
+                    string.concat(
+                        "FUZZ HALT seed=",
+                        vm.toString(SEED),
+                        " scenario=",
+                        vm.toString(index),
+                        " block=",
+                        vm.toString(b),
+                        " (dRaised)"
                     )
                 );
             }
@@ -147,6 +185,25 @@ contract StonkzAuctionFuzzVectorsTest is Test {
                 )
             );
         }
+        if (_delta(got, exp) > _deltaTol(exp)) {
+            revert(
+                string.concat(
+                    "FUZZ HALT seed=",
+                    vm.toString(SEED),
+                    " scenario=",
+                    vm.toString(index),
+                    " block=",
+                    vm.toString(b),
+                    " dFill=",
+                    name
+                )
+            );
+        }
+    }
+
+    function _deltaTol(uint256 scale) internal pure returns (uint256) {
+        uint256 rel = scale / 1e9;
+        return rel > DELTA_ABS_FLOOR ? rel : DELTA_ABS_FLOOR;
     }
 
     function _placeAction(string memory json, string memory ab) internal {

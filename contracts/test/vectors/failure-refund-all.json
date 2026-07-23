@@ -1,5 +1,6 @@
 {
   "name": "failure-refund-all",
+  "quantized": true,
   "params": {
     "blocks": 5,
     "supply": "100000000000000000000",

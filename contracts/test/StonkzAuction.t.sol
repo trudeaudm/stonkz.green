@@ -8,14 +8,20 @@ import {LadderWeights} from "../src/LadderWeights.sol";
 
 /// @notice Differential + invariant + regression suite (docs/mechanism-spec.md §9).
 /// @dev Vectors from `node reference/gen-vectors.js` — all amounts are 1e18 WAD.
+///
+/// Comparison policy (Task I):
+///   1. Cumulative abs: assertApproxEqAbs(..., TOL=1e18) on price/offered/raised/fills.
+///   2. Per-block delta: sold/raised/fills this clear within max(1e12 wei, 1e-9 · scale).
 contract StonkzAuctionTest is Test {
     using stdJson for string;
 
     uint256 internal constant WAD = 1e18;
-    uint256 internal constant TOL = 1e18; // 1e18 fixed-point tolerance (spec / milestone)
+    uint256 internal constant TOL = 1e18; // cumulative absolute (policy 1)
+    uint256 internal constant DELTA_ABS_FLOOR = 1e12; // per-block abs floor (policy 2)
     uint256 internal constant BID_FEE = WAD / 10;
 
     StonkzAuction internal auction;
+    uint256 internal _wall; // wall-clock for vm.roll (avoids block.number+1 quirk)
 
     address internal constant ADDR_A = address(0xA11);
     address internal constant ADDR_B = address(0xB22);
@@ -293,8 +299,16 @@ contract StonkzAuctionTest is Test {
     }
 
     function _step() internal {
-        vm.roll(block.number + 1);
+        if (_wall == 0) _wall = block.number;
+        _wall += 1;
+        vm.roll(_wall);
         auction.poke();
+    }
+
+    /// @dev Per-block delta tolerance: max(1e12 wei, 1e-9 · scale).
+    function _deltaTol(uint256 scale) internal pure returns (uint256) {
+        uint256 rel = scale / 1e9;
+        return rel > DELTA_ABS_FLOOR ? rel : DELTA_ABS_FLOOR;
     }
 
     function _addr(string memory name) internal pure returns (address) {
@@ -314,6 +328,7 @@ contract StonkzAuctionTest is Test {
         string memory json = _load(name);
         auction = new StonkzAuction(_params(json));
         auction.poke(); // start clock (needed for ghost-town)
+        _wall = block.number;
 
         bool scheduled = _has(json, ".actions[0].at");
         if (scheduled) {
@@ -362,21 +377,32 @@ contract StonkzAuctionTest is Test {
         uint256 expPrice = json.readUint(string.concat(blk, ".price"));
         uint256 expOffered = json.readUint(string.concat(blk, ".offered"));
         uint256 expRaised = json.readUint(string.concat(blk, ".raised"));
+        uint256 expSold = json.readUint(string.concat(blk, ".sold"));
 
         uint256 gotPrice = auction.price();
         uint256 gotOffer = auction.currentOffer();
+        uint256 raisedBefore = auction.raised();
+        uint256 soldBefore = auction.sold();
 
         uint256 fA = auction.bidderTokens(ADDR_A);
         uint256 fB = auction.bidderTokens(ADDR_B);
         uint256 fC = auction.bidderTokens(ADDR_C);
         uint256 fD = auction.bidderTokens(ADDR_D);
 
+        // Policy 1 — cumulative abs 1e18
         assertApproxEqAbs(gotPrice, expPrice, TOL, "price");
         assertApproxEqAbs(gotOffer, expOffered, TOL, "offered");
 
         _step();
 
         assertApproxEqAbs(auction.raised(), expRaised, TOL, "raised");
+        // Policy 2 — per-block delta max(1e12, 1e-9·scale)
+        uint256 dRaised = auction.raised() - raisedBefore;
+        // Vector `sold` is per-clear qty; raised cum − prior approx via exp
+        uint256 prevRaised = i == 0 ? 0 : json.readUint(string.concat(".blocks[", vm.toString(i - 1), "].raised"));
+        uint256 expDRaised = expRaised > prevRaised ? expRaised - prevRaised : 0;
+        assertApproxEqAbs(dRaised, expDRaised, _deltaTol(expDRaised), "dRaised");
+        assertApproxEqAbs(auction.sold() - soldBefore, expSold, _deltaTol(expSold), "dSold");
         _fill(json, blk, "A", ADDR_A, fA);
         _fill(json, blk, "B", ADDR_B, fB);
         _fill(json, blk, "C", ADDR_C, fC);
@@ -390,6 +416,9 @@ contract StonkzAuctionTest is Test {
         string memory key = string.concat(blk, ".fills.", name);
         if (!_has(json, key)) return;
         uint256 exp = json.readUint(key);
-        assertApproxEqAbs(auction.bidderTokens(who) - before, exp, TOL, name);
+        uint256 got = auction.bidderTokens(who) - before;
+        // Policy 1 cumulative-style abs on this clear's fill, plus policy 2 delta tol
+        assertApproxEqAbs(got, exp, TOL, name);
+        assertApproxEqAbs(got, exp, _deltaTol(exp), string.concat(name, "-delta"));
     }
 }

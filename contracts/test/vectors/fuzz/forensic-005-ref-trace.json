@@ -1,0 +1,156 @@
+{
+  "trace": [
+    {
+      "iteration": 0,
+      "remainingBefore": 43.12947048513735,
+      "actives": [
+        {
+          "name": "B",
+          "weight": 7.751546078869811,
+          "committedBasis": 5668.35975023685,
+          "share": 21.759177235943937,
+          "capLeft": 22.384014369789213,
+          "budLeft": 98.25849192160442,
+          "take": 21.759177235943937,
+          "constraintHit": null,
+          "tokBefore": 228.31598563021078,
+          "spentBefore": 2400.2803710670246
+        },
+        {
+          "name": "C",
+          "weight": 7.613009032641255,
+          "committedBasis": 5252.962674589361,
+          "share": 21.37029324919341,
+          "capLeft": 179.04835118160048,
+          "budLeft": 157.93624653534056,
+          "take": 21.37029324919341,
+          "constraintHit": null,
+          "tokBefore": 71.65164881839952,
+          "spentBefore": 0
+        }
+      ],
+      "remainingAfter": 0,
+      "used": 43.12947048513735,
+      "totW": 15.364555111511066
+    },
+    {
+      "summary": true,
+      "offered": 43.12947048513735,
+      "remaining": 0,
+      "hitIterCap": false,
+      "stoppedNoActives": false,
+      "iterations": 1,
+      "constraintHits": 0
+    }
+  ],
+  "params": {
+    "blocks": 29,
+    "supply": "1000000000000000000000",
+    "floorMcap": "32277618112508209397760",
+    "threshold": "0",
+    "baseStepBps": 12,
+    "walletCapBps": 2507,
+    "sizeBonusBps": 1785,
+    "lpShareBps": 6932,
+    "holdbackBps": 1589,
+    "kappaHundredths": 199
+  },
+  "actions": [
+    {
+      "at": 0,
+      "bid": {
+        "name": "A",
+        "budget": "3128659968166611910656",
+        "maxPrice": "32307228140275724288"
+      }
+    },
+    {
+      "at": 0,
+      "bid": {
+        "name": "B",
+        "budget": "3865322965285740740608",
+        "maxPrice": "32278735676475662336"
+      }
+    },
+    {
+      "at": 0,
+      "bid": {
+        "name": "C",
+        "budget": "3465801850317511852032",
+        "maxPrice": "32319774664599011328"
+      }
+    },
+    {
+      "at": 1,
+      "bid": {
+        "name": "B",
+        "budget": "2450163918202743029760",
+        "maxPrice": "478935954390657007616"
+      }
+    },
+    {
+      "at": 3,
+      "bid": {
+        "name": "A",
+        "budget": "2617176912745926754304",
+        "maxPrice": "32316667248103682048"
+      }
+    },
+    {
+      "at": 8,
+      "bid": {
+        "name": "C",
+        "budget": "2311722055738791821312",
+        "maxPrice": "34376985635821703168"
+      }
+    },
+    {
+      "at": 9,
+      "bid": {
+        "name": "B",
+        "budget": "2660058993513229975552",
+        "maxPrice": "1000000000000000000000000000"
+      }
+    },
+    {
+      "at": 15,
+      "bid": {
+        "name": "B",
+        "budget": "4042034080817829904384",
+        "maxPrice": "23690485943231107072"
+      }
+    },
+    {
+      "at": 20,
+      "bid": {
+        "name": "A",
+        "budget": "1275631184489466298368",
+        "maxPrice": "29893752139617857536"
+      }
+    },
+    {
+      "at": 20,
+      "bid": {
+        "name": "B",
+        "budget": "5668359750236850094080",
+        "maxPrice": "321791498007177396224"
+      }
+    },
+    {
+      "at": 25,
+      "bid": {
+        "name": "B",
+        "budget": "1158202112352009846784",
+        "maxPrice": "32282219008087724032"
+      }
+    },
+    {
+      "at": 25,
+      "bid": {
+        "name": "C",
+        "budget": "5252962674589361504256",
+        "maxPrice": "1000000000000000000000000000"
+      }
+    }
+  ]
+}

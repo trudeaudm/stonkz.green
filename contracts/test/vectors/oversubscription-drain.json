@@ -1,5 +1,6 @@
 {
   "name": "oversubscription-drain",
+  "quantized": true,
   "params": {
     "blocks": 20,
     "supply": "1000000000000000000000000",

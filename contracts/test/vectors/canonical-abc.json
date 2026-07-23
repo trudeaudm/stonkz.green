@@ -1,5 +1,6 @@
 {
   "name": "canonical-abc",
+  "quantized": true,
   "params": {
     "blocks": 10,
     "supply": "100000000000000000000",
@@ -10,7 +11,7 @@
     "sizeBonusBps": 0,
     "lpShareBps": 0,
     "holdbackBps": 0,
-    "kappaHundredths": 130
+    "kappaHundredths": 100
   },
   "derived": {
     "floor": "50000000000000000000",
