@@ -38,14 +38,14 @@ contract Forensic000Test is Test {
         p.kappaHundredths = uint16(json.readUint(".params.kappaHundredths"));
         p.disposalMode = 0;
         p.pairToken = address(0);
-        p.eagerFills = true;
+        p.eagerFills = false;
 
         auction = new StonkzAuction(p);
         auction.poke();
 
         uint256 actionIdx;
         _t = block.timestamp;
-        // Advance until auctionIndex == 5 (about to clear block 5 → vector blocks[5])
+        // Advance until auctionIndex == 5 (about to clear block 5 â†’ vector blocks[5])
         while (auction.auctionIndex() < 5 && !auction.done()) {
             actionIdx = _applyActions(json, actionIdx);
              _t += 1;

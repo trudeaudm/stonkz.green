@@ -34,7 +34,7 @@ contract Forensic005Trace is Test {
         p.holdbackBps = uint16(json.readUint(".params.holdbackBps"));
         p.kappaHundredths = uint16(json.readUint(".params.kappaHundredths"));
         if (p.kappaHundredths < 100) p.kappaHundredths = 100;
-        p.eagerFills = true;
+        p.eagerFills = false;
         auction = new StonkzAuction(p);
         auction.poke();
         _t = block.timestamp;

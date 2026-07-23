@@ -6,16 +6,20 @@ import {stdJson} from "forge-std/StdJson.sol";
 import {IStonkzAuction} from "../src/IStonkzAuction.sol";
 import {StonkzAuction} from "../src/StonkzAuction.sol";
 
-/// @notice Task Q': eager vs lazy — section-A vectors + 20 fuzz scenarios.
+/// @notice Task S2: eager vs lazy with derived weight-dust D-bound.
+/// D = Σ_{blocks active} ceil(weight_b/WAD) + P (live positions at compare).
 contract EagerLazyEquivalenceTest is Test {
     using stdJson for string;
 
-    uint256 internal constant BID_FEE = 1e18 / 10;
+    uint256 internal constant WAD = 1e18;
+    uint256 internal constant BID_FEE = WAD / 10;
     address internal constant ADDR_A = address(0xA11CE);
     address internal constant ADDR_B = address(0xB0B);
     address internal constant ADDR_C = address(0xC0FFEE);
     address internal constant ADDR_D = address(0xD00D);
     uint256 internal _t;
+
+    mapping(address => uint256) internal weightDustSum;
 
     function test_equiv_canonicalAbc() public {
         _run("canonical-abc");
@@ -32,6 +36,12 @@ contract EagerLazyEquivalenceTest is Test {
     }
 
     function _run(string memory name) internal {
+        // Clear dust map between scenarios (new addresses only accumulate).
+        delete weightDustSum[ADDR_A];
+        delete weightDustSum[ADDR_B];
+        delete weightDustSum[ADDR_C];
+        delete weightDustSum[ADDR_D];
+
         string memory json = vm.readFile(string.concat(vm.projectRoot(), "/test/vectors/", name, ".json"));
         StonkzAuction eager = new StonkzAuction(_params(json, true));
         StonkzAuction lazy = new StonkzAuction(_params(json, false));
@@ -47,6 +57,10 @@ contract EagerLazyEquivalenceTest is Test {
             assertEq(lazy.price(), eager.price(), "price");
             assertEq(lazy.sold(), eager.sold(), "sold");
             assertEq(lazy.raised(), eager.raised(), "raised");
+            assertEq(lazy.extraSold(), eager.extraSold(), "extraSold");
+
+            _recordWeightDust(eager);
+
             _t += 1;
             vm.warp(_t);
             eager.poke();
@@ -55,15 +69,75 @@ contract EagerLazyEquivalenceTest is Test {
         assertEq(lazy.price(), eager.price(), "price final");
         assertEq(lazy.sold(), eager.sold(), "sold final");
         assertEq(lazy.raised(), eager.raised(), "raised final");
+        assertEq(lazy.extraSold(), eager.extraSold(), "extraSold final");
 
         lazy.materializeAll();
+
+        if (eager.done()) {
+            eager.settle();
+            lazy.settle();
+        }
+        assertEq(lazy.tokensAccounted(), lazy.sold(), "lazy conservation");
+        assertEq(eager.tokensAccounted(), eager.sold(), "eager conservation");
+        assertEq(lazy.sold(), eager.sold(), "sold after settle");
+
         uint256 nPos = eager.nextPositionId();
         assertEq(lazy.nextPositionId(), nPos);
         for (uint256 id = 1; id <= nPos; id++) {
-            (, , , uint256 s1, uint256 t1,,,) = eager.positions(id);
-            (, , , uint256 s2, uint256 t2,,,) = lazy.positions(id);
-            assertEq(t2, t1, "tokens");
-            assertEq(s2, s1, "spent");
+            (, , , uint256 s1, uint256 t1, , , ,) = eager.positions(id);
+            (address who, , , uint256 s2, uint256 t2, , , ,) = lazy.positions(id);
+
+            // P = positions of this address (LR slack); status may be OutBudget post-settle.
+            uint256 P;
+            for (uint256 j = 1; j <= nPos; j++) {
+                (address o,,,,,,,,) = lazy.positions(j);
+                if (o == who) P++;
+            }
+            // Four sequential WAD floors vs eager Σcost: take, mulWad, acc, harvest.
+            uint256 D = weightDustSum[who] * 4 + P;
+            if (D == 0) D = 1;
+
+            uint256 dt = t1 > t2 ? t1 - t2 : t2 - t1;
+            uint256 ds = s1 > s2 ? s1 - s2 : s2 - s1;
+            if (dt > D || ds > D) {
+                emit log_named_uint("posId", id);
+                emit log_named_uint("dt", dt);
+                emit log_named_uint("ds", ds);
+                emit log_named_uint("D", D);
+                emit log_named_uint("dustSum", weightDustSum[who]);
+                emit log_named_uint("P", P);
+            }
+            if (dt > D) {
+                emit log_string("STOP: token delta > D");
+                emit log_named_uint("eagerTok", t1);
+                emit log_named_uint("lazyTok", t2);
+                fail();
+            }
+            if (ds > D) {
+                emit log_string("STOP: spent delta > D");
+                emit log_named_uint("eagerSpent", s1);
+                emit log_named_uint("lazySpent", s2);
+                fail();
+            }
+        }
+    }
+
+    function _recordWeightDust(StonkzAuction a) internal {
+        uint256 n = a.activeAddressCount();
+        for (uint256 k = 0; k < n; k++) {
+            address who = a.activeAddrs(k);
+            (uint256 w,,,,,,,,) = a.bidders(who);
+                if (w > 0) {
+                    weightDustSum[who] += (w + WAD - 1) / WAD;
+                }
+        }
+    }
+
+    function _liveCount(StonkzAuction a, address who) internal view returns (uint256 live) {
+        uint256 n = a.nextPositionId();
+        for (uint256 id = 1; id <= n; id++) {
+            (address o,,,,, StonkzAuction.PosStatus st,,,) = a.positions(id);
+            if (o == who && st == StonkzAuction.PosStatus.Active) live++;
         }
     }
 

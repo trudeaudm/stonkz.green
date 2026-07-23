@@ -89,6 +89,80 @@ Guarantee aimed: **protocol never underflows; bidders never overdrawn.**
 | Weight powWad | approx | relative fills | Ratios match engine within 1e18 tests |
 | Position `d/live` | floor | address-level remainder loop | Inner water-fill ≤6 iters |
 | `claim` unspent | exact `budget−spent` | — | USD/token claims independent (Task M) |
+| Lazy address total `floor(w·Δacc)` | floor | settle dust → pairing surplus | Task S2 |
+| Lazy position split `d/live` + LR | floor + largest-remainder | rem → lowest `positionId` | Tokens first; spent pro-rata to token shares |
+
+### Task S2 — derived weight-dust bound (eager vs lazy)
+
+Pure accumulator for **tokens and USD at all α** (no per-taker spent SSTOREs).
+
+**Per clear**, unconstrained fills credit:
+
+```
+acc += floor(amount × WAD / uncW)     // global per-weight write
+```
+
+Harvest:
+
+```
+credit = floor(w × acc / WAD) − debt
+```
+
+Relative to the exact rational share `w/uncW × amount`, a single floor chain
+contributes **at most `ceil(w/WAD)` wei** to the address (each WAD of weight can
+lose <1 wei at the `×WAD/uncW` write, recovered as `< w/WAD` on harvest).
+
+USD compares lazy credits to eager `Σ mulWad(take, px)`. That path has **three**
+sequential WAD-scale floors per clear:
+
+1. `take = floor(rem × w / totW)`  
+2. `cost = floor(take × px / WAD)` (`mulWad`)  
+3. `accUsd += floor(Σcost × WAD / uncW)`  
+4. `pendU = floor(w × accUsd / WAD) − debt`  
+
+Each stage contributes **at most `ceil(w_b/WAD)` wei** at the address when
+propagated through WAD-scaled mulDivs, so per clear the bound is
+`4 × ceil(w_b/WAD)`. Summing over live blocks and adding LR slack
+`P = #positions of the address`:
+
+```
+D = Σ_{active blocks b} 4 × ceil(weight_b / WAD)  +  P
+```
+
+Assert `|eager − lazy| ≤ D` per position for **tokens and spent**. Aggregates
+`price/sold/raised/extraSold` stay **byte-identical** per auction block.
+Conservation post-`materializeAll`+settle is **exact** via `settleDustSurplus`.
+
+`eagerFills=true` is **test-only** (`EagerLazyEquivalence`). Production / CI /
+fuzz / invariants use `eagerFills=false`.
+
+### Task S3 — same-clear projSpent + razor window
+
+**Diagnosis:** dust-exhaust used pre-clear `pendingUsd(acc_before)` and missed
+clear `b`'s cost → one-block exit lag vs eager.
+
+**Fix:** after computing `accUsdAfter` (block `b`'s unc delta included), for each
+unc taker:
+
+```
+projSpent = activeSpent + floor(w · accUsdAfter / WAD) − usdDebt
+dust iff budget ≤ projSpent + 1e9   // record exhaustProjSpent; mark OutBudget at b+1
+```
+
+`materialize` asserts credited spent equals recorded projection (0 wei).
+
+**Razor window.** Let `D` be the Task S2 weight-dust bound for the address
+(`Σ 4×ceil(w_b/WAD) + P`, or the duration-safe upper
+`4×ceil(w/WAD)×durationBlocks + 1` used in `ExhaustionBoundary`).
+
+Derivation of the ±1 exit allowance: floor chains can place `projSpent` up to
+`D` wei below the eager position ledger at the epsilon crossing. When
+`budget − eagerSpent` lands in `(1e9 − D, 1e9 + D)`, lazy may trip dust one
+clear earlier or later than eager while still obeying `budget ≤ spent + 1e9` on
+its own ledger. Outside that window (class a), exit blocks match exactly.
+
+Class b asserts `|Δexit| ≤ 1` and per-address fill Δ ≤ fuzz tol
+`max(1e12, scale/1e9)`.
 
 ## 5. Gas (post M/N/O)
 
