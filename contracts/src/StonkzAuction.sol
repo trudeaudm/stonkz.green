@@ -85,8 +85,12 @@ contract StonkzAuction is IStonkzAuction {
         uint256 weight; // committedCapital^α (WAD)
         uint256 rewardDebt; // accTokensPerWeight snapshot
         uint256 tokens; // harvested token total
-        uint256 activeBudget; // Σ budget of Active positions
-        uint256 activeSpent; // Σ spent of Active positions
+        /// @dev Weight basis (spec §3): Σ FULL budgets of positions live at start of clear
+        ///      (Active ∧ maxPrice ≥ price), after price-out, before fills. OutPrice /
+        ///      OutBudget / Capped contribute 0 from their exit block onward (fill exits
+        ///      apply from b+1). Distinct from demand basis `committedLive` (spec §4).
+        uint256 activeBudget;
+        uint256 activeSpent; // Σ spent of those live positions
         uint32 activeCount;
         bool capped;
         bool tracked;
@@ -217,10 +221,9 @@ contract StonkzAuction is IStonkzAuction {
             b.activeCount += 1;
             _setActiveBudget(msg.sender, b.activeBudget + budget, b.activeSpent);
             _ensureActive(msg.sender);
-            // Competition ratchet is one-way and checked before offer (spec §5 / engine tick order)
-            if (!competition && activeAddrs.length > 1) {
-                competition = true;
-            }
+            // Competition ratchet: ONLY in _clearOneBlock after price-out (spec §5 / engine tick).
+            // Do not set here — a bid arriving in the same wall block as a soon-to-be-priced-out
+            // peer must not flip the flat→shallow gate before that peer is swept.
         }
 
         // Refund dust above budget+fee
@@ -383,9 +386,11 @@ contract StonkzAuction is IStonkzAuction {
         return activeAddrs.length;
     }
 
+    /// @notice Demand basis for step scaling (spec §4). Sum of FULL budgets of every
+    ///         position EXCEPT OutPrice. All-in (OutBudget) and Capped capital still count.
+    /// @dev Intentionally different from weight basis (`Bidder.activeBudget`). Updated
+    ///      implicitly when `_priceOutBidder` / placeBid marks OutPrice — status is source of truth.
     function committedLive() public view returns (uint256) {
-        // Capital not priced-out — spec §4. Walk positions of tracked actives + all via positions map
-        // O(positions) view — tests only / off-chain. On-chain step uses cached path.
         uint256 t;
         uint256 n = nextPositionId;
         for (uint256 id = 1; id <= n; id++) {
@@ -436,15 +441,17 @@ contract StonkzAuction is IStonkzAuction {
     }
 
     /// @dev One auction block — differential twin of reference `tick()`.
+    ///      Weight basis: price-out applies BEFORE fills; OutBudget/cap exits from this
+    ///      clear apply to weight from block b+1 (re-snapshot at end of clear).
     function _clearOneBlock() internal {
         uint256 b = auctionIndex;
         require(b < durationBlocks, "past");
         uint256 px = price;
 
-        // 1. Price-outs at this tick (exits bucketed at price — spec §3)
+        // 1. Price-outs at this tick — weight basis updates immediately (spec §3)
         _priceOutAt(px);
 
-        // 2. Competition ratchet (addresses)
+        // 2. Competition ratchet AFTER price-out (reference tick order — spec §5)
         if (!competition && activeAddrs.length > 1) {
             competition = true;
         }
@@ -452,40 +459,53 @@ contract StonkzAuction is IStonkzAuction {
         uint256 offered = _offeredAt(b, px, raised, auctionSold());
         uint256 cap = walletCapTokens();
 
-        // 3. Harvest all actives so tokens/spent are fresh, then water-fill (spec §3)
-        uint256 n = activeAddrs.length;
+        // 3. Harvest, then snapshot weight basis for this clear (reference per-block snaps)
+        address[] memory snap = activeAddrs;
+        uint256 n = snap.length;
         for (uint256 i = 0; i < n; i++) {
-            _harvest(activeAddrs[i]);
+            _harvest(snap[i]);
         }
 
-        // Snapshot arrays for water-fill
+        uint256[] memory snapW = new uint256[](n);
+        uint256[] memory snapBud = new uint256[](n);
+        uint256[] memory snapSpent = new uint256[](n);
+        uint256[] memory snapTok = new uint256[](n);
+        bool[] memory alive = new bool[](n);
+        for (uint256 i = 0; i < n; i++) {
+            Bidder storage bd = bidders[snap[i]];
+            snapW[i] = bd.weight == 0 ? WAD : bd.weight;
+            snapBud[i] = bd.activeBudget;
+            snapSpent[i] = bd.activeSpent;
+            snapTok[i] = bd.tokens;
+            alive[i] = bd.activeCount > 0 && !bd.capped && bd.activeBudget > 0;
+        }
+
+        // Dust exhaustion AFTER snap (engine runs exhaustion before distribute, so a
+        // position that hit spent≈budget last clear still participates in THIS clear's
+        // snap, then is marked OutBudget for storage / next clear).
+        for (uint256 i = 0; i < n; i++) {
+            _dustExhaustPositions(snap[i]);
+            _refreshWeightBasisOnly(snap[i]);
+        }
+
         uint256 remaining = offered;
-        // Use storage reads in loop — bounded by unique bidders
         for (uint256 it = 0; it < 8 && remaining > 0; it++) {
             uint256 totW;
-            uint256 actN = activeAddrs.length;
-            for (uint256 i = 0; i < actN; i++) {
-                address who = activeAddrs[i];
-                Bidder storage bd = bidders[who];
-                if (bd.activeCount == 0 || bd.capped) continue;
-                totW += bd.weight == 0 ? WAD : bd.weight;
+            for (uint256 i = 0; i < n; i++) {
+                if (!alive[i]) continue;
+                totW += snapW[i];
             }
             if (totW == 0) break;
 
             uint256 used;
-            // Second pass — take shares (copy address list: removals mid-loop are careful)
-            address[] memory snap = activeAddrs;
-            for (uint256 i = 0; i < snap.length; i++) {
+            for (uint256 i = 0; i < n; i++) {
+                if (!alive[i]) continue;
                 address who = snap[i];
-                if (_activeIdx[who] == 0) continue;
                 Bidder storage bd = bidders[who];
-                if (bd.activeCount == 0 || bd.capped) continue;
 
-                uint256 w = bd.weight == 0 ? WAD : bd.weight;
-                uint256 share = FixedPointMathLib.mulDiv(remaining, w, totW);
-                uint256 tokHave = bd.tokens;
-                uint256 capLeft = cap > tokHave ? cap - tokHave : 0;
-                uint256 budLeft = bd.activeBudget > bd.activeSpent ? bd.activeBudget - bd.activeSpent : 0;
+                uint256 share = FixedPointMathLib.mulDiv(remaining, snapW[i], totW);
+                uint256 capLeft = cap > snapTok[i] ? cap - snapTok[i] : 0;
+                uint256 budLeft = snapBud[i] > snapSpent[i] ? snapBud[i] - snapSpent[i] : 0;
                 uint256 budTok = FixedPointMathLib.mulDiv(budLeft, WAD, px);
 
                 uint256 take = share;
@@ -493,43 +513,37 @@ contract StonkzAuction is IStonkzAuction {
                 if (take > budTok) take = budTok;
 
                 if (take > 0) {
+                    uint256 cost = FixedPointMathLib.mulWad(take, px);
                     bd.tokens += take;
-                    bd.activeSpent += FixedPointMathLib.mulWad(take, px);
-                    bd.rewardDebt = accTokensPerWeight; // keep debt coherent
+                    bd.activeSpent += cost;
+                    snapTok[i] += take;
+                    snapSpent[i] += cost;
+                    bd.rewardDebt = accTokensPerWeight;
                     used += take;
                     _distributeToPositions(who, take, px);
-                    emit Filled(who, take, FixedPointMathLib.mulWad(take, px), px, uint64(b));
+                    emit Filled(who, take, cost, px, uint64(b));
                 }
 
                 if (take + 1 < share) {
-                    // constrained — mark for exit (spec §3)
+                    // Constrained — drop from further iters this clear (engine snap.status).
+                    alive[i] = false;
                     if (capLeft <= budTok) {
-                        _capBidder(who);
-                    } else {
-                        // Address-level budget hit: force all-in on every active position
-                        uint256[] storage ids = _bidderPositions[who];
-                        for (uint256 j = 0; j < ids.length; j++) {
-                            Position storage pos = positions[ids[j]];
-                            if (pos.status == PosStatus.Active) {
-                                pos.status = PosStatus.OutBudget;
-                                emit AllIn(who, ids[j], uint64(b));
-                            }
-                        }
-                        bd.activeCount = 0;
-                        bd.activeBudget = 0;
-                        bd.activeSpent = 0;
-                        _reweight(who);
-                        _removeActive(who);
+                        // Cap: mark positions this clear (engine post-distribute cap_hit path).
+                        _markCapped(who);
                     }
+                    // bud_hit: do NOT mark positions OutBudget here — engine only flips
+                    // snap.status; positions stay active until distribute/exhaustion so the
+                    // next clear's weight-basis snap still sees fully-spent live budgets.
                 }
             }
             remaining -= used;
             if (used == 0) break;
         }
 
-        // Accumulators: credit proportional fill for bookkeeping (post water-fill actuals already applied)
-        if (offered > remaining && totalWeight > 0) {
-            // soldNow credited below; debt already synced per bidder
+        // Cap / all-in / distribute OutBudget → refresh storage for b+1.
+        // Do NOT dust-mark here: same-clear spending stays Active until next clear's post-snap exhaust.
+        for (uint256 i = 0; i < n; i++) {
+            _refreshWeightBasisOnly(snap[i]);
         }
 
         uint256 soldNow = offered - remaining;
@@ -572,13 +586,11 @@ contract StonkzAuction is IStonkzAuction {
     }
 
     function _effStepWadCached() internal view returns (uint256) {
-        // Use committedLive of non-priced-out — approximate via activeBudgets + inactive non-out
-        // For exact match, recompute like engine.
+        // Demand basis = committedLive (excludes OutPrice only) — not weight basis.
         return effStepWad();
     }
 
     function _priceOutAt(uint256 px) internal {
-        // Scan active addresses' positions; also need positions that are Active but bidder not in set
         address[] memory snap = activeAddrs;
         for (uint256 i = 0; i < snap.length; i++) {
             _priceOutBidder(snap[i], px);
@@ -595,6 +607,7 @@ contract StonkzAuction is IStonkzAuction {
                 p.status = PosStatus.OutPrice;
                 uint256 left = p.budget - p.spent;
                 claimableUsd[who] += left;
+                // Weight basis: drop full budget immediately (before this block's fills)
                 if (b.activeBudget >= p.budget) b.activeBudget -= p.budget;
                 else b.activeBudget = 0;
                 if (b.activeSpent >= p.spent) b.activeSpent -= p.spent;
@@ -608,7 +621,8 @@ contract StonkzAuction is IStonkzAuction {
     }
 
     function _distributeToPositions(address who, uint256 dTok, uint256 px) internal {
-        // Equal water-fill across Active positions — spec §2
+        // Equal water-fill across Active positions — spec §2.
+        // Position OutBudget marks only; weight basis refresh is deferred to end of clear (b+1).
         uint256[] storage ids = _bidderPositions[who];
         uint256 d = dTok;
         for (uint256 it = 0; it < 6 && d > 0; it++) {
@@ -630,8 +644,6 @@ contract StonkzAuction is IStonkzAuction {
                 used += take;
                 if (take < per) {
                     p.status = PosStatus.OutBudget;
-                    Bidder storage b = bidders[who];
-                    if (b.activeCount > 0) b.activeCount -= 1;
                     emit AllIn(who, ids[i], uint64(auctionIndex));
                 }
             }
@@ -640,7 +652,8 @@ contract StonkzAuction is IStonkzAuction {
         }
     }
 
-    function _capBidder(address who) internal {
+    /// @dev Mark wallet-cap exit; weight basis refreshed at end of clear (effective b+1).
+    function _markCapped(address who) internal {
         Bidder storage b = bidders[who];
         if (b.capped) return;
         b.capped = true;
@@ -651,26 +664,48 @@ contract StonkzAuction is IStonkzAuction {
                 p.status = PosStatus.Capped;
             }
         }
-        b.activeCount = 0;
-        b.activeBudget = 0;
-        b.activeSpent = 0;
-        _reweight(who);
-        _removeActive(who);
         emit Capped(who, uint64(auctionIndex));
     }
 
-    function _exhaustBudgets(address who) internal {
+    /// @dev Address-level budget hit: all live positions → OutBudget (basis at end of clear).
+    function _markAllIn(address who) internal {
         uint256[] storage ids = _bidderPositions[who];
-        Bidder storage b = bidders[who];
+        for (uint256 j = 0; j < ids.length; j++) {
+            Position storage pos = positions[ids[j]];
+            if (pos.status == PosStatus.Active) {
+                pos.status = PosStatus.OutBudget;
+                emit AllIn(who, ids[j], uint64(auctionIndex));
+            }
+        }
+    }
+
+    /// @dev Mark fully-spent Active positions OutBudget (engine exhaustion: bud−spent ≤ 1e-9 USD).
+    ///      1e-9 USD in WAD = 1e9 wei.
+    function _dustExhaustPositions(address who) internal {
+        uint256[] storage ids = _bidderPositions[who];
         for (uint256 i = 0; i < ids.length; i++) {
             Position storage p = positions[ids[i]];
-            if (p.status == PosStatus.Active && p.budget <= p.spent + 1) {
+            if (p.status == PosStatus.Active && p.budget <= p.spent + 1e9) {
                 p.status = PosStatus.OutBudget;
-                if (b.activeCount > 0) b.activeCount -= 1;
                 emit AllIn(who, ids[i], uint64(auctionIndex));
             }
         }
-        // Refresh active budget from remaining actives
+    }
+
+    /// @dev Recompute weight basis from remaining Active positions (spec §3).
+    function _refreshWeightBasisOnly(address who) internal {
+        Bidder storage b = bidders[who];
+        uint256[] storage ids = _bidderPositions[who];
+
+        if (b.capped) {
+            b.activeBudget = 0;
+            b.activeSpent = 0;
+            b.activeCount = 0;
+            _reweight(who);
+            _removeActive(who);
+            return;
+        }
+
         uint256 ab;
         uint256 as_;
         uint32 ac;
@@ -682,10 +717,12 @@ contract StonkzAuction is IStonkzAuction {
                 ac++;
             }
         }
-        _setActiveBudget(who, ab, as_);
+        b.activeBudget = ab;
+        b.activeSpent = as_;
         b.activeCount = ac;
         _reweight(who);
         if (ac == 0) _removeActive(who);
+        else _ensureActive(who);
     }
 
     function _finish() internal {
@@ -789,10 +826,41 @@ contract StonkzAuction is IStonkzAuction {
         uint256 ws = weightSuffix[b];
         if (ws == 0) return 0;
         uint256 q = FixedPointMathLib.mulDiv(rem, weights[b], ws);
-        if (!competition) {
+        // Flat cap until competition — use preview so views match the next clear
+        // (price-out may drop peers that placeBid already added to activeAddrs).
+        if (!_previewCompetition()) {
             if (q > flatBase) q = flatBase;
         }
         return q < rem ? q : rem;
+    }
+
+    /// @dev Spec §5 / engine: competition after price-out count of active addresses > 1.
+    ///      Storage ratchet is one-way; preview also treats "would survive price-out now".
+    function _previewCompetition() internal view returns (bool) {
+        if (competition) return true;
+        uint256 n;
+        address[] memory snap = activeAddrs;
+        for (uint256 i = 0; i < snap.length; i++) {
+            if (_survivesPriceOut(snap[i], price)) {
+                unchecked {
+                    n++;
+                }
+                if (n > 1) return true;
+            }
+        }
+        return false;
+    }
+
+    /// @dev True if `who` has ≥1 Active position with maxPrice ≥ px (and not capped).
+    function _survivesPriceOut(address who, uint256 px) internal view returns (bool) {
+        Bidder storage b = bidders[who];
+        if (b.capped || b.activeCount == 0) return false;
+        uint256[] storage ids = _bidderPositions[who];
+        for (uint256 i = 0; i < ids.length; i++) {
+            Position storage p = positions[ids[i]];
+            if (p.status == PosStatus.Active && p.maxPrice >= px) return true;
+        }
+        return false;
     }
 
     function _offeredAt(uint256 b, uint256 px, uint256 raised_, uint256 aSold)
