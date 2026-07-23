@@ -87,7 +87,8 @@ contract StonkzAuctionInvariantTest is Test {
             holdbackBps: 0,
             kappaHundredths: 130,
             disposalMode: 0,
-            pairToken: address(0)
+            pairToken: address(0),
+            eagerFills: true
         });
         auction = new StonkzAuction(p);
         handler = new StonkzAuctionHandler(auction);

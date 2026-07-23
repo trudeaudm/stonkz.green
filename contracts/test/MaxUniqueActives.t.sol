@@ -27,7 +27,8 @@ contract MaxUniqueActivesTest is Test {
                 holdbackBps: 0,
                 kappaHundredths: 130,
                 disposalMode: 0,
-                pairToken: address(0)
+                pairToken: address(0),
+            eagerFills: false
             })
         );
 
@@ -65,7 +66,8 @@ contract MaxUniqueActivesTest is Test {
                 holdbackBps: 0,
                 kappaHundredths: 130,
                 disposalMode: 0,
-                pairToken: address(0)
+                pairToken: address(0),
+            eagerFills: false
             })
         );
         for (uint256 i = 1; i <= 5; i++) {

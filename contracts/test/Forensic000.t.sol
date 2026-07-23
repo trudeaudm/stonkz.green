@@ -38,6 +38,7 @@ contract Forensic000Test is Test {
         p.kappaHundredths = uint16(json.readUint(".params.kappaHundredths"));
         p.disposalMode = 0;
         p.pairToken = address(0);
+        p.eagerFills = true;
 
         auction = new StonkzAuction(p);
         auction.poke();
@@ -84,6 +85,7 @@ contract Forensic000Test is Test {
     function _snap(address who, bytes32 name) internal view returns (TracedWaterFill.Snap memory s) {
         (
             uint256 weight,
+            ,
             ,
             uint256 tokens,
             uint256 activeBudget,

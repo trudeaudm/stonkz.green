@@ -36,6 +36,7 @@ interface IStonkzAuction {
         uint16  kappaHundredths;     // design print/avg ratio, e.g. 130
         uint8   disposalMode;        // 0 thickerLP, 1 holders, 2 creator, 3 burn
         address pairToken;           // USDG or WETH
+        bool    eagerFills;          // true = legacy per-address writes (equiv harness); false = Q' lazy
     }
 
     function placeBid(uint256 budget, uint256 maxPrice) external payable returns (uint256 positionId);

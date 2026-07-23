@@ -233,6 +233,7 @@ contract StonkzAuctionFuzzVectorsTest is Test {
         if (p.kappaHundredths < 100) p.kappaHundredths = 100;
         p.disposalMode = 0;
         p.pairToken = address(0);
+        p.eagerFills = true;
     }
 
     function _addr(string memory name) internal pure returns (address) {

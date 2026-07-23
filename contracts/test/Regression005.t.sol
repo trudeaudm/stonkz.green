@@ -39,7 +39,8 @@ contract Regression005 is Test {
                 holdbackBps: 0,
                 kappaHundredths: 130,
                 disposalMode: 0,
-                pairToken: address(0)
+                pairToken: address(0),
+            eagerFills: true
             })
         );
 
@@ -95,12 +96,12 @@ contract Regression005 is Test {
     }
 
     function _basis(address who) internal view returns (uint256) {
-        (,,, uint256 activeBudget,,,,) = auction.bidders(who);
+        (,,,, uint256 activeBudget,,,,) = auction.bidders(who);
         return activeBudget;
     }
 
     function _weight(address who) internal view returns (uint256) {
-        (uint256 weight,,,,,,,) = auction.bidders(who);
+        (uint256 weight,,,,,,,,) = auction.bidders(who);
         return weight;
     }
 

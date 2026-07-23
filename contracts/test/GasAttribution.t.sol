@@ -61,9 +61,10 @@ contract GasAttributionTest is Test {
         emit log_named_uint("seq32_avg_warm_clear_gas", gRest / 31);
         emit log_named_uint("seq32_avg_all_gas", sumSeq / 32);
 
-        // Dominance check: position must NOT be the majority of SSTOREs
-        assertTrue(c2.bidderWriteOps > c2.positionWriteOps, "bidder dominates position");
-        assertTrue((c2.positionWriteOps * 100) / c2.sstoreOps < 50, "position not dominant");
+        // Dominance check updated post-Q': unconstrained clears write globals only.
+        assertEq(c2.positionWriteOps, 0, "no position writes when unconstrained");
+        assertEq(c2.bidderWriteOps, 0, "no bidder writes when unconstrained");
+        assertLe(c2.sstoreOps, 16, "WriteBudget");
     }
 
     struct Attr {
@@ -182,7 +183,8 @@ contract GasAttributionTest is Test {
                 holdbackBps: 0,
                 kappaHundredths: 130,
                 disposalMode: 0,
-                pairToken: address(0)
+                pairToken: address(0),
+            eagerFills: false
             })
         );
     }

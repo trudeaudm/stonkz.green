@@ -81,7 +81,8 @@ contract EpochSyncTest is Test {
             holdbackBps: 0,
             kappaHundredths: 130,
             disposalMode: 0,
-            pairToken: address(0)
+            pairToken: address(0),
+            eagerFills: false
         });
     }
 

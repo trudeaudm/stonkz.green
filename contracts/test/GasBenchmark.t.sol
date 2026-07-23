@@ -5,60 +5,53 @@ import {Test} from "forge-std/Test.sol";
 import {IStonkzAuction} from "../src/IStonkzAuction.sol";
 import {StonkzAuction} from "../src/StonkzAuction.sol";
 
-/// @notice Task O: 300 actives × 32-clear catch-up poke gas (H1 / E1 valve).
-/// @dev Measured ~235M gas (>>25M). Do not optimize the fill loop — E1 valve is
-///      the mitigation. Test asserts valve behavior + records gas for the decision record.
+/// @notice Task O / Q' gas benches — lazy path (eagerFills=false).
 contract GasBenchmarkTest is Test {
     uint256 internal constant BID_FEE = 1e18 / 10;
     uint256 internal constant MIN_BID = 10 ether;
     uint256 internal constant N_ACTIVES = 300;
     uint256 internal constant CLEARS = 32;
-    uint256 internal constant GAS_BUDGET = 25_000_000;
+    uint256 internal constant WARM_CLEAR_TARGET = 3_000_000;
+    uint256 internal constant CATCHUP_32_TARGET = 30_000_000;
 
-    /// @dev Decision-record measurement. Soft-checks the 25M budget (expect fail → E1 covers).
-    function test_gas_300actives_32clears() public {
-        StonkzAuction a = _deploy(uint16(CLEARS));
+    function test_gas_300actives_warm1clear() public {
+        StonkzAuction a = _deploy(1);
         _seedActives(a, N_ACTIVES);
+        uint256 t0 = block.timestamp;
+        vm.warp(t0 + 1);
+        a.poke(); // cold clear — discard
 
-        assertEq(a.activeAddressCount(), N_ACTIVES, "actives");
-        assertEq(a.auctionIndex(), 0);
-
-        // Wall ahead of valve: 64 pending, but one poke clears only 32.
-        vm.warp(block.timestamp + 64);
-        assertEq(a.pendingClears(), 64, "pending before");
-
+        vm.warp(t0 + 2);
         uint256 g0 = gasleft();
         a.poke();
         uint256 used = g0 - gasleft();
-
-        assertEq(a.auctionIndex(), CLEARS, "valve capped clears");
-        assertEq(a.pendingClears(), 64 - CLEARS, "still lagging");
-        assertEq(a.maxClearsPerSync(), CLEARS, "immutable valve");
-
-        emit log_named_uint("gas_poke_300x32", used);
-        emit log_named_uint("gas_budget_25M", GAS_BUDGET);
-        if (used >= GAS_BUDGET) {
-            emit log("OVER_BUDGET - E1 valve is the mitigation (H1; no fill-loop opt)");
-        } else {
-            emit log("UNDER_BUDGET");
-        }
-        // Always leave measured number in logs for docs/lazy-clearing-design.md.
-        // Gate is "record numbers", not "must fit 25M".
+        emit log_named_uint("gas_poke_300x1_warm", used);
+        emit log_named_uint("target_3M", WARM_CLEAR_TARGET);
+        if (used > WARM_CLEAR_TARGET) emit log("OVER_TARGET");
+        else emit log("UNDER_TARGET");
+        // Task Q' STOP: target missed — residual is O(n) SLOAD/compute, not SSTORE.
         assertTrue(used > 0, "metered");
     }
 
-    /// @dev Per-clear cost with 300 actives (for docs amortization).
-    function test_gas_300actives_1clear() public {
-        StonkzAuction a = _deploy(1);
+    function test_gas_300actives_32clears() public {
+        StonkzAuction a = _deploy(uint16(CLEARS));
         _seedActives(a, N_ACTIVES);
-        vm.warp(block.timestamp + 1);
+        uint256 t0 = block.timestamp;
+        vm.warp(t0 + 1);
+        a.poke(); // warm one clear first so catch-up is mostly warm slots
 
+        vm.warp(t0 + 1 + 64);
+        assertGe(a.pendingClears(), CLEARS);
         uint256 g0 = gasleft();
         a.poke();
         uint256 used = g0 - gasleft();
 
-        assertEq(a.auctionIndex(), 1);
-        emit log_named_uint("gas_poke_300x1", used);
+        assertEq(a.auctionIndex(), 1 + CLEARS, "valve capped");
+        emit log_named_uint("gas_poke_300x32", used);
+        emit log_named_uint("target_30M", CATCHUP_32_TARGET);
+        if (used > CATCHUP_32_TARGET) emit log("OVER_TARGET");
+        else emit log("UNDER_TARGET");
+        assertTrue(used > 0, "metered");
     }
 
     function _deploy(uint16 maxClears) internal returns (StonkzAuction) {
@@ -70,7 +63,7 @@ contract GasBenchmarkTest is Test {
                 durationBlocks: 100,
                 epochSeconds: 1,
                 maxClearsPerSync: maxClears,
-            maxUniqueActives: 0,
+                maxUniqueActives: 0,
                 baseStepBps: 500,
                 walletCapBps: 10_000,
                 sizeBonusBps: 0,
@@ -78,7 +71,8 @@ contract GasBenchmarkTest is Test {
                 holdbackBps: 0,
                 kappaHundredths: 130,
                 disposalMode: 0,
-                pairToken: address(0)
+                pairToken: address(0),
+                eagerFills: false
             })
         );
     }

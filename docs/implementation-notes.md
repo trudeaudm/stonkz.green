@@ -37,11 +37,11 @@ bookkeeping via `tokensAccounted()`) is the source of truth for fills and
 claims. Conservation: `tokensAccounted() == sold` (exact) under the invariant
 handler, including mid-auction `claim()` interleaving (Task M).
 
-**`accTokensPerWeight` / `Bidder.tokens`:** retained only for **weight
-coherence** (MasterChef-style harvest when weight changes). They are **not**
-the claim path and must not diverge mechanism math. Fills are still applied
-eagerly to positions in `_clearOneBlock`. Do not reintroduce dual-ledger claim
-credit (H2 deferred indefinitely — see `docs/lazy-clearing-design.md`).
+**`accTokensPerWeight` / `accUsdPerWeight` / `Bidder.tokens`:** Task Q' lazy path
+credits unconstrained fills via accumulators; materialize on touch/exit. Eager
+path (`eagerFills=true`) keeps per-clear position writes for vector oracle
+parity until EagerLazyEquivalence is wei-green. Position ledger is canonical
+**after** `materialize` / `materializeAll`.
 
 **Exits bucketed at price ticks:** on clear, positions with `maxPrice < price`
 → `OutPrice` before offer/fill. Caps / all-in mark out and drop weight.

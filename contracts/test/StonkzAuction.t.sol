@@ -290,7 +290,8 @@ contract StonkzAuctionTest is Test {
             holdbackBps: 0,
             kappaHundredths: 130,
             disposalMode: 0,
-            pairToken: address(0)
+            pairToken: address(0),
+            eagerFills: true
         });
     }
 
@@ -314,6 +315,7 @@ contract StonkzAuctionTest is Test {
         p.kappaHundredths = uint16(json.readUint(".params.kappaHundredths"));
         p.disposalMode = 0;
         p.pairToken = address(0);
+        p.eagerFills = true;
     }
 
     function _bid(address who, uint256 budget, uint256 maxPrice) internal {

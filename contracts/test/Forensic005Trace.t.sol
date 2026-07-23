@@ -34,6 +34,7 @@ contract Forensic005Trace is Test {
         p.holdbackBps = uint16(json.readUint(".params.holdbackBps"));
         p.kappaHundredths = uint16(json.readUint(".params.kappaHundredths"));
         if (p.kappaHundredths < 100) p.kappaHundredths = 100;
+        p.eagerFills = true;
         auction = new StonkzAuction(p);
         auction.poke();
         _t = block.timestamp;
@@ -60,7 +61,7 @@ contract Forensic005Trace is Test {
     }
 
     function _snap(address who, bytes32 name) internal view returns (TracedWaterFill.Snap memory s) {
-        (uint256 weight,, uint256 tokens, uint256 activeBudget, uint256 activeSpent, uint32 activeCount, bool capped,) =
+        (uint256 weight,,, uint256 tokens, uint256 activeBudget, uint256 activeSpent, uint32 activeCount, bool capped,) =
             auction.bidders(who);
         s.who = who;
         s.name = name;

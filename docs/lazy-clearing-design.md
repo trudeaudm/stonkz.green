@@ -95,14 +95,16 @@ H3/H4 wait on production triggers above.
 
 ---
 
-## Milestone 2.5 decision (Tasks P / Q / R)
+## Milestone 2.5 / Q' decision
 
 | Item | Outcome |
 |------|---------|
-| Task P attribution | **Shipped** — `docs/gas-attribution.md` |
-| H2+ lazy materialization (Task Q) | **Refuted / STOPPED** — per-position writes are only ~12% of SSTOREs; **per-address bidder writes ~87%** (`rewardDebt` + double `_refreshWeightBasisOnly` + fill bookkeeping). Do not implement Q as scoped until redesign targets unconstrained address writes. |
-| Task R `maxUniqueActives` | **Shipped** — ctor param, 0 = unlimited; new addresses rejected past cap; existing may re-bid. Lifts with TVL caps (`docs/launch-plan.md`). |
-| E1 + E2 keeper cadence | **Interim catch-up bounds** while H2+ redesign / M5 engine pending |
+| Task P attribution | Confirmed bidder SSTORE dominance |
+| Task Q' lazy (event-driven weight + acc fills) | **Partial ship** — WriteBudget ≤16 GREEN; unconstrained SSTORE eliminated |
+| Gas targets (3M / 30M) | **MISSED** — residual O(n) SLOAD/compute; see `docs/gas-attribution.md` |
+| EagerLazyEquivalence | **Incomplete** — section-A position wei mismatch; vectors stay on `eagerFills=true` |
+| Task R `maxUniqueActives` | Shipped |
+| M5 segment+heap | Still the path to remove caps at scale |
 
 ### Milestone-5 design note (cap removal at scale)
 
