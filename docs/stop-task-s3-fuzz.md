@@ -254,3 +254,43 @@ higher weight/budget → oversell.
 | **G1‴** | Other — human specifies after reading the table |
 
 Task T / production green still blocked.
+
+---
+
+## HALT — G1''' production fuzz (post COMPOUND exact-track)
+
+**Gate:** 	estFuzzVectors_seed4663_all200 after G1''' SIMPLE/COMPOUND.
+
+### Green before this halt
+| Item | Status |
+|------|--------|
+| G1 set-diff fuzz-001 b10 (1e21 oversell) | **Fixed** — position marks match; Δsold≈3 wei |
+| EagerLazy canonical + size-tilt | Green (byte-identical aggregates) |
+| EagerLazy fuzz-001 compound + marks | Green |
+| Exhaustion (a)+(b), OrphanCredit | Green |
+| WriteBudget ALL-SIMPLE warm=8; K-compound bound | Green |
+| maxLivePositionsPerAddress guard | Green |
+| exactWeiLedger canonical + size-tilt | Green |
+
+### HALT — fuzz seed 4663 scenario **22** block **3** (raised)
+
+**Vector:** 	est/vectors/fuzz/fuzz-022.json  
+**Forensic:** contracts/test/ForensicFuzz022.t.sol
+
+| b | lazyVsExp raised | eagerVsExp | lazyVsEager | nActive L | nActive E |
+|--:|-----------------:|-----------:|------------:|----------:|----------:|
+| 2 | 1 | 1 | 2 | — | — |
+| **3** | **~3.95e20** | 1 | **~3.95e20** | **1** | **0** |
+
+Eager book empty (nActive=0) — no further fill. Lazy still has **1 active** and oversells (~6.28e18 extra sold). Address-set drift: an address remains Active on lazy after eager exited it.
+
+Not the fuzz-001 compound position-mark class (that is green). Suspect SIMPLE ACC dust/exit mark lag or COMPOUND→SIMPLE transition leaving weight live one clear too long.
+
+### Ruling needed
+| Opt | Action |
+|-----|--------|
+| **H1** | Set-diff fuzz-022 b2→b3 (who stays Active on lazy, mark block on eager) then fix exit timing |
+| **H2** | Widen raised TOL (rejects — blinds 1e20-scale) |
+| **H3** | Park production on eager until H1 |
+
+Task T blocked.

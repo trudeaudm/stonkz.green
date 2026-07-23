@@ -26,7 +26,7 @@ contract RegressionClaimForfeit is Test {
                 epochSeconds: 1,
                 maxClearsPerSync: 0,
             maxUniqueActives: 0,
-                baseStepBps: 1000, // 10% steps â€” cliff hits quickly
+                baseStepBps: 1000, // 10% steps Ã¢â‚¬â€ cliff hits quickly
                 walletCapBps: 10_000,
                 sizeBonusBps: 0,
                 lpShareBps: 8000,
@@ -34,6 +34,7 @@ contract RegressionClaimForfeit is Test {
                 kappaHundredths: 130,
                 disposalMode: 0,
                 pairToken: address(0),
+            maxLivePositionsPerAddress: 0,
             eagerFills: false
             })
         );
@@ -41,7 +42,7 @@ contract RegressionClaimForfeit is Test {
         uint256 floor = auction.price(); // 5e18
         // A: will fill some then price out when ladder exceeds cliff
         uint256 budgetA = 200 ether;
-        uint256 cliff = floor + floor / 10; // one step above floor â‰ˆ 5.5
+        uint256 cliff = floor + floor / 10; // one step above floor Ã¢â€°Ë† 5.5
         _bid(A, budgetA, cliff);
         // B: stays in to drive price and graduation volume
         _bid(B, 5000 ether, type(uint256).max);

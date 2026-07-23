@@ -142,7 +142,7 @@ contract GasAttributionTest is Test {
     }
 
     function _isGlobalScalar(uint256 slot) internal pure returns (bool) {
-        // slots 2–13 (incl. uniqueBidders), activeAddrs length@17, escrow totals@21–23
+        // slots 2â€“13 (incl. uniqueBidders), activeAddrs length@17, escrow totals@21â€“23
         if (slot >= 2 && slot <= 13) return true;
         if (slot == 17 || slot == 21 || slot == 22 || slot == 23) return true;
         return false;
@@ -184,6 +184,7 @@ contract GasAttributionTest is Test {
                 kappaHundredths: 130,
                 disposalMode: 0,
                 pairToken: address(0),
+            maxLivePositionsPerAddress: 0,
             eagerFills: false
             })
         );

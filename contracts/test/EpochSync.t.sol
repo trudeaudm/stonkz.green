@@ -5,14 +5,14 @@ import {Test} from "forge-std/Test.sol";
 import {IStonkzAuction} from "../src/IStonkzAuction.sol";
 import {StonkzAuction} from "../src/StonkzAuction.sol";
 
-/// @notice Task N: partial sync (E1 valve) ≡ full sync per auction-block state.
+/// @notice Task N: partial sync (E1 valve) â‰¡ full sync per auction-block state.
 contract EpochSyncTest is Test {
     uint256 internal constant BID_FEE = 1e18 / 10;
     address internal constant A = address(0xA11);
     address internal constant B = address(0xB22);
 
     function test_partialSync_byteIdenticalToFullSync() public {
-        IStonkzAuction.Params memory fullP = _base(0); // uncapped clears (still ≤64 default but we warp gradually)
+        IStonkzAuction.Params memory fullP = _base(0); // uncapped clears (still â‰¤64 default but we warp gradually)
         IStonkzAuction.Params memory partP = _base(2); // max 2 clears per poke
 
         StonkzAuction full = new StonkzAuction(fullP);
@@ -26,7 +26,7 @@ contract EpochSyncTest is Test {
         // Wall advances 10 epochs at once
         vm.warp(block.timestamp + 10);
 
-        // Full: one poke clears all pending (10 ≤ 64)
+        // Full: one poke clears all pending (10 â‰¤ 64)
         full.poke();
         assertEq(full.pendingClears(), 0, "full caught up");
         assertEq(full.auctionIndex(), 10);
@@ -82,6 +82,7 @@ contract EpochSyncTest is Test {
             kappaHundredths: 130,
             disposalMode: 0,
             pairToken: address(0),
+            maxLivePositionsPerAddress: 0,
             eagerFills: false
         });
     }

@@ -38,6 +38,9 @@ interface IStonkzAuction {
         uint16  kappaHundredths;     // design print/avg ratio, e.g. 130
         uint8   disposalMode;        // 0 thickerLP, 1 holders, 2 creator, 3 burn
         address pairToken;           // USDG or WETH
+        /// @dev Task G1''': max Active positions per address; 0 = unlimited (default).
+        ///      Guarded launch may set ~8 to bound compound write amplification.
+        uint8   maxLivePositionsPerAddress;
         bool    eagerFills;          // true = legacy per-address writes (equiv harness); false = Q' lazy
     }
 

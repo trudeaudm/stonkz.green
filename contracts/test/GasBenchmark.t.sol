@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {IStonkzAuction} from "../src/IStonkzAuction.sol";
 import {StonkzAuction} from "../src/StonkzAuction.sol";
 
-/// @notice Task O / Q' gas benches — lazy path (eagerFills=false).
+/// @notice Task O / Q' gas benches â€” lazy path (eagerFills=false).
 contract GasBenchmarkTest is Test {
     uint256 internal constant BID_FEE = 1e18 / 10;
     uint256 internal constant MIN_BID = 10 ether;
@@ -19,7 +19,7 @@ contract GasBenchmarkTest is Test {
         _seedActives(a, N_ACTIVES);
         uint256 t0 = block.timestamp;
         vm.warp(t0 + 1);
-        a.poke(); // cold clear — discard
+        a.poke(); // cold clear â€” discard
 
         vm.warp(t0 + 2);
         uint256 g0 = gasleft();
@@ -29,7 +29,7 @@ contract GasBenchmarkTest is Test {
         emit log_named_uint("target_3M", WARM_CLEAR_TARGET);
         if (used > WARM_CLEAR_TARGET) emit log("OVER_TARGET");
         else emit log("UNDER_TARGET");
-        // Task Q' STOP: target missed — residual is O(n) SLOAD/compute, not SSTORE.
+        // Task Q' STOP: target missed â€” residual is O(n) SLOAD/compute, not SSTORE.
         assertTrue(used > 0, "metered");
     }
 
@@ -72,6 +72,7 @@ contract GasBenchmarkTest is Test {
                 kappaHundredths: 130,
                 disposalMode: 0,
                 pairToken: address(0),
+                maxLivePositionsPerAddress: 0,
                 eagerFills: false
             })
         );

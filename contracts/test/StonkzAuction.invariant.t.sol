@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {IStonkzAuction} from "../src/IStonkzAuction.sol";
 import {StonkzAuction} from "../src/StonkzAuction.sol";
 
-/// @dev Handler for forge invariant testing â€” random placeBid/poke/claim/settle/runAway.
+/// @dev Handler for forge invariant testing Ã¢â‚¬â€ random placeBid/poke/claim/settle/runAway.
 contract StonkzAuctionHandler is Test {
     uint256 internal constant BID_FEE = 1e18 / 10;
 
@@ -58,7 +58,7 @@ contract StonkzAuctionHandler is Test {
     }
 
     function runAway() external {
-        // Only creator can runAway â€” prank creator (test contract that deployed)
+        // Only creator can runAway Ã¢â‚¬â€ prank creator (test contract that deployed)
         // Handler is not creator; skip unless we expose creator.
         address c = auction.creator();
         vm.prank(c);
@@ -66,7 +66,7 @@ contract StonkzAuctionHandler is Test {
     }
 }
 
-/// @notice Handler-based invariant campaign â€” all ten Â§9 invariants (depth â‰¥ 64 via foundry.toml).
+/// @notice Handler-based invariant campaign Ã¢â‚¬â€ all ten Ã‚Â§9 invariants (depth Ã¢â€°Â¥ 64 via foundry.toml).
 contract StonkzAuctionInvariantTest is Test {
     StonkzAuction internal auction;
     StonkzAuctionHandler internal handler;
@@ -88,6 +88,7 @@ contract StonkzAuctionInvariantTest is Test {
             kappaHundredths: 130,
             disposalMode: 0,
             pairToken: address(0),
+            maxLivePositionsPerAddress: 0,
             eagerFills: false
         });
         auction = new StonkzAuction(p);
@@ -137,13 +138,13 @@ contract StonkzAuctionInvariantTest is Test {
         }
     }
 
-    // I2: reserveRemaining â‰¤ reserveInitial
+    // I2: reserveRemaining Ã¢â€°Â¤ reserveInitial
     function invariant_I2_reserve() public view {
         assertLe(auction.reserveRemaining(), auction.reserveInitial(), "I2");
         assertLe(auction.extraSold(), auction.reserveInitial(), "I2 extra");
     }
 
-    // I1-ish during life: sold â‰¥ auctionSold; auctionSold â‰¤ auctionSupply
+    // I1-ish during life: sold Ã¢â€°Â¥ auctionSold; auctionSold Ã¢â€°Â¤ auctionSupply
     function invariant_I1_soldBounds() public view {
         assertGe(auction.sold(), auction.auctionSold(), "sold>=auctSold");
         assertLe(auction.auctionSold(), auction.auctionSupply() + 1e15, "auctSold<=supply");
@@ -156,14 +157,14 @@ contract StonkzAuctionInvariantTest is Test {
         }
     }
 
-    // I10 weights sum (immutable after ctor) â€” checked via schedule length
+    // I10 weights sum (immutable after ctor) Ã¢â‚¬â€ checked via schedule length
     function invariant_I10_scheduleLen() public view {
         assertEq(auction.durationBlocks() > 0 ? 1 : 0, 1);
     }
 
     // Raised non-decreasing across pokes (ghost)
     function invariant_raisedNonDecrease() public view {
-        // soft: raised is consistent with sold*prices aggregate â€” just non-neg
+        // soft: raised is consistent with sold*prices aggregate Ã¢â‚¬â€ just non-neg
         assertGe(auction.raised(), 0);
     }
 

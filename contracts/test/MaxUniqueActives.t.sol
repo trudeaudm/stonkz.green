@@ -28,6 +28,7 @@ contract MaxUniqueActivesTest is Test {
                 kappaHundredths: 130,
                 disposalMode: 0,
                 pairToken: address(0),
+            maxLivePositionsPerAddress: 0,
             eagerFills: false
             })
         );
@@ -67,6 +68,7 @@ contract MaxUniqueActivesTest is Test {
                 kappaHundredths: 130,
                 disposalMode: 0,
                 pairToken: address(0),
+            maxLivePositionsPerAddress: 0,
             eagerFills: false
             })
         );
