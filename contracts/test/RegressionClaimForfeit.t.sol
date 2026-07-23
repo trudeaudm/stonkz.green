@@ -45,14 +45,14 @@ contract RegressionClaimForfeit is Test {
         uint256 cliff = floor + floor / 10; // one step above floor Ã¢â€°Ë† 5.5
         _bid(A, budgetA, cliff);
         // B: stays in to drive price and graduation volume
-        _bid(B, 5000 ether, type(uint256).max);
+        _bid(B, 5000 ether, type(uint80).max);
 
         // Clear until A is OutPrice and has some fills
         bool pricedOut;
         uint256 filled;
         for (uint256 i = 0; i < 12 && !auction.done(); i++) {
             _step();
-            (, , , uint256 spent, uint256 tokens, StonkzAuction.PosStatus st,,,) = auction.positions(1);
+            (, , uint256 spent, , uint256 tokens, , StonkzAuction.PosStatus st,) = auction.positions(1);
             filled = tokens;
             if (st == StonkzAuction.PosStatus.OutPrice && tokens > 0 && spent > 0) {
                 pricedOut = true;
@@ -62,7 +62,7 @@ contract RegressionClaimForfeit is Test {
         assertTrue(pricedOut, "A should be OutPrice with fills");
         assertGt(filled, 0, "A filled some tokens");
 
-        (, uint256 bud,, uint256 spentBefore,,,,,) = auction.positions(1);
+        (uint256 bud,, uint256 spentBefore,,,,,) = auction.positions(1);
         uint256 unspent = bud - spentBefore;
         assertGt(unspent, 0, "unspent USD remains");
 
@@ -73,9 +73,9 @@ contract RegressionClaimForfeit is Test {
         assertEq(A.balance - balBefore, unspent, "USD claim == budget-spent");
 
         // Tokens must survive on the position
-        (, , , , uint256 tokensAfterUsd, , bool usdClaimed, bool tokClaimed,) = auction.positions(1);
-        assertTrue(usdClaimed, "usd claimed");
-        assertFalse(tokClaimed, "tokens not yet claimed");
+        (, , , , uint256 tokensAfterUsd, , , uint8 claimFlags) = auction.positions(1);
+        assertTrue(claimFlags & 1 != 0, "usd claimed");
+        assertFalse(claimFlags & 2 != 0, "tokens not yet claimed");
         assertEq(tokensAfterUsd, filled, "tokens preserved after USD claim");
 
         // Finish auction + settle
@@ -90,8 +90,8 @@ contract RegressionClaimForfeit is Test {
         auction.claim(1);
         assertEq(auction.claimableTokens(A) - credBefore, filled, "token credit == filled");
 
-        (, , , , uint256 tokensFinal, , , bool tokClaimed2,) = auction.positions(1);
-        assertTrue(tokClaimed2, "tokens claimed");
+        (, , , , uint256 tokensFinal, , , uint8 claimFlags2) = auction.positions(1);
+        assertTrue(claimFlags2 & 2 != 0, "tokens claimed");
         assertEq(tokensFinal, 0, "position tokens zeroed after credit");
 
         // Exact wei G: accounted == sold

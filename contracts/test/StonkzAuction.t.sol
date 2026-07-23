@@ -93,16 +93,16 @@ contract StonkzAuctionTest is Test {
 
     function testInvariant_I4_perCapita() public {
         auction = new StonkzAuction(_toy(0));
-        _bid(ADDR_A, 1000 ether, type(uint256).max);
-        _bid(ADDR_B, 2000 ether, type(uint256).max);
+        _bid(ADDR_A, 1000 ether, type(uint80).max);
+        _bid(ADDR_B, 2000 ether, type(uint80).max);
         _step();
         assertApproxEqAbs(auction.bidderTokens(ADDR_A), auction.bidderTokens(ADDR_B), 1e9, "eq");
     }
 
     function testInvariant_I4_sizeTilt() public {
         auction = new StonkzAuction(_toy(1000));
-        _bid(ADDR_A, 1000 ether, type(uint256).max);
-        _bid(ADDR_B, 2000 ether, type(uint256).max);
+        _bid(ADDR_A, 1000 ether, type(uint80).max);
+        _bid(ADDR_B, 2000 ether, type(uint80).max);
         _step();
         uint256 ratio = (auction.bidderTokens(ADDR_B) * WAD) / auction.bidderTokens(ADDR_A);
         assertApproxEqAbs(ratio, 11 * WAD / 10, WAD / 1e5, "tilt");
@@ -136,10 +136,10 @@ contract StonkzAuctionTest is Test {
 
     function testInvariant_I7_oneShare() public {
         auction = new StonkzAuction(_toy(0));
-        _bid(ADDR_A, 1000 ether, type(uint256).max);
-        _bid(ADDR_A, 1000 ether, type(uint256).max);
-        _bid(ADDR_A, 1000 ether, type(uint256).max);
-        _bid(ADDR_B, 3000 ether, type(uint256).max);
+        _bid(ADDR_A, 1000 ether, type(uint80).max);
+        _bid(ADDR_A, 1000 ether, type(uint80).max);
+        _bid(ADDR_A, 1000 ether, type(uint80).max);
+        _bid(ADDR_B, 3000 ether, type(uint80).max);
         _step();
         assertApproxEqAbs(auction.bidderTokens(ADDR_A), auction.bidderTokens(ADDR_B), 1e9, "share");
     }
@@ -149,8 +149,8 @@ contract StonkzAuctionTest is Test {
         p.walletCapBps = 100; // 1%
         auction = new StonkzAuction(p);
         uint256 cap = auction.walletCapTokens();
-        _bid(ADDR_A, 1_000_000 ether, type(uint256).max);
-        _bid(ADDR_B, 1_000_000 ether, type(uint256).max);
+        _bid(ADDR_A, 1_000_000 ether, type(uint80).max);
+        _bid(ADDR_B, 1_000_000 ether, type(uint80).max);
         for (uint256 i = 0; i < 10; i++) _step();
         assertLe(auction.bidderTokens(ADDR_A), cap + 1e9);
         assertLe(auction.bidderTokens(ADDR_B), cap + 1e9);
@@ -161,7 +161,7 @@ contract StonkzAuctionTest is Test {
         p.graduationUsd = 2000 ether; // above $100 budgets, within raise ceiling
         p.lpShareBps = 8000;
         auction = new StonkzAuction(p);
-        _bid(ADDR_A, 50 ether, type(uint256).max);
+        _bid(ADDR_A, 50 ether, type(uint80).max);
         for (uint256 i = 0; i < 10; i++) _step();
         assertTrue(auction.done() && !auction.graduated());
         uint256 balBeforeClaim = ADDR_A.balance;
@@ -181,12 +181,12 @@ contract StonkzAuctionTest is Test {
 
     function testInvariant_I5_committedBudgets() public {
         auction = new StonkzAuction(_toy(0));
-        _bid(ADDR_A, 100 ether, type(uint256).max);
-        (, uint256 budget,, uint256 spent,,,,,) = auction.positions(1);
+        _bid(ADDR_A, 100 ether, type(uint80).max);
+        (uint256 budget,, uint256 spent,,,,,) = auction.positions(1);
         assertEq(budget, 100 ether);
         assertEq(spent, 0);
         _step();
-        (, budget,, spent,,,,,) = auction.positions(1);
+        (budget,, spent,,,,,) = auction.positions(1);
         assertEq(budget, 100 ether);
         assertLe(spent, budget);
     }
@@ -203,8 +203,8 @@ contract StonkzAuctionTest is Test {
         p.holdbackBps = 1000;
         p.graduationUsd = 100 ether;
         auction = new StonkzAuction(p);
-        _bid(ADDR_A, 3000 ether, type(uint256).max);
-        _bid(ADDR_B, 3000 ether, type(uint256).max);
+        _bid(ADDR_A, 3000 ether, type(uint80).max);
+        _bid(ADDR_B, 3000 ether, type(uint80).max);
         for (uint256 i = 0; i < 12; i++) _step();
         if (!auction.done()) {
             vm.warp(block.timestamp + 20);
@@ -252,8 +252,8 @@ contract StonkzAuctionTest is Test {
         p.baseStepBps = 0;
         auction = new StonkzAuction(p);
         uint256 p0 = auction.price();
-        _bid(ADDR_A, 5000 ether, type(uint256).max);
-        _bid(ADDR_B, 5000 ether, type(uint256).max);
+        _bid(ADDR_A, 5000 ether, type(uint80).max);
+        _bid(ADDR_B, 5000 ether, type(uint80).max);
         _step();
         assertGe(auction.price(), p0);
     }
@@ -263,8 +263,8 @@ contract StonkzAuctionTest is Test {
         p.lpShareBps = 8000;
         p.graduationUsd = 100 ether;
         auction = new StonkzAuction(p);
-        _bid(ADDR_A, 5000 ether, type(uint256).max);
-        _bid(ADDR_B, 5000 ether, type(uint256).max);
+        _bid(ADDR_A, 5000 ether, type(uint80).max);
+        _bid(ADDR_B, 5000 ether, type(uint80).max);
         for (uint256 i = 0; i < 10; i++) _step();
         if (!auction.graduated()) return;
         auction.settle();
@@ -460,7 +460,7 @@ contract StonkzAuctionTest is Test {
     function _sumPositionLedger() internal view returns (uint256 sumTok, uint256 sumSpent) {
         uint256 n = auction.nextPositionId();
         for (uint256 id = 1; id <= n; id++) {
-            (, , , uint256 spent, uint256 tokens,,,,) = auction.positions(id);
+            (, , uint256 spent, , uint256 tokens,,,) = auction.positions(id);
             sumTok += tokens;
             sumSpent += spent;
         }

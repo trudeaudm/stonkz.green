@@ -195,7 +195,7 @@ contract GasAttributionTest is Test {
             address who = address(uint160(i));
             vm.deal(who, MIN_BID + BID_FEE + 1 ether);
             vm.prank(who);
-            a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint256).max);
+            a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint80).max);
         }
     }
 }

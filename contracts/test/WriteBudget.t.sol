@@ -47,7 +47,7 @@ contract WriteBudgetTest is Test {
             for (uint256 j = 0; j < m; j++) {
                 vm.deal(who, MIN_BID + BID_FEE + 1 ether);
                 vm.prank(who);
-                a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint256).max);
+                a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint80).max);
             }
         }
         uint256 t0 = block.timestamp;
@@ -67,7 +67,7 @@ contract WriteBudgetTest is Test {
         StonkzAuction a = _deploy(1);
         for (uint256 i = 1; i <= 5; i++) {
             address who = address(uint160(i));
-            uint256 maxP = i <= 2 ? 1 : type(uint256).max;
+            uint256 maxP = i <= 2 ? 1 : type(uint80).max;
             vm.deal(who, MIN_BID + BID_FEE + 1 ether);
             vm.prank(who);
             a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, maxP);
@@ -109,12 +109,12 @@ contract WriteBudgetTest is Test {
         address who = address(0xBEEF);
         vm.deal(who, 100 ether);
         vm.prank(who);
-        a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint256).max);
+        a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint80).max);
         vm.prank(who);
-        a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint256).max);
+        a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint80).max);
         vm.prank(who);
         vm.expectRevert(bytes("max live positions"));
-        a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint256).max);
+        a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint80).max);
     }
 
     function _deploy(uint16 maxClears) internal returns (StonkzAuction) {
@@ -146,7 +146,7 @@ contract WriteBudgetTest is Test {
             address who = address(uint160(i));
             vm.deal(who, MIN_BID + BID_FEE + 1 ether);
             vm.prank(who);
-            a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint256).max);
+            a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint80).max);
         }
     }
 }

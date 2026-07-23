@@ -90,6 +90,6 @@ contract EpochSyncTest is Test {
     function _bid(StonkzAuction a, address who, uint256 budget) internal {
         vm.deal(who, budget + BID_FEE + 1 ether);
         vm.prank(who);
-        a.placeBid{value: budget + BID_FEE}(budget, type(uint256).max);
+        a.placeBid{value: budget + BID_FEE}(budget, type(uint80).max);
     }
 }

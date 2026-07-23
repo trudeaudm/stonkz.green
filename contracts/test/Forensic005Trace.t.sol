@@ -61,7 +61,7 @@ contract Forensic005Trace is Test {
     }
 
     function _snap(address who, bytes32 name) internal view returns (TracedWaterFill.Snap memory s) {
-        (uint256 weight,,, uint256 tokens, uint256 activeBudget, uint256 activeSpent, uint32 activeCount, bool capped,) =
+        (uint256 weight, uint256 activeBudget, uint256 activeSpent, uint16 activeCount,,, uint256 tokens, uint8 flags) =
             auction.bidders(who);
         s.who = who;
         s.name = name;
@@ -70,15 +70,15 @@ contract Forensic005Trace is Test {
         s.tokens = tokens;
         s.activeSpent = activeSpent;
         s.activeBudget = activeBudget;
-        s.active = activeCount > 0 && !capped;
-        s.capped = capped;
+        s.active = activeCount > 0 && flags & 1 == 0;
+        s.capped = flags & 1 != 0;
         console2.logBytes32(name);
         console2.log("pre weight", weight);
         console2.log("pre tokens", tokens);
         console2.log("pre activeBudget", activeBudget);
         console2.log("pre activeSpent", activeSpent);
         console2.log("pre activeCount", activeCount);
-        console2.log("pre capped", capped ? 1 : 0);
+        console2.log("pre capped", flags & 1 != 0 ? 1 : 0);
     }
 
     function _apply(string memory json, uint256 startIdx) internal returns (uint256) {

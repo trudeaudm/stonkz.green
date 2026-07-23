@@ -101,7 +101,7 @@ contract ForensicG1SetDiff is Test {
         console2.log("nActive", n);
         for (uint256 i = 0; i < n; i++) {
             address who = a.activeAddrs(i);
-            (uint256 w,,,, uint256 ab, uint256 aspent, uint32 ac,,) = a.bidders(who);
+            (uint256 w, uint256 ab, uint256 aspent, uint16 ac,,,,) = a.bidders(who);
             console2.log("addr", _name(who));
             console2.log("w", w);
             console2.log("headroom", ab > aspent ? ab - aspent : 0);
@@ -113,7 +113,7 @@ contract ForensicG1SetDiff is Test {
         console2.log(tag);
         uint256 n = a.nextPositionId();
         for (uint256 id = 1; id <= n; id++) {
-            (address o, uint256 bud,, uint256 spent,, StonkzAuction.PosStatus st,,,) = a.positions(id);
+            (uint256 bud,, uint256 spent,,, address o, StonkzAuction.PosStatus st,) = a.positions(id);
             if (o != who) continue;
             console2.log("id", id);
             console2.log("st", uint256(st));

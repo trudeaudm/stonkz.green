@@ -48,12 +48,12 @@ contract ExhaustionBoundaryTest is Test {
     function _assertExactExit(IStonkzAuction.Params memory p, uint256 budget, uint256 tag) internal {
         StonkzAuction eager = new StonkzAuction(_eager(p, true));
         StonkzAuction lazy = new StonkzAuction(_eager(p, false));
-        _bid(eager, PEER, 100_000 ether, type(uint256).max);
-        _bid(lazy, PEER, 100_000 ether, type(uint256).max);
-        _bid(eager, WHO, budget, type(uint256).max);
-        _bid(lazy, WHO, budget, type(uint256).max);
+        _bid(eager, PEER, 100_000 ether, type(uint80).max);
+        _bid(lazy, PEER, 100_000 ether, type(uint80).max);
+        _bid(eager, WHO, budget, type(uint80).max);
+        _bid(lazy, WHO, budget, type(uint80).max);
 
-        (uint256 w,,,,,,,,) = eager.bidders(WHO);
+        (uint256 w,,,,,,,) = eager.bidders(WHO);
         emit log_named_uint("tag_a", tag);
         emit log_named_uint("weight", w);
 
@@ -75,10 +75,10 @@ contract ExhaustionBoundaryTest is Test {
 
         StonkzAuction eager = new StonkzAuction(_eager(p, true));
         StonkzAuction lazy = new StonkzAuction(_eager(p, false));
-        _bid(eager, PEER, 100_000 ether, type(uint256).max);
-        _bid(lazy, PEER, 100_000 ether, type(uint256).max);
-        _bid(eager, WHO, budget, type(uint256).max);
-        _bid(lazy, WHO, budget, type(uint256).max);
+        _bid(eager, PEER, 100_000 ether, type(uint80).max);
+        _bid(lazy, PEER, 100_000 ether, type(uint80).max);
+        _bid(eager, WHO, budget, type(uint80).max);
+        _bid(lazy, WHO, budget, type(uint80).max);
 
         emit log_named_uint("tag_b", tag);
         emit log_named_uint("razorBud", budget);
@@ -145,9 +145,9 @@ contract ExhaustionBoundaryTest is Test {
 
     function _dustBound(IStonkzAuction.Params memory p, uint256 budget) internal returns (uint256 D) {
         StonkzAuction a = new StonkzAuction(_eager(p, true));
-        _bid(a, PEER, 100_000 ether, type(uint256).max);
-        _bid(a, WHO, budget, type(uint256).max);
-        (uint256 w,,,,,,,,) = a.bidders(WHO);
+        _bid(a, PEER, 100_000 ether, type(uint80).max);
+        _bid(a, WHO, budget, type(uint80).max);
+        (uint256 w,,,,,,,) = a.bidders(WHO);
         uint256 ceilW = w == 0 ? 1 : (w + WAD - 1) / WAD;
         D = 4 * ceilW * uint256(p.durationBlocks) + 1;
     }
@@ -155,7 +155,7 @@ contract ExhaustionBoundaryTest is Test {
     function _hasActive(StonkzAuction a, address who) internal view returns (bool) {
         uint256 n = a.nextPositionId();
         for (uint256 id = 1; id <= n; id++) {
-            (address o,,,,, StonkzAuction.PosStatus st,,,) = a.positions(id);
+            (,,,,, address o, StonkzAuction.PosStatus st,) = a.positions(id);
             if (o == who && st == StonkzAuction.PosStatus.Active) return true;
         }
         return false;

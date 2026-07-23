@@ -46,7 +46,7 @@ contract RegressionH1GhostTest is Test {
     function _assertOutPriceClean(StonkzAuction a) internal view {
         uint256 n = a.nextPositionId();
         for (uint256 id = 1; id <= n; id++) {
-            (, , , uint256 spent, , StonkzAuction.PosStatus st, , ,) = a.positions(id);
+            (, , uint256 spent, , , , StonkzAuction.PosStatus st,) = a.positions(id);
             if (st == StonkzAuction.PosStatus.OutPrice) {
                 // Immediate placeBid OutPrice never received fills; spent may be
                 // non-zero only if priced out mid-auction after fills — those go
@@ -58,10 +58,10 @@ contract RegressionH1GhostTest is Test {
         uint256 na = a.activeAddressCount();
         for (uint256 i = 0; i < na; i++) {
             address who = a.activeAddrs(i);
-            (, , , , , uint256 aspent, , ,) = a.bidders(who);
+            (, , uint256 aspent, , , , ,) = a.bidders(who);
             uint256 sum;
             for (uint256 id = 1; id <= n; id++) {
-                (address o, , , uint256 sp, , StonkzAuction.PosStatus st, , ,) = a.positions(id);
+                (, , uint256 sp, , , address o, StonkzAuction.PosStatus st,) = a.positions(id);
                 if (o == who && st == StonkzAuction.PosStatus.Active) sum += sp;
             }
             assertEq(aspent, sum, "H1 orphan spent on non-Active");

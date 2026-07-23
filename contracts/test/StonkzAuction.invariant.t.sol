@@ -110,7 +110,7 @@ contract StonkzAuctionInvariantTest is Test {
         auction.materializeAll();
         uint256 n = auction.nextPositionId();
         for (uint256 id = 1; id <= n; id++) {
-            (, uint256 budget,, uint256 spent,,,,,) = auction.positions(id);
+            (uint256 budget,, uint256 spent,,,,,) = auction.positions(id);
             if (budget == 0) continue;
             assertLe(spent, budget, "I5 spent<=budget");
         }

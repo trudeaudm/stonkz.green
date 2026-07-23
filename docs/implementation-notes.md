@@ -49,7 +49,7 @@ parity until EagerLazyEquivalence is wei-green. Position ledger is canonical
 **`poke()` / `_sync()` (Task N):** target =
 `min(N, (block.timestamp − startTime) / epochSeconds)`.
 - `totalWeight == 0` (empty book): **O(1)** jump of `auctionIndex`.
-- Else: at most `maxClearsPerSync` clears per call (E1; default 64).
+- Else: at most `maxClearsPerSync` clears per call (E1; Task T default 4).
 - `pendingClears()` is honest while lagging; views read the cleared cursor.
 
 Complexity: never iterate idle wall time; cost scales with unique actives ×

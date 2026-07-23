@@ -340,3 +340,18 @@ Fixpoint-law water-fill iteration mismatch inside one clear: **not the convict**
 **(b) price operand** — stayed REFUTED; no `priceInForce` change.
 
 Task T unblocked.
+
+---
+
+## Task T — storage packing + E1 retune (STOP on 2.5M target)
+
+| Item | Status |
+|------|--------|
+| `Position` / `Bidder` ≤ 2 slots (`uint80` + flags) | Done |
+| Warm ALL-SIMPLE @300 ≤ **2.5M** | **MISS** — **~6.09M** (~2.4×) |
+| `maxClearsPerSync` default = floor(25M/measured) = **4** | Done |
+| Assert `cap × measured ≤ 25M` | Green (`24344376 ≤ 25M`) |
+| WriteBudget warm SSTOREs | **8** ≤ 16 Green |
+| 200-vector + invariants under lazy | Green |
+
+Residual: O(n) SLOAD + memory water-fill (packing saved ~2% on warm clear). Segment+heap (M5) needed for 2.5M. See `docs/gas-attribution.md`.

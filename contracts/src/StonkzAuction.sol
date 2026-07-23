@@ -20,6 +20,12 @@ contract StonkzAuction is IStonkzAuction {
     uint256 internal constant BID_FEE = WAD / 10; // flat per-bid fee — spec §2
     uint256 internal constant FLOOR_MCAP_MIN = 2000 * WAD;
     uint256 internal constant FLOOR_MCAP_MAX = 100_000 * WAD;
+    /// @dev Packed bidder/position quantities have >1e6 ether supply / $50k raise headroom.
+    uint256 internal constant PACKED_MAX = type(uint80).max;
+    uint8 internal constant CLAIM_USD = 1;
+    uint8 internal constant CLAIM_TOKENS = 2;
+    uint8 internal constant BIDDER_CAPPED = 1;
+    uint8 internal constant BIDDER_TRACKED = 2;
 
     // ─── immutables (spec §1) ─────────────────────────────────────────────
     uint256 public immutable totalSupply;
@@ -31,7 +37,7 @@ contract StonkzAuction is IStonkzAuction {
     uint256 public immutable graduationUsd;
     uint64 public immutable durationBlocks;
     uint32 public immutable epochSeconds; // wall seconds per auction block (Task N)
-    uint16 public immutable maxClearsPerSync; // E1 overflow valve (default 64)
+    uint16 public immutable maxClearsPerSync; // E1 overflow valve (Task T default 4)
     uint16 public immutable maxUniqueActives; // guarded launch; 0 = unlimited (Task R)
     uint16 public immutable baseStepBps;
     uint16 public immutable walletCapBps;
@@ -85,32 +91,33 @@ contract StonkzAuction is IStonkzAuction {
     }
 
     struct Position {
+        // slot 0
+        uint80 budget; // committed USD; never zeroed (lifecycle via flags)
+        uint80 maxPrice;
+        uint80 spent;
+        uint16 enteredAt;
+        // slot 1
+        uint80 tokens; // survives pre-settle USD claim (Task M)
         address owner;
-        uint256 budget; // committed USD; never zeroed (lifecycle via flags)
-        uint256 maxPrice;
-        uint256 spent;
-        uint256 tokens; // survives pre-settle USD claim (Task M)
         PosStatus status;
-        bool usdClaimed;
-        bool tokensClaimed;
-        /// @dev Auction index when position became Active (Task S D-bound).
-        uint64 enteredAt;
+        uint8 claimFlags; // bit0 = USD claimed; bit1 = tokens claimed
     }
 
     struct Bidder {
-        uint256 weight; // committedCapital^α (WAD)
-        uint256 rewardDebt; // weight * accTokensPerWeight / WAD at last materialize
-        uint256 usdDebt; // weight * accUsdPerWeight / WAD at last materialize
-        uint256 tokens; // materialized token total (excl. pending acc)
+        // slot 0
+        uint80 weight; // committedCapital^α (WAD)
         /// @dev Weight basis (spec §3): Σ FULL budgets of positions live at start of clear
         ///      (Active ∧ maxPrice ≥ price), after price-out, before fills. OutPrice /
         ///      OutBudget / Capped contribute 0 from their exit block onward (fill exits
         ///      apply from b+1). Distinct from demand basis `committedLive` (spec §4).
-        uint256 activeBudget;
-        uint256 activeSpent; // Σ spent of those live positions (materialized)
-        uint32 activeCount;
-        bool capped;
-        bool tracked;
+        uint80 activeBudget;
+        uint80 activeSpent; // Σ spent of those live positions (materialized)
+        uint16 activeCount;
+        // slot 1
+        uint80 rewardDebt; // weight * accTokensPerWeight / WAD at last materialize
+        uint80 usdDebt; // weight * accUsdPerWeight / WAD at last materialize
+        uint80 tokens; // materialized token total (excl. pending acc)
+        uint8 flags; // bit0 = capped; bit1 = tracked
     }
 
     mapping(uint256 => Position) public positions;
@@ -147,7 +154,7 @@ contract StonkzAuction is IStonkzAuction {
         // Production launches: N ∈ [100,2000]. Differential vectors use N≥5 (oracle untouched).
         require(p.durationBlocks >= 5 && p.durationBlocks <= 2000, "duration");
         require(p.epochSeconds >= 1 && p.epochSeconds <= 3600, "epoch");
-        require(p.totalSupply > 0, "supply");
+        require(p.totalSupply > 0 && p.totalSupply <= PACKED_MAX, "supply");
         // baseStep clamped >= 0 by uint16; explicit check for documentation (regression C)
         require(p.baseStepBps == p.baseStepBps, "step"); // tautology keeps clamp note; uint can't be <0
 
@@ -157,7 +164,9 @@ contract StonkzAuction is IStonkzAuction {
         graduationUsd = p.graduationUsd;
         durationBlocks = p.durationBlocks;
         epochSeconds = p.epochSeconds;
-        maxClearsPerSync = p.maxClearsPerSync == 0 ? 64 : p.maxClearsPerSync;
+        // Task T: default = floor(25M / warm-ALL-SIMPLE@300). Bench-derived (see
+        // GasBenchmark + docs/gas-attribution.md); 0 in Params selects this default.
+        maxClearsPerSync = p.maxClearsPerSync == 0 ? 4 : p.maxClearsPerSync;
         maxUniqueActives = p.maxUniqueActives; // 0 = unlimited
         baseStepBps = p.baseStepBps;
         walletCapBps = p.walletCapBps;
@@ -220,6 +229,43 @@ contract StonkzAuction is IStonkzAuction {
         return raisedMax;
     }
 
+    function _u80(uint256 x) internal pure returns (uint80) {
+        require(x <= PACKED_MAX, "pack u80");
+        return uint80(x);
+    }
+
+    function _usdClaimed(Position storage p) internal view returns (bool) {
+        return p.claimFlags & CLAIM_USD != 0;
+    }
+
+    function _tokensClaimed(Position storage p) internal view returns (bool) {
+        return p.claimFlags & CLAIM_TOKENS != 0;
+    }
+
+    function _setUsdClaimed(Position storage p) internal {
+        p.claimFlags |= CLAIM_USD;
+    }
+
+    function _setTokensClaimed(Position storage p) internal {
+        p.claimFlags |= CLAIM_TOKENS;
+    }
+
+    function _capped(Bidder storage b) internal view returns (bool) {
+        return b.flags & BIDDER_CAPPED != 0;
+    }
+
+    function _tracked(Bidder storage b) internal view returns (bool) {
+        return b.flags & BIDDER_TRACKED != 0;
+    }
+
+    function _setCapped(Bidder storage b) internal {
+        b.flags |= BIDDER_CAPPED;
+    }
+
+    function _setTracked(Bidder storage b) internal {
+        b.flags |= BIDDER_TRACKED;
+    }
+
     // ─── external API ─────────────────────────────────────────────────────
 
     /// @inheritdoc IStonkzAuction
@@ -232,14 +278,14 @@ contract StonkzAuction is IStonkzAuction {
 
         Bidder storage b = bidders[msg.sender];
         // Task R: cap NEW addresses only; existing bidders may always add positions.
-        if (!b.tracked) {
+        if (!_tracked(b)) {
             uint16 cap = maxUniqueActives;
             require(cap == 0 || uniqueBidders < cap, "max unique actives");
         }
         // Task G1''': bound live Active positions (anti-grief compound write amp).
         {
             uint8 liveCap = maxLivePositionsPerAddress;
-            if (liveCap > 0 && maxPrice >= price && !b.capped) {
+            if (liveCap > 0 && maxPrice >= price && !_capped(b)) {
                 require(b.activeCount < liveCap, "max live positions");
             }
         }
@@ -255,22 +301,22 @@ contract StonkzAuction is IStonkzAuction {
 
         positionId = ++nextPositionId;
         bool pricedOutNow = maxPrice < price;
+        require(auctionIndex <= type(uint16).max, "enteredAt");
         positions[positionId] = Position({
-            owner: msg.sender,
-            budget: budget,
-            maxPrice: maxPrice,
+            budget: _u80(budget),
+            maxPrice: _u80(maxPrice),
             spent: 0,
+            enteredAt: uint16(auctionIndex),
             tokens: 0,
+            owner: msg.sender,
             status: pricedOutNow ? PosStatus.OutPrice : PosStatus.Active,
-            usdClaimed: false,
-            tokensClaimed: false,
-            enteredAt: uint64(auctionIndex)
+            claimFlags: 0
         });
         _bidderPositions[msg.sender].push(positionId);
         totalEscrowed += budget;
 
-        if (!b.tracked) {
-            b.tracked = true;
+        if (!_tracked(b)) {
+            _setTracked(b);
             uniqueBidders += 1;
         }
 
@@ -279,7 +325,7 @@ contract StonkzAuction is IStonkzAuction {
         if (pricedOutNow) {
             claimableUsd[msg.sender] += budget;
             emit PricedOut(msg.sender, positionId, budget, uint64(auctionIndex));
-        } else if (!b.capped) {
+        } else if (!_capped(b)) {
             b.activeCount += 1;
             _setActiveBudget(msg.sender, b.activeBudget + budget, b.activeSpent);
             _ensureActive(msg.sender);
@@ -311,24 +357,24 @@ contract StonkzAuction is IStonkzAuction {
         _sync();
         Position storage p = positions[positionId];
         require(p.owner == msg.sender, "owner");
-        require(!(p.usdClaimed && p.tokensClaimed), "claimed");
+        require(!(_usdClaimed(p) && _tokensClaimed(p)), "claimed");
         _materialize(msg.sender);
 
         bool paidUsd;
         bool paidTok;
 
         // ── USD leg ───────────────────────────────────────────────────────
-        if (!p.usdClaimed) {
+        if (!_usdClaimed(p)) {
             if (done && !graduated) {
                 // Failure: full budget refund; filled tokens forfeited (spec §7 / I8)
                 uint256 usd = p.budget;
-                if (p.tokens > 0 && !p.tokensClaimed) {
+                if (p.tokens > 0 && !_tokensClaimed(p)) {
                     totalTokensForfeited += p.tokens;
-                    p.tokens = 0;
-                    p.tokensClaimed = true;
+                    p.tokens = _u80(0);
+                    _setTokensClaimed(p);
                 }
                 totalEscrowed -= p.budget;
-                p.usdClaimed = true;
+                _setUsdClaimed(p);
                 paidUsd = true;
                 if (usd > 0) {
                     (bool ok,) = msg.sender.call{value: usd}("");
@@ -339,7 +385,7 @@ contract StonkzAuction is IStonkzAuction {
                 // Unspent USD only; keep budget/spent/tokens for token leg + G ledger
                 uint256 usd = p.budget - p.spent;
                 totalEscrowed -= usd;
-                p.usdClaimed = true;
+                _setUsdClaimed(p);
                 paidUsd = true;
                 if (usd > 0) {
                     (bool ok,) = msg.sender.call{value: usd}("");
@@ -349,12 +395,12 @@ contract StonkzAuction is IStonkzAuction {
         }
 
         // ── Token leg (post-settle graduate only) ─────────────────────────
-        if (!p.tokensClaimed && settled && graduated && p.tokens > 0) {
+        if (!_tokensClaimed(p) && settled && graduated && p.tokens > 0) {
             uint256 tok = p.tokens;
             claimableTokens[msg.sender] += tok;
             totalTokensCredited += tok;
-            p.tokens = 0;
-            p.tokensClaimed = true;
+            p.tokens = _u80(0);
+            _setTokensClaimed(p);
             paidTok = true;
         }
 
@@ -428,7 +474,7 @@ contract StonkzAuction is IStonkzAuction {
         for (uint256 id = 1; id <= n; id++) {
             Position storage p = positions[id];
             if (p.owner == address(0)) continue;
-            if (p.usdClaimed) {
+            if (_usdClaimed(p)) {
                 // Failure path refunded full budget (spent not retained in escrow).
                 if (!(done && !graduated)) s += p.spent;
             } else {
@@ -444,7 +490,7 @@ contract StonkzAuction is IStonkzAuction {
         uint256 n = nextPositionId;
         for (uint256 id = 1; id <= n; id++) {
             Position storage p = positions[id];
-            if (p.owner == address(0) || p.usdClaimed) continue;
+            if (p.owner == address(0) || _usdClaimed(p)) continue;
             if (done && !graduated) liab += p.budget;
             else liab += p.budget - p.spent;
         }
@@ -727,7 +773,7 @@ contract StonkzAuction is IStonkzAuction {
             snapBud[i] = bd.activeBudget;
             snapSpent[i] = bd.activeSpent;
             snapTok[i] = bd.tokens;
-            alive[i] = bd.activeCount > 0 && !bd.capped && bd.activeBudget > 0;
+            alive[i] = bd.activeCount > 0 && !_capped(bd) && bd.activeBudget > 0;
         }
 
         for (uint256 i = 0; i < n; i++) {
@@ -763,12 +809,12 @@ contract StonkzAuction is IStonkzAuction {
                 if (take > 0) {
                     (uint256 gotTok, uint256 cost) = _distributeToPositions(who, take, px);
                     if (gotTok > 0) {
-                        bd.tokens += gotTok;
-                        bd.activeSpent += cost;
+                        bd.tokens = _u80(uint256(bd.tokens) + gotTok);
+                        bd.activeSpent = _u80(uint256(bd.activeSpent) + cost);
                         snapTok[i] += gotTok;
                         snapSpent[i] += cost;
-                        bd.rewardDebt = FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC);
-                        bd.usdDebt = FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD);
+                        bd.rewardDebt = _u80(FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC));
+                        bd.usdDebt = _u80(FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD));
                         used += gotTok;
                         blockRaised += cost;
                         emit Filled(who, gotTok, cost, px, uint64(b));
@@ -831,7 +877,7 @@ contract StonkzAuction is IStonkzAuction {
             // projSpentPre: spent through b−1 only (Task F1 circularity law).
             snapSpent[i] = bd.activeSpent + _pendingUsd(who);
             snapTok[i] = bd.tokens + _pendingTokens(who);
-            alive[i] = bd.activeCount > 0 && !bd.capped && bd.activeBudget > 0;
+            alive[i] = bd.activeCount > 0 && !_capped(bd) && bd.activeBudget > 0;
             compound[i] = bd.activeCount >= 2;
         }
 
@@ -870,8 +916,8 @@ contract StonkzAuction is IStonkzAuction {
             _materialize(who);
             Bidder storage bd = bidders[who];
             if (bd.weight > 0) {
-                bd.rewardDebt = FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC);
-                bd.usdDebt = FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD);
+                bd.rewardDebt = _u80(FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC));
+                bd.usdDebt = _u80(FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD));
             }
         }
 
@@ -904,8 +950,8 @@ contract StonkzAuction is IStonkzAuction {
                         (uint256 gotTok, uint256 cost) = _distributeToPositions(who, take, px);
                         if (gotTok > 0) {
                             Bidder storage bd = bidders[who];
-                            bd.tokens += gotTok;
-                            bd.activeSpent += cost;
+                            bd.tokens = _u80(uint256(bd.tokens) + gotTok);
+                            bd.activeSpent = _u80(uint256(bd.activeSpent) + cost);
                             takeAmt[i] += gotTok;
                             costAmt[i] += cost;
                             snapTok[i] += gotTok;
@@ -990,13 +1036,13 @@ contract StonkzAuction is IStonkzAuction {
             if (exactCh[i]) {
                 Bidder storage bd = bidders[snap[i]];
                 if (bd.weight > 0) {
-                    bd.rewardDebt = FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC);
-                    bd.usdDebt = FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD);
+                    bd.rewardDebt = _u80(FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC));
+                    bd.usdDebt = _u80(FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD));
                 }
             } else if (takeAmt[i] == 0 && !dustExit[i] && snapW[i] > 0) {
                 Bidder storage bd = bidders[snap[i]];
-                bd.rewardDebt = FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC);
-                bd.usdDebt = FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD);
+                bd.rewardDebt = _u80(FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC));
+                bd.usdDebt = _u80(FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD));
             }
         }
 
@@ -1021,8 +1067,8 @@ contract StonkzAuction is IStonkzAuction {
                 {
                     Bidder storage bd = bidders[who];
                     if (bd.weight > 0) {
-                        bd.rewardDebt = FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC);
-                        bd.usdDebt = FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD);
+                        bd.rewardDebt = _u80(FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC));
+                        bd.usdDebt = _u80(FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD));
                     }
                 }
                 uint256 gotTok;
@@ -1034,14 +1080,14 @@ contract StonkzAuction is IStonkzAuction {
                     gotTok = takeAmt[i];
                     cost = costAmt[i];
                     Bidder storage bd = bidders[who];
-                    bd.tokens += gotTok;
-                    bd.activeSpent += cost;
+                    bd.tokens = _u80(uint256(bd.tokens) + gotTok);
+                    bd.activeSpent = _u80(uint256(bd.activeSpent) + cost);
                     soldMaterialized += gotTok;
                     uint256[] storage ids = _bidderPositions[who];
                     if (ids.length > 0) {
                         Position storage p0 = positions[ids[0]];
-                        p0.tokens += gotTok;
-                        p0.spent += cost;
+                        p0.tokens = _u80(uint256(p0.tokens) + gotTok);
+                        p0.spent = _u80(uint256(p0.spent) + cost);
                     }
                 }
                 // Align globals to credited mass when distribute floors (eager twin).
@@ -1058,8 +1104,8 @@ contract StonkzAuction is IStonkzAuction {
                 if (gotTok > 0) {
                     if (live > 0) {
                         Bidder storage bd2 = bidders[who];
-                        bd2.tokens += gotTok;
-                        bd2.activeSpent += cost;
+                        bd2.tokens = _u80(uint256(bd2.tokens) + gotTok);
+                        bd2.activeSpent = _u80(uint256(bd2.activeSpent) + cost);
                     }
                     emit Filled(who, gotTok, cost, px, uint64(b));
                 }
@@ -1068,8 +1114,8 @@ contract StonkzAuction is IStonkzAuction {
             if (compound[i] || constrained[i] || dustExit[i]) {
                 {
                     Bidder storage bd = bidders[who];
-                    bd.rewardDebt = FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC);
-                    bd.usdDebt = FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD);
+                    bd.rewardDebt = _u80(FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC));
+                    bd.usdDebt = _u80(FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD));
                 }
                 if (!dustExit[i] || compound[i] || constrained[i]) {
                     _refreshWeightBasisOnly(who);
@@ -1081,7 +1127,7 @@ contract StonkzAuction is IStonkzAuction {
             for (uint256 i = 0; i < n; i++) {
                 if (exactCh[i] || takeAmt[i] == 0 || dustExit[i]) continue;
                 Bidder storage bd = bidders[snap[i]];
-                if (bd.activeCount == 0 || bd.capped || bd.weight == 0) continue;
+                if (bd.activeCount == 0 || _capped(bd) || bd.weight == 0) continue;
                 uint256 accrued = FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD);
                 uint256 projPost = bd.activeSpent + (accrued > bd.usdDebt ? accrued - bd.usdDebt : 0);
                 if (bd.activeBudget <= projPost + 1e9) {
@@ -1224,10 +1270,10 @@ contract StonkzAuction is IStonkzAuction {
                 p.status = PosStatus.OutPrice;
                 uint256 left = p.budget - p.spent;
                 claimableUsd[who] += left;
-                if (b.activeBudget >= p.budget) b.activeBudget -= p.budget;
-                else b.activeBudget = 0;
-                if (b.activeSpent >= p.spent) b.activeSpent -= p.spent;
-                else b.activeSpent = 0;
+                if (b.activeBudget >= p.budget) b.activeBudget = _u80(uint256(b.activeBudget) - p.budget);
+                else b.activeBudget = _u80(0);
+                if (b.activeSpent >= p.spent) b.activeSpent = _u80(uint256(b.activeSpent) - p.spent);
+                else b.activeSpent = _u80(0);
                 if (b.activeCount > 0) b.activeCount -= 1;
                 emit PricedOut(who, ids[i], left, uint64(auctionIndex));
             }
@@ -1262,8 +1308,8 @@ contract StonkzAuction is IStonkzAuction {
                 uint256 cost = FixedPointMathLib.mulWad(take, px);
                 // Cap cost to budLeft so spent never exceeds budget (floor dust).
                 if (cost > budLeft) cost = budLeft;
-                p.tokens += take;
-                p.spent += cost;
+                p.tokens = _u80(uint256(p.tokens) + take);
+                p.spent = _u80(uint256(p.spent) + cost);
                 tokOut += take;
                 spentOut += cost;
                 used += take;
@@ -1281,8 +1327,8 @@ contract StonkzAuction is IStonkzAuction {
     /// @dev Mark wallet-cap exit; weight basis refreshed at end of clear (effective b+1).
     function _markCapped(address who) internal {
         Bidder storage b = bidders[who];
-        if (b.capped) return;
-        b.capped = true;
+        if (_capped(b)) return;
+        _setCapped(b);
         uint256[] storage ids = _bidderPositions[who];
         for (uint256 i = 0; i < ids.length; i++) {
             Position storage p = positions[ids[i]];
@@ -1327,9 +1373,9 @@ contract StonkzAuction is IStonkzAuction {
         Bidder storage b = bidders[who];
         uint256[] storage ids = _bidderPositions[who];
 
-        if (b.capped) {
-            b.activeBudget = 0;
-            b.activeSpent = 0;
+        if (_capped(b)) {
+            b.activeBudget = _u80(0);
+            b.activeSpent = _u80(0);
             b.activeCount = 0;
             _reweight(who);
             _removeActive(who);
@@ -1338,7 +1384,7 @@ contract StonkzAuction is IStonkzAuction {
 
         uint256 ab;
         uint256 as_;
-        uint32 ac;
+        uint16 ac;
         for (uint256 i = 0; i < ids.length; i++) {
             Position storage p = positions[ids[i]];
             if (p.status == PosStatus.Active) {
@@ -1347,8 +1393,8 @@ contract StonkzAuction is IStonkzAuction {
                 ac++;
             }
         }
-        b.activeBudget = ab;
-        b.activeSpent = as_;
+        b.activeBudget = _u80(ab);
+        b.activeSpent = _u80(as_);
         b.activeCount = ac;
         _reweight(who);
         if (ac == 0) _removeActive(who);
@@ -1370,8 +1416,8 @@ contract StonkzAuction is IStonkzAuction {
 
     function _setActiveBudget(address who, uint256 ab, uint256 as_) internal {
         Bidder storage b = bidders[who];
-        b.activeBudget = ab;
-        b.activeSpent = as_;
+        b.activeBudget = _u80(ab);
+        b.activeSpent = _u80(as_);
         _reweight(who);
     }
 
@@ -1380,16 +1426,16 @@ contract StonkzAuction is IStonkzAuction {
         _materialize(who);
         uint256 oldW = b.weight;
         uint256 newW;
-        if (b.activeCount == 0 || b.capped || b.activeBudget == 0) {
+        if (b.activeCount == 0 || _capped(b) || b.activeBudget == 0) {
             newW = 0;
         } else {
             newW = _weightOf(b.activeBudget);
         }
         if (oldW != newW) {
             totalWeight = totalWeight - oldW + newW;
-            b.weight = newW;
-            b.rewardDebt = FixedPointMathLib.mulDiv(newW, accTokensPerWeight, WAD * ACC_PREC);
-            b.usdDebt = FixedPointMathLib.mulDiv(newW, accUsdPerWeight, WAD);
+            b.weight = _u80(newW);
+            b.rewardDebt = _u80(FixedPointMathLib.mulDiv(newW, accTokensPerWeight, WAD * ACC_PREC));
+            b.usdDebt = _u80(FixedPointMathLib.mulDiv(newW, accUsdPerWeight, WAD));
         }
     }
 
@@ -1417,11 +1463,11 @@ contract StonkzAuction is IStonkzAuction {
         }
         if (pendT > 0 || pendU > 0) {
             _applyPendingToPositions(who, pendT, pendU);
-            b.tokens += pendT;
-            b.activeSpent += pendU;
+            b.tokens = _u80(uint256(b.tokens) + pendT);
+            b.activeSpent = _u80(uint256(b.activeSpent) + pendU);
         }
-        b.rewardDebt = wantT;
-        b.usdDebt = wantU;
+        b.rewardDebt = _u80(wantT);
+        b.usdDebt = _u80(wantU);
         uint256 expect2 = exhaustProjSpent[who];
         if (expect2 != 0 && b.activeSpent == expect2) delete exhaustProjSpent[who];
     }
@@ -1457,8 +1503,8 @@ contract StonkzAuction is IStonkzAuction {
         if (live == 0) {
             if (ids.length == 0) return;
             Position storage p0 = positions[ids[0]];
-            p0.tokens += dTok;
-            p0.spent += dUsd;
+            p0.tokens = _u80(uint256(p0.tokens) + dTok);
+            p0.spent = _u80(uint256(p0.spent) + dUsd);
             if (dTok > 0) soldMaterialized += dTok;
             return;
         }
@@ -1514,8 +1560,8 @@ contract StonkzAuction is IStonkzAuction {
             uint256 u = uShare[i];
             uint256 budLeft = p.budget > p.spent ? p.budget - p.spent : 0;
             if (u > budLeft) u = budLeft;
-            p.tokens += tShare[i];
-            p.spent += u;
+            p.tokens = _u80(uint256(p.tokens) + tShare[i]);
+            p.spent = _u80(uint256(p.spent) + u);
         }
         if (dTok > 0) soldMaterialized += dTok;
     }
@@ -1536,7 +1582,7 @@ contract StonkzAuction is IStonkzAuction {
 
     function _ensureActive(address who) internal {
         if (_activeIdx[who] != 0) return;
-        if (bidders[who].activeCount == 0 || bidders[who].capped) return;
+        if (bidders[who].activeCount == 0 || _capped(bidders[who])) return;
         activeAddrs.push(who);
         _activeIdx[who] = activeAddrs.length; // 1-based
     }
@@ -1557,9 +1603,9 @@ contract StonkzAuction is IStonkzAuction {
         if (b.weight > 0) {
             _materialize(who);
             totalWeight -= b.weight;
-            b.weight = 0;
-            b.rewardDebt = 0;
-            b.usdDebt = 0;
+            b.weight = _u80(0);
+            b.rewardDebt = _u80(0);
+            b.usdDebt = _u80(0);
         }
     }
 
@@ -1600,7 +1646,7 @@ contract StonkzAuction is IStonkzAuction {
     /// @dev True if `who` has ≥1 Active position with maxPrice ≥ px (and not capped).
     function _survivesPriceOut(address who, uint256 px) internal view returns (bool) {
         Bidder storage b = bidders[who];
-        if (b.capped || b.activeCount == 0) return false;
+        if (_capped(b) || b.activeCount == 0) return false;
         uint256[] storage ids = _bidderPositions[who];
         for (uint256 i = 0; i < ids.length; i++) {
             Position storage p = positions[ids[i]];

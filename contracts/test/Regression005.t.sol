@@ -46,9 +46,9 @@ contract Regression005 is Test {
         );
 
         // Multi-bid A: small (all-in later) + cliff (prices out when ladder > 5.5)
-        _bid(A, 30 ether, type(uint256).max);
+        _bid(A, 30 ether, type(uint80).max);
         _bid(A, 200 ether, 55e17); // 5.5
-        _bid(C, 500 ether, type(uint256).max);
+        _bid(C, 500 ether, type(uint80).max);
 
         assertEq(_basis(A), 230 ether, "pre: full weight basis");
         // Demand includes all non-OutPrice
@@ -97,12 +97,12 @@ contract Regression005 is Test {
     }
 
     function _basis(address who) internal view returns (uint256) {
-        (,,,, uint256 activeBudget,,,,) = auction.bidders(who);
+        (, uint256 activeBudget,,,,,,) = auction.bidders(who);
         return activeBudget;
     }
 
     function _weight(address who) internal view returns (uint256) {
-        (uint256 weight,,,,,,,,) = auction.bidders(who);
+        (uint256 weight,,,,,,,) = auction.bidders(who);
         return weight;
     }
 
