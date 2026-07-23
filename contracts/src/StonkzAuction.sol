@@ -369,9 +369,13 @@ contract StonkzAuction is IStonkzAuction {
     }
 
     function bidderTokens(address who) external view returns (uint256) {
-        Bidder storage b = bidders[who];
-        uint256 pending = _pendingTokens(who);
-        return b.tokens + pending;
+        // Task G: canonical token ledger is Σ position.tokens (not harvest accumulator).
+        uint256[] storage ids = _bidderPositions[who];
+        uint256 t;
+        for (uint256 i = 0; i < ids.length; i++) {
+            t += positions[ids[i]].tokens;
+        }
+        return t;
     }
 
     function positionCount(address who) external view returns (uint256) {
@@ -489,6 +493,7 @@ contract StonkzAuction is IStonkzAuction {
         }
 
         uint256 remaining = offered;
+        uint256 blockRaised; // Task F: accumulate actual fill costs (not mulWad(soldNow, px))
         for (uint256 it = 0; it < 8 && remaining > 0; it++) {
             uint256 totW;
             for (uint256 i = 0; i < n; i++) {
@@ -513,15 +518,18 @@ contract StonkzAuction is IStonkzAuction {
                 if (take > budTok) take = budTok;
 
                 if (take > 0) {
-                    uint256 cost = FixedPointMathLib.mulWad(take, px);
-                    bd.tokens += take;
-                    bd.activeSpent += cost;
-                    snapTok[i] += take;
-                    snapSpent[i] += cost;
-                    bd.rewardDebt = accTokensPerWeight;
-                    used += take;
-                    _distributeToPositions(who, take, px);
-                    emit Filled(who, take, cost, px, uint64(b));
+                    // Canonical ledger (Task G): position accounting is source of truth.
+                    (uint256 gotTok, uint256 cost) = _distributeToPositions(who, take, px);
+                    if (gotTok > 0) {
+                        bd.tokens += gotTok;
+                        bd.activeSpent += cost;
+                        snapTok[i] += gotTok;
+                        snapSpent[i] += cost;
+                        bd.rewardDebt = accTokensPerWeight;
+                        used += gotTok;
+                        blockRaised += cost;
+                        emit Filled(who, gotTok, cost, px, uint64(b));
+                    }
                 }
 
                 if (take + 1 < share) {
@@ -555,7 +563,8 @@ contract StonkzAuction is IStonkzAuction {
         bool fullySold = gate > 0 && soldNow + _gateTol(gate) >= gate;
 
         sold += soldNow;
-        raised += FixedPointMathLib.mulWad(soldNow, px);
+        // Task F: raised tracks Σ fill costs (same mulWad as charges), not mulWad(soldNow, px)
+        raised += blockRaised;
         if (soldNow > schedQty) {
             extraSold += soldNow - schedQty;
             emit ReserveToppedUp(soldNow - schedQty, px, uint64(b));
@@ -620,9 +629,12 @@ contract StonkzAuction is IStonkzAuction {
         if (b.activeCount == 0) _removeActive(who);
     }
 
-    function _distributeToPositions(address who, uint256 dTok, uint256 px) internal {
-        // Equal water-fill across Active positions — spec §2.
-        // Position OutBudget marks only; weight basis refresh is deferred to end of clear (b+1).
+    /// @dev Equal water-fill across Active positions — spec §2.
+    ///      Returns tokens actually placed and USD spent (canonical ledger — Task G).
+    function _distributeToPositions(address who, uint256 dTok, uint256 px)
+        internal
+        returns (uint256 tokOut, uint256 spentOut)
+    {
         uint256[] storage ids = _bidderPositions[who];
         uint256 d = dTok;
         for (uint256 it = 0; it < 6 && d > 0; it++) {
@@ -639,8 +651,14 @@ contract StonkzAuction is IStonkzAuction {
                 uint256 budLeft = p.budget > p.spent ? p.budget - p.spent : 0;
                 uint256 budTok = FixedPointMathLib.mulDiv(budLeft, WAD, px);
                 uint256 take = per < budTok ? per : budTok;
+                if (take == 0) continue;
+                uint256 cost = FixedPointMathLib.mulWad(take, px);
+                // Cap cost to budLeft so spent never exceeds budget (floor dust).
+                if (cost > budLeft) cost = budLeft;
                 p.tokens += take;
-                p.spent += FixedPointMathLib.mulWad(take, px);
+                p.spent += cost;
+                tokOut += take;
+                spentOut += cost;
                 used += take;
                 if (take < per) {
                     p.status = PosStatus.OutBudget;
@@ -774,11 +792,9 @@ contract StonkzAuction is IStonkzAuction {
     }
 
     function _harvest(address who) internal {
+        // Task G: fills live on positions only — accumulator debt is kept coherent for
+        // weight changes but must not mint phantom bidder.tokens.
         Bidder storage b = bidders[who];
-        uint256 pending = _pendingTokens(who);
-        if (pending > 0) {
-            b.tokens += pending;
-        }
         b.rewardDebt = FixedPointMathLib.mulDiv(b.weight, accTokensPerWeight, WAD);
     }
 
@@ -873,16 +889,15 @@ contract StonkzAuction is IStonkzAuction {
         if (graduationUsd > 0 && raised_ >= graduationUsd) {
             uint256 rr = reserveInitial > extraSold ? reserveInitial - extraSold : 0;
             if (rr > 0 && px > 0) {
-                // need_now = LP-share × raised / p — spec §6
-                uint256 needNow = FixedPointMathLib.mulDiv(raised_, lpShareBps, 10_000);
-                needNow = FixedPointMathLib.mulDiv(needNow, WAD, px);
-                // future_headroom = LP-share × remaining_scheduled / κ̂
+                // Task F: ceil need/headroom → conservative slack (never understate reserve need)
+                uint256 needNow = FixedPointMathLib.mulDivUp(raised_, lpShareBps, 10_000);
+                needNow = FixedPointMathLib.mulDivUp(needNow, WAD, px);
                 uint256 remSched = auctionSupply > aSold ? auctionSupply - aSold : 0;
-                uint256 futureNeed = FixedPointMathLib.mulDiv(remSched, lpShareBps, 10_000);
-                futureNeed = FixedPointMathLib.mulDiv(futureNeed, WAD, kappaWad());
+                uint256 futureNeed = FixedPointMathLib.mulDivUp(remSched, lpShareBps, 10_000);
+                futureNeed = FixedPointMathLib.mulDivUp(futureNeed, WAD, kappaWad());
                 uint256 guard = needNow + futureNeed;
                 uint256 slack = rr > guard ? rr - guard : 0;
-                // drainable = slack / (1 + LP-share)
+                // drainable floors — sell less from reserve if anything
                 uint256 drain = FixedPointMathLib.mulDiv(slack, WAD, WAD + lpShareWad());
                 if (drain > rr) drain = rr;
                 uint256 ws = b < weightSuffix.length ? weightSuffix[b] : 0;

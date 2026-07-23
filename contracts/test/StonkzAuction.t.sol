@@ -108,6 +108,21 @@ contract StonkzAuctionTest is Test {
         assertApproxEqAbs(ratio, 11 * WAD / 10, WAD / 1e5, "tilt");
     }
 
+    /// @notice Task G: Σ position.tokens == sold and Σ position.spent == raised (exact wei).
+    function testInvariant_exactWeiLedger() public {
+        _runVector("canonical-abc");
+        (uint256 sumTok, uint256 sumSpent) = _sumPositionLedger();
+        assertEq(sumTok, auction.sold(), "sum tokens == sold");
+        assertEq(sumSpent, auction.raised(), "sum spent == raised");
+    }
+
+    function testInvariant_exactWeiLedger_sizeTilt() public {
+        _runVector("size-tilt");
+        (uint256 sumTok, uint256 sumSpent) = _sumPositionLedger();
+        assertEq(sumTok, auction.sold(), "sum tokens == sold");
+        assertEq(sumSpent, auction.raised(), "sum spent == raised");
+    }
+
     function testInvariant_I7_oneShare() public {
         auction = new StonkzAuction(_toy(0));
         _bid(ADDR_A, 1000 ether, type(uint256).max);
@@ -420,5 +435,14 @@ contract StonkzAuctionTest is Test {
         // Policy 1 cumulative-style abs on this clear's fill, plus policy 2 delta tol
         assertApproxEqAbs(got, exp, TOL, name);
         assertApproxEqAbs(got, exp, _deltaTol(exp), string.concat(name, "-delta"));
+    }
+
+    function _sumPositionLedger() internal view returns (uint256 sumTok, uint256 sumSpent) {
+        uint256 n = auction.nextPositionId();
+        for (uint256 id = 1; id <= n; id++) {
+            (, , , uint256 spent, uint256 tokens,) = auction.positions(id);
+            sumTok += tokens;
+            sumSpent += spent;
+        }
     }
 }

@@ -163,6 +163,20 @@ contract StonkzAuctionInvariantTest is Test {
         assertGe(auction.raised(), 0);
     }
 
+    // Task G (soft under claims): ledger never exceeds sold/raised; exact eq in unit vectors.
+    function invariant_exactWeiLedger() public view {
+        uint256 n = auction.nextPositionId();
+        uint256 sumTok;
+        uint256 sumSpent;
+        for (uint256 id = 1; id <= n; id++) {
+            (, , , uint256 spent, uint256 tokens,) = auction.positions(id);
+            sumTok += tokens;
+            sumSpent += spent;
+        }
+        assertLe(sumTok, auction.sold(), "G tokens<=sold");
+        assertLe(sumSpent, auction.raised(), "G spent<=raised");
+    }
+
     // I7 one-share proxy: tracked bidders have weight 0 or >0 consistently with activeCount
     function invariant_I7_weightActive() public view {
         uint256 n = auction.activeAddressCount();
