@@ -21,7 +21,7 @@ jobs:
         run: node reference/fuzz-vectors.js 4663
 
   foundry:
-    name: Foundry build + test
+    name: Foundry build + unit/vector suite
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,10 +31,44 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@v1
       - name: Generate fuzz vectors (fixed seed 4663)
         run: node reference/fuzz-vectors.js 4663
-      - name: Install deps, build, test
+      - name: Install deps, build, unit+vector tests
         working-directory: contracts
         run: |
           forge install foundry-rs/forge-std --no-git
           forge install vectorized/solady --no-git
           forge build
-          forge test -vv
+          forge test --no-match-contract "StonkzAuctionFuzzVectorsTest|StonkzAuctionInvariantTest" -vv
+
+  fuzz-consumer:
+    name: Differential fuzz consumer (seed 4663, 200)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Generate fuzz vectors (fixed seed 4663)
+        run: node reference/fuzz-vectors.js 4663
+      - name: Install deps and run halting fuzz consumer
+        working-directory: contracts
+        run: |
+          forge install foundry-rs/forge-std --no-git
+          forge install vectorized/solady --no-git
+          forge test --match-contract StonkzAuctionFuzzVectorsTest -vv --gas-limit 3000000000
+
+  invariant-campaign:
+    name: Handler invariant campaign (§9)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Install deps and run invariant campaign
+        working-directory: contracts
+        run: |
+          forge install foundry-rs/forge-std --no-git
+          forge install vectorized/solady --no-git
+          forge test --match-contract StonkzAuctionInvariantTest -vv
