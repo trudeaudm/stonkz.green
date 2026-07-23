@@ -1,23 +1,44 @@
-# Task H — Lazy-clearing design (docs only; not implemented)
+# Task H / O — Lazy-clearing decision record
 
-Status: **for human review**. No code changes in this task.
+**Ruling (Task O):** H1 accepted, conditional. This document is the decision
+record (H4/H3 deferred with trigger conditions).
 
-## 1. Problem
+## Decision
 
-Robinhood Chain ~100ms blocks forbid on-chain **per-wall-block** iteration
-(`.cursorrules`). Today `_sync` already:
+| Choice | Status |
+|--------|--------|
+| H1 — eager fills; lazy empty-book only | **Shipped** |
+| H2 — lazy position harvest via accumulator | **Deferred** (Task G made position ledger canonical; dual-write cost not the bottleneck) |
+| H3 — exit tick buckets for OutPrice USD | **Deferred** (trigger below) |
+| H4 — snapshot cursors for `committedLive` | **Deferred** (trigger below) |
 
-- **O(1)** jumps `auctionIndex` when `totalWeight == 0` (empty book).
-- **O(pending × actives)** clears when the book is live.
+## Gas measurement (Task O bench)
 
-“Lazy clearing” here means: **defer work that is not needed to answer the
-current call**, without changing per-auction-block economics (spec §§3–6,
-reference `tick()`).
+Harness: `contracts/test/GasBenchmark.t.sol` — 300 unique actives, wallet cap
+100%, `epochSeconds=1`, Foundry `gasleft()` delta on `poke()`.
 
-Task E (epoching) covers *how many* clears a tx may run. This doc covers
-*what* can be deferred inside or across clears.
+| Scenario | Clears / poke | Measured gas | vs 25M budget |
+|----------|---------------|--------------|---------------|
+| 300 actives × 32-clear catch-up | 32 (`maxClearsPerSync=32`) | **~235.3M** | **OVER** (~9.4×) |
+| 300 actives × 1 clear | 1 | **~32.0M** | **OVER** (~1.3×) |
 
-## 2. What must stay eager (non-negotiable)
+**Do not optimize the fill loop.** Per Task O: E1 (`maxClearsPerSync`) is the
+mitigation for multi-clear catch-up. The bench proves the valve: wall lag 64
+pending → one poke advances exactly 32 auction blocks and leaves
+`pendingClears() == 32`.
+
+**Surprise:** even a **single** clear at 300 actives (~32M) exceeds the 25M
+budget. E1 alone does not make a 300-active clear fit a 25M tx — it only bounds
+catch-up magnification (32× ≈ 235M). Production posture:
+
+1. Keeper cadence (E2): poke at least once per epoch while `totalWeight > 0`
+   so pending stays near 1 (see `docs/epoching-report.md`).
+2. Expect unique-active counts well below 300 for guarded launch, or accept
+   higher chain gas limits / further H4/H3 work if RH Chain block gas allows
+   less than ~32M for a dense clear.
+3. Revisit H4/H3 only under the triggers below — not fill-loop micro-opts.
+
+## What stays eager (non-negotiable)
 
 Per clear, in order (reference + Task L):
 
@@ -30,65 +51,43 @@ Per clear, in order (reference + Task L):
 
 Skipping or reordering these diverges from `reference/engine.js`.
 
-## 3. What is already lazy
+## What is already lazy
 
 | Mechanism | Laziness |
 |-----------|----------|
 | Empty-book cursor | Jump to wall target; no water-fill |
-| `poke` / `placeBid` entry | Clears only on demand (`_sync`) |
+| `poke` / `placeBid` entry | Clears only on demand (`_sync`), capped by E1 |
 | Claims | `_sync` then read position escrow |
-| MasterChef `accTokensPerWeight` | Present but fills are applied eagerly in clear (see notes §4 flag) |
+| Timestamp epochs (Task N) | Wall time ≠ clear work; auction blocks only |
 
-## 4. Design options (for later implementation)
-
-### H1 — Keep eager fills; lazy only empty-book (status quo)
-
-Ship as-is. Document gas: worst case `durationBlocks` clears × active set.
-
-### H2 — Lazy position harvest only
-
-Stop dual-writing `Bidder.tokens` during clear; credit tokens only via
-accumulator on `claim` / `bidderTokens` view. Weight basis and `sold`/`raised`
-remain eager.
-
-- Pros: less storage writes in water-fill.
-- Cons: Task G wants a **single canonical ledger**; splitting address vs
-  position balances fights that. Prefer G first.
-
-### H3 — Exit tick buckets (price-indexed)
-
-Record OutPrice exits in a tick bucket (spec already says “exits bucketed at
-price ticks”). Process claimable USD lazily when price crosses the tick, O(1)
-per poke amortized.
-
-- Pros: large bidder sets with many cliffs.
-- Cons: new storage; must still apply weight-basis removals **before** the
-  clear that uses the new price (same as today’s `_priceOutAt`).
+## Deferred options — trigger conditions
 
 ### H4 — Snapshot cursors for views
 
-`currentOffer` / `effStepWad` already preview competition. Extend with a
-cached `committedLive` updated only on OutPrice / placeBid (O(1) step),
-instead of walking all positions.
+**Trigger:** profiles show `committedLive()` / view walks dominating gas on
+user-facing RPCs or keeper preflight (not just clear loops). Require invariant
+parity vs full position walk before shipping.
 
-- Pros: cheaper price steps under many positions.
-- Cons: must stay exact vs view walk; invariant tests required.
+### H3 — Exit tick buckets
 
-## 5. Recommended sequence
+**Trigger:** cliff-heavy auctions (many OutPrice exits per clear) dominate
+clear gas after H1+E1+keeper cadence is in production. Design must not weaken
+Task L weight-basis timing (exits before offer/fill at the new price).
 
-1. **H1** through guarded launch (current code).
-2. After Task G (canonical ledger), reconsider **H2** only if gas reports show
-   position writes dominating.
-3. **H4** if `committedLive` walk shows up in profiles.
-4. **H3** only if cliff-heavy auctions dominate gas — design must not weaken
-   Task L weight-basis timing.
+### H2 — Lazy harvest
 
-## 6. Non-goals
+**Not planned.** Task G: position ledger is canonical; address
+`Bidder.tokens` / `accTokensPerWeight` are weight-coherence helpers only.
+Re-splitting credit paths would fight G.
 
-- Merging multiple auction blocks into one water-fill (see Task E / E3 reject).
+## Non-goals
+
+- Merging multiple auction blocks into one water-fill (E3 reject).
 - Sponsoring gas on bids.
 - Upgradeable clearing modules.
+- Fill-loop micro-opts to chase the 25M budget at 300×32.
 
-## 7. Gate
+## Gate
 
-Design delivered for review. Implement nothing until human picks H1–H4.
+H1 shipped. Gas numbers recorded. E1 valve verified under dense actives.
+H3/H4 wait on production triggers above.

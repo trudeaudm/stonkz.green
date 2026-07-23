@@ -1,56 +1,82 @@
 # StonkzAuction — implementation notes
 
-Milestone-1 notes for review. Spec: `docs/mechanism-spec.md`. Oracle: `reference/engine.js`.
+Milestone-1 notes for review (refreshed post Tasks M/N/O). Spec:
+`docs/mechanism-spec.md`. Oracle: `reference/engine.js`.
 
 ## 1. Storage layout
 
-**Immutables (ctor):** `totalSupply`, `launchSupply`, `auctionSupply`, `reserveInitial`, `floorPrice`, `floorMcapUsd`, `graduationUsd`, `durationBlocks`, `baseStepBps`, `walletCapBps`, `sizeBonusBps`, `lpShareBps`, `holdbackBps`, `kappaHundredths`, `disposalMode`, `pairToken`, `creator`, `alphaWad`.
+**Immutables (ctor):** `totalSupply`, `launchSupply`, `auctionSupply`,
+`reserveInitial`, `floorPrice`, `floorMcapUsd`, `graduationUsd`,
+`durationBlocks`, `epochSeconds`, `maxClearsPerSync`, `baseStepBps`,
+`walletCapBps`, `sizeBonusBps`, `lpShareBps`, `holdbackBps`,
+`kappaHundredths`, `disposalMode`, `pairToken`, `creator`, `alphaWad`.
 
 **Schedule:** `weights[]`, `weightSuffix[]` (Σ from i..N), `flatBase`.
 
-**Cursor / book:** `startBlock`, `auctionIndex`, `price`, `sold`, `raised`, `extraSold`, `lastSoldPrice`, `competition`, `done`, `graduated`, `settled`.
+**Cursor / book:** `startTime`, `auctionIndex`, `price`, `sold`, `raised`,
+`extraSold`, `lastSoldPrice`, `competition`, `done`, `graduated`, `settled`.
 
-**Share accounting:** `accTokensPerWeight`, `totalWeight`; per-bidder `Bidder{weight, rewardDebt, tokens, activeBudget, activeSpent, activeCount, capped, tracked}`; `activeAddrs[]` + `_activeIdx`.
+**Share accounting:** `accTokensPerWeight`, `totalWeight`; per-bidder
+`Bidder{weight, rewardDebt, tokens, activeBudget, activeSpent, activeCount,
+capped, tracked}`; `activeAddrs[]` + `_activeIdx`.
 
-**Positions:** `positions[id] → Position{owner, budget, maxPrice, spent, tokens, status}`; `_bidderPositions[addr]`.
+**Positions:** `positions[id] → Position{owner, budget, maxPrice, spent,
+tokens, status, usdClaimed, tokensClaimed}`; `_bidderPositions[addr]`.
 
-**Escrow:** `claimableUsd`, `claimableTokens`, `totalEscrowed`, `nextPositionId`.
+**Escrow:** `claimableUsd`, `claimableTokens`, `totalEscrowed`,
+`totalTokensCredited`, `totalTokensForfeited`, `nextPositionId`.
 
-## 2. Accumulator design
+## 2. Accumulator / ledger (Task G)
 
-Each **address** is one weighted share: `weight = committedCapital^α` (`α = log2(1+sizeBonus)`, `α=0 ⇒ weight=WAD`). All of an address’s active positions share that weight (no self-sybil).
+Each **address** is one weighted share: `weight = committedCapital^α`
+(`α = log2(1+sizeBonus)`, `α=0 ⇒ weight=WAD`). All of an address’s active
+positions share that weight (no self-sybil).
 
-**Fills:** per auction block, water-fill over `activeAddrs` proportional to weight; constrained exits redistribute (spec §3). Position-level equal water-fill splits the address take.
+**Canonical token ledger:** Σ `position.tokens` (+ claimable / forfeited
+bookkeeping via `tokensAccounted()`) is the source of truth for fills and
+claims. Conservation: `tokensAccounted() == sold` (exact) under the invariant
+handler, including mid-auction `claim()` interleaving (Task M).
 
-**Exits bucketed at price ticks:** on clear, positions with `maxPrice < price` → `OutPrice` before offer/fill. Caps / all-in mark out and drop weight.
+**`accTokensPerWeight` / `Bidder.tokens`:** retained only for **weight
+coherence** (MasterChef-style harvest when weight changes). They are **not**
+the claim path and must not diverge mechanism math. Fills are still applied
+eagerly to positions in `_clearOneBlock`. Do not reintroduce dual-ledger claim
+credit (H2 deferred indefinitely — see `docs/lazy-clearing-design.md`).
 
-**`poke()` / `_sync()`:** target = `min(duration, block.number − startBlock)`.
-- `totalWeight == 0` (empty book): **O(1)** jump of `auctionIndex` (price frozen; squish applies when demand returns).
-- Else: clear each pending auction block — **O(actives)** water-fill, **not** O(wall-clock empty blocks).
+**Exits bucketed at price ticks:** on clear, positions with `maxPrice < price`
+→ `OutPrice` before offer/fill. Caps / all-in mark out and drop weight.
 
-Complexity: with 100ms blocks, never iterate idle wall time; cost scales with unique actives × auction blocks cleared, not with elapsed chain blocks while the book is empty.
+**`poke()` / `_sync()` (Task N):** target =
+`min(N, (block.timestamp − startTime) / epochSeconds)`.
+- `totalWeight == 0` (empty book): **O(1)** jump of `auctionIndex`.
+- Else: at most `maxClearsPerSync` clears per call (E1; default 64).
+- `pendingClears()` is honest while lagging; views read the cleared cursor.
+
+Complexity: never iterate idle wall time; cost scales with unique actives ×
+auction blocks cleared (capped per tx).
 
 ## 3. Spec §§3–8 → code
 
 | Spec | Formula / rule | Location |
 |------|----------------|----------|
-| §3 | `α = log2(1+sizeBonus)` | `StonkzAuction.sol:142–149` |
-| §3 | `weight = capital^α` | `StonkzAuction.sol:_weightOf` (~719) |
-| §3 | Water-fill by weight; exits | `StonkzAuction.sol:_clearOneBlock` 455–528 |
-| §4 | Gate = original schedule | `StonkzAuction.sol:536–548` |
-| §4 | `effStep = 1 + base×(1+live/grad)` | `StonkzAuction.sol:399–404` |
+| §3 | `α = log2(1+sizeBonus)` | `StonkzAuction.sol` ctor |
+| §3 | `weight = capital^α` | `StonkzAuction.sol:_weightOf` |
+| §3 | Water-fill by weight; exits | `StonkzAuction.sol:_clearOneBlock` |
+| §4 | Gate = original schedule | `_clearOneBlock` gate branch |
+| §4 | `effStep = 1 + base×(1+live/grad)` | `effStepWad` |
 | §5 | Weights 40/60, handoff | `LadderWeights.sol:makeWeights` |
-| §5 | Squish `rem×w[b]/Σw[b..]` | `StonkzAuction.sol:_schedAt` 785–796 |
-| §5 | Flat while `!competition` | `StonkzAuction.sol:792–794`, ratchet ~220, 447–449 |
-| §6 | Guard top-up | `StonkzAuction.sol:_offeredAt` 798–827 |
-| §7 | κ̂∶LP split | `StonkzAuction.sol:134–140` |
-| §7 | Raise ceiling | `StonkzAuction.sol:_raiseCeiling` 164–177 |
-| §7 | Fail ⇒ full refund | `claim` 254–256; `runAway` 294–302 |
-| §8 | Pair `F/P`; leftover buckets | `settle` 306–331 |
+| §5 | Squish `rem×w[b]/Σw[b..]` | `_schedAt` |
+| §5 | Flat while `!competition` | `_schedAt` + ratchet in clear |
+| §6 | Guard top-up | `_offeredAt` |
+| §7 | κ̂∶LP split | ctor |
+| §7 | Raise ceiling | `_raiseCeiling` |
+| §7 | Fail ⇒ full refund | `claim` failure path; `runAway` |
+| §8 | Pair `F/P`; leftover buckets | `settle` |
 
 ## 4. Rounding policy
 
-Solady `mulDiv` / `mulWad` are **floor** (dust truncated toward zero). Guarantee aimed: **protocol never underflows; bidders never overdrawn.**
+Solady `mulDiv` / `mulWad` are **floor** (dust truncated toward zero).
+Guarantee aimed: **protocol never underflows; bidders never overdrawn.**
 
 | Site | Direction | Dust eater | Notes |
 |------|-----------|------------|-------|
@@ -62,17 +88,28 @@ Solady `mulDiv` / `mulWad` are **floor** (dust truncated toward zero). Guarantee
 | Price step mulWad | floor | slightly slower climb | Gate still schedule-based |
 | Weight powWad | approx | relative fills | Ratios match engine within 1e18 tests |
 | Position `d/live` | floor | address-level remainder loop | Inner water-fill ≤6 iters |
-| `claim` unspent | exact `budget−spent` | — | Failure path refunds full `budget` |
+| `claim` unspent | exact `budget−spent` | — | USD/token claims independent (Task M) |
 
-**Flag:** `accTokensPerWeight` is maintained for harvest bookkeeping but **fills are applied eagerly** in `_clearOneBlock`, not solely via accumulator deltas. Dust between `bd.tokens` and Σ `position.tokens` is possible at wei scale; claims use position accounting after sync. Differential suite holds at 1e18 abs tol; tighter wei conservation across all positions is **not** proven here.
+## 5. Gas (post M/N/O)
 
-## 5. Gas (`forge test --gas-report`)
+Routine suite (`forge test --gas-report --match-contract StonkzAuctionTest`,
+post M/N; excludes the 300-active stress bench):
 
 | Fn | Min | Avg | Median | Max | Calls |
 |----|-----|-----|--------|-----|-------|
-| `placeBid` | 171k | 316k | 311k | 381k | 66 |
-| `poke` | 26k | 253k | 190k | 1.16M | 193 |
-| `claim` | 49k | 49k | 49k | 49k | 1 |
+| `placeBid` | 168k | 311k | 292k | 381k | 71 |
+| `poke` | 26k | 286k | 208k | 1.25M | 215 |
+| `claim` | 71k | 71k | 71k | 71k | 1 |
 | `settle` | 26k | 35k | 40k | 40k | 3 |
 
-Deploy ~4.35M gas / 21.6kB. `poke` max spikes when clearing a dense active set; empty-book poke stays near the min.
+`poke` max is dense live-book catch-up within the E1 valve; empty-book stays near min.
+
+**Stress bench** (`GasBenchmark.t.sol`, Task O) — decision numbers:
+
+| Scenario | Gas |
+|----------|-----|
+| 300 actives × 32 clears / poke | ~235.3M (over 25M budget) |
+| 300 actives × 1 clear / poke | ~32.0M (over 25M budget) |
+
+Mitigation: E1 valve + E2 keeper cadence; see `docs/lazy-clearing-design.md`.
+Deploy remains ~4.3M gas class / ~22kB runtime size (re-measure on release tag).
