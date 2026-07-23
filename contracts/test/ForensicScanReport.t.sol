@@ -22,7 +22,7 @@ contract ForensicScanReportTest is Test {
     address internal constant ADDR_H = address(uint160(0x688));
 
     StonkzAuction internal auction;
-    uint256 internal _wall;
+    uint256 internal _t;
 
     function test_scanAll200_reportOnly() public {
         vm.pauseGasMetering();
@@ -145,7 +145,7 @@ contract ForensicScanReportTest is Test {
         auction.poke();
         uint256 n = json.readUint(".params.blocks");
         uint256 actionIdx;
-        _wall = block.number;
+        _t = block.timestamp;
         for (uint256 b = 0; b < n && !auction.done(); b++) {
             while (true) {
                 string memory ab = string.concat(".actions[", vm.toString(actionIdx), "]");
@@ -170,8 +170,8 @@ contract ForensicScanReportTest is Test {
             uint256 fA = auction.bidderTokens(ADDR_A);
             uint256 fB = auction.bidderTokens(ADDR_B);
 
-            _wall += 1;
-            vm.roll(_wall);
+             _t += 1;
+            vm.warp(_t);
             auction.poke();
 
             uint256 expRaised = json.readUint(string.concat(blk, ".raised"));
@@ -211,6 +211,8 @@ contract ForensicScanReportTest is Test {
         p.floorMcapUsd = json.readUint(".params.floorMcap");
         p.graduationUsd = json.readUint(".params.threshold");
         p.durationBlocks = uint64(json.readUint(".params.blocks"));
+        p.epochSeconds = 1;
+        p.maxClearsPerSync = 0;
         p.baseStepBps = uint16(json.readUint(".params.baseStepBps"));
         p.walletCapBps = uint16(json.readUint(".params.walletCapBps"));
         p.sizeBonusBps = uint16(json.readUint(".params.sizeBonusBps"));

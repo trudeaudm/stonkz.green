@@ -21,7 +21,7 @@ contract StonkzAuctionTest is Test {
     uint256 internal constant BID_FEE = WAD / 10;
 
     StonkzAuction internal auction;
-    uint256 internal _wall; // wall-clock for vm.roll (avoids block.number+1 quirk)
+    uint256 internal _t; // wall timestamp for vm.warp (Task N)
 
     address internal constant ADDR_A = address(0xA11);
     address internal constant ADDR_B = address(0xB22);
@@ -108,19 +108,22 @@ contract StonkzAuctionTest is Test {
         assertApproxEqAbs(ratio, 11 * WAD / 10, WAD / 1e5, "tilt");
     }
 
-    /// @notice Task G: Σ position.tokens == sold and Σ position.spent == raised (exact wei).
+    /// @notice Task G: tokensAccounted == sold and spent sum == raised (exact wei).
     function testInvariant_exactWeiLedger() public {
         _runVector("canonical-abc");
         (uint256 sumTok, uint256 sumSpent) = _sumPositionLedger();
-        assertEq(sumTok, auction.sold(), "sum tokens == sold");
+        assertEq(sumTok + auction.totalTokensCredited() + auction.totalTokensForfeited(), auction.sold(), "accounted");
         assertEq(sumSpent, auction.raised(), "sum spent == raised");
+        assertEq(auction.tokensAccounted(), auction.sold(), "tokensAccounted");
+        assertEq(auction.totalEscrowed(), auction.escrowBook(), "escrow");
     }
 
     function testInvariant_exactWeiLedger_sizeTilt() public {
         _runVector("size-tilt");
-        (uint256 sumTok, uint256 sumSpent) = _sumPositionLedger();
-        assertEq(sumTok, auction.sold(), "sum tokens == sold");
+        assertEq(auction.tokensAccounted(), auction.sold(), "tokensAccounted");
+        (, uint256 sumSpent) = _sumPositionLedger();
         assertEq(sumSpent, auction.raised(), "sum spent == raised");
+        assertEq(auction.totalEscrowed(), auction.escrowBook(), "escrow");
     }
 
     function testInvariant_I7_oneShare() public {
@@ -171,11 +174,11 @@ contract StonkzAuctionTest is Test {
     function testInvariant_I5_committedBudgets() public {
         auction = new StonkzAuction(_toy(0));
         _bid(ADDR_A, 100 ether, type(uint256).max);
-        (, uint256 budget,, uint256 spent,,) = auction.positions(1);
+        (, uint256 budget,, uint256 spent,,,,) = auction.positions(1);
         assertEq(budget, 100 ether);
         assertEq(spent, 0);
         _step();
-        (, budget,, spent,,) = auction.positions(1);
+        (, budget,, spent,,,,) = auction.positions(1);
         assertEq(budget, 100 ether);
         assertLe(spent, budget);
     }
@@ -196,7 +199,7 @@ contract StonkzAuctionTest is Test {
         _bid(ADDR_B, 3000 ether, type(uint256).max);
         for (uint256 i = 0; i < 12; i++) _step();
         if (!auction.done()) {
-            vm.roll(block.number + 20);
+            vm.warp(block.timestamp + 20);
             auction.poke();
         }
         if (!auction.graduated()) return;
@@ -277,6 +280,8 @@ contract StonkzAuctionTest is Test {
             floorMcapUsd: 5000 ether,
             graduationUsd: 0,
             durationBlocks: 10,
+            epochSeconds: 1,
+            maxClearsPerSync: 0,
             baseStepBps: 1000,
             walletCapBps: 10_000,
             sizeBonusBps: sizeBonusBps,
@@ -297,6 +302,8 @@ contract StonkzAuctionTest is Test {
         p.floorMcapUsd = json.readUint(".params.floorMcap");
         p.graduationUsd = json.readUint(".params.threshold");
         p.durationBlocks = uint64(json.readUint(".params.blocks"));
+        p.epochSeconds = 1; // 1s/epoch — vm.warp(+1) == one auction block
+        p.maxClearsPerSync = 0;
         p.baseStepBps = uint16(json.readUint(".params.baseStepBps"));
         p.walletCapBps = uint16(json.readUint(".params.walletCapBps"));
         p.sizeBonusBps = uint16(json.readUint(".params.sizeBonusBps"));
@@ -314,9 +321,9 @@ contract StonkzAuctionTest is Test {
     }
 
     function _step() internal {
-        if (_wall == 0) _wall = block.number;
-        _wall += 1;
-        vm.roll(_wall);
+        if (_t == 0) _t = block.timestamp;
+        _t += 1; // epochSeconds=1 in tests
+        vm.warp(_t);
         auction.poke();
     }
 
@@ -343,7 +350,7 @@ contract StonkzAuctionTest is Test {
         string memory json = _load(name);
         auction = new StonkzAuction(_params(json));
         auction.poke(); // start clock (needed for ghost-town)
-        _wall = block.number;
+        _t = block.timestamp;
 
         bool scheduled = _has(json, ".actions[0].at");
         if (scheduled) {
@@ -440,7 +447,7 @@ contract StonkzAuctionTest is Test {
     function _sumPositionLedger() internal view returns (uint256 sumTok, uint256 sumSpent) {
         uint256 n = auction.nextPositionId();
         for (uint256 id = 1; id <= n; id++) {
-            (, , , uint256 spent, uint256 tokens,) = auction.positions(id);
+            (, , , uint256 spent, uint256 tokens,,,) = auction.positions(id);
             sumTok += tokens;
             sumSpent += spent;
         }

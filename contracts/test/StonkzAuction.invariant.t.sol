@@ -40,7 +40,7 @@ contract StonkzAuctionHandler is Test {
 
     function poke(uint256 blocksSeed) external {
         uint256 n = 1 + (blocksSeed % 5);
-        vm.roll(block.number + n);
+        vm.warp(block.timestamp + n);
         try auction.poke() {} catch {}
     }
 
@@ -77,6 +77,8 @@ contract StonkzAuctionInvariantTest is Test {
             floorMcapUsd: 5000 ether,
             graduationUsd: 500 ether,
             durationBlocks: 20,
+            epochSeconds: 1,
+            maxClearsPerSync: 0,
             baseStepBps: 200,
             walletCapBps: 5_000,
             sizeBonusBps: 1000,
@@ -101,12 +103,11 @@ contract StonkzAuctionInvariantTest is Test {
         targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
     }
 
-    // I4 / I5 / I7-ish: budgets never increase; spent ≤ budget for every position
-    function invariant_I5_committedBudgets() public view {
+        function invariant_I5_committedBudgets() public view {
         uint256 n = auction.nextPositionId();
         for (uint256 id = 1; id <= n; id++) {
-            (, uint256 budget,, uint256 spent,,) = auction.positions(id);
-            if (budget == 0) continue; // claimed
+            (, uint256 budget,, uint256 spent,,,,) = auction.positions(id);
+            if (budget == 0) continue;
             assertLe(spent, budget, "I5 spent<=budget");
         }
     }
@@ -163,18 +164,18 @@ contract StonkzAuctionInvariantTest is Test {
         assertGe(auction.raised(), 0);
     }
 
-    // Task G (soft under claims): ledger never exceeds sold/raised; exact eq in unit vectors.
+    // Task G: exact accounted conservation (survives interleaved claims)
     function invariant_exactWeiLedger() public view {
+        assertEq(auction.tokensAccounted(), auction.sold(), "G tokens accounted == sold");
+        assertEq(auction.totalEscrowed(), auction.escrowBook(), "escrow book == totalEscrowed");
         uint256 n = auction.nextPositionId();
-        uint256 sumTok;
         uint256 sumSpent;
         for (uint256 id = 1; id <= n; id++) {
-            (, , , uint256 spent, uint256 tokens,) = auction.positions(id);
-            sumTok += tokens;
+            (, , , uint256 spent,,,,) = auction.positions(id);
             sumSpent += spent;
         }
-        assertLe(sumTok, auction.sold(), "G tokens<=sold");
-        assertLe(sumSpent, auction.raised(), "G spent<=raised");
+        // Spent is never clawed back; equals raised (fill costs)
+        assertEq(sumSpent, auction.raised(), "G spent == raised");
     }
 
     // I7 one-share proxy: tracked bidders have weight 0 or >0 consistently with activeCount

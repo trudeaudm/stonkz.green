@@ -11,7 +11,7 @@ contract Forensic005Trace is Test {
 
     uint256 internal constant BID_FEE = 1e18 / 10;
     StonkzAuction internal auction;
-    uint256 internal _wall;
+    uint256 internal _t;
     address internal constant A = address(0xA11);
     address internal constant B = address(0xB22);
     address internal constant C = address(0xC33);
@@ -24,6 +24,8 @@ contract Forensic005Trace is Test {
         p.floorMcapUsd = json.readUint(".params.floorMcap");
         p.graduationUsd = json.readUint(".params.threshold");
         p.durationBlocks = uint64(json.readUint(".params.blocks"));
+        p.epochSeconds = 1;
+        p.maxClearsPerSync = 0;
         p.baseStepBps = uint16(json.readUint(".params.baseStepBps"));
         p.walletCapBps = uint16(json.readUint(".params.walletCapBps"));
         p.sizeBonusBps = uint16(json.readUint(".params.sizeBonusBps"));
@@ -33,12 +35,12 @@ contract Forensic005Trace is Test {
         if (p.kappaHundredths < 100) p.kappaHundredths = 100;
         auction = new StonkzAuction(p);
         auction.poke();
-        _wall = block.number;
+        _t = block.timestamp;
         uint256 ai;
         while (auction.auctionIndex() < 25 && !auction.done()) {
             ai = _apply(json, ai);
-            _wall += 1;
-            vm.roll(_wall);
+             _t += 1;
+            vm.warp(_t);
             auction.poke();
         }
         ai = _apply(json, ai);

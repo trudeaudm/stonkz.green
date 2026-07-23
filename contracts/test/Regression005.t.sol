@@ -29,6 +29,8 @@ contract Regression005 is Test {
                 floorMcapUsd: 5000 ether,
                 graduationUsd: 0,
                 durationBlocks: 15,
+                epochSeconds: 1,
+                maxClearsPerSync: 0,
                 baseStepBps: 500, // 5%
                 walletCapBps: 5000, // 50%
                 sizeBonusBps: 1785, // 17.85% → α > 0
@@ -108,9 +110,9 @@ contract Regression005 is Test {
     }
 
     function _step() internal {
-        if (wall == 0) wall = block.number;
+        if (wall == 0) wall = block.timestamp;
         wall += 1;
-        vm.roll(wall);
+        vm.warp(wall);
         auction.poke();
     }
 }

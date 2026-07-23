@@ -19,7 +19,7 @@ contract StonkzAuctionFuzzVectorsTest is Test {
     uint256 internal constant SEED = 4663;
 
     StonkzAuction internal auction;
-    uint256 internal _wall; // wall-clock roll counter (avoids via-ir stack + block.number+1 quirk)
+    uint256 internal _t; // wall timestamp for vm.warp (Task N)
 
     address internal constant ADDR_A = address(0xA11);
     address internal constant ADDR_B = address(0xB22);
@@ -58,7 +58,7 @@ contract StonkzAuctionFuzzVectorsTest is Test {
         auction.poke();
         uint256 n = json.readUint(".params.blocks");
         uint256 actionIdx;
-        _wall = block.number;
+        _t = block.timestamp;
         for (uint256 b = 0; b < n && !auction.done(); b++) {
             while (true) {
                 string memory ab = string.concat(".actions[", vm.toString(actionIdx), "]");
@@ -97,8 +97,8 @@ contract StonkzAuctionFuzzVectorsTest is Test {
             uint256 raisedBefore = auction.raised();
             uint256 soldBefore = auction.sold();
 
-            _wall += 1;
-            vm.roll(_wall);
+            _t += 1;
+            vm.warp(_t);
             auction.poke();
 
             uint256 expRaised = json.readUint(string.concat(blk, ".raised"));
@@ -221,6 +221,8 @@ contract StonkzAuctionFuzzVectorsTest is Test {
         p.floorMcapUsd = json.readUint(".params.floorMcap");
         p.graduationUsd = json.readUint(".params.threshold");
         p.durationBlocks = uint64(json.readUint(".params.blocks"));
+        p.epochSeconds = 1;
+        p.maxClearsPerSync = 0;
         p.baseStepBps = uint16(json.readUint(".params.baseStepBps"));
         p.walletCapBps = uint16(json.readUint(".params.walletCapBps"));
         p.sizeBonusBps = uint16(json.readUint(".params.sizeBonusBps"));

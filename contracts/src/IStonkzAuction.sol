@@ -24,7 +24,9 @@ interface IStonkzAuction {
         uint256 totalSupply;
         uint256 floorMcapUsd;        // $2k–$100k, 1e18
         uint256 graduationUsd;       // must pass raise-ceiling validation
-        uint64  durationBlocks;
+        uint64  durationBlocks;      // N auction blocks; production 100..2000; tests/vectors ≥5
+        uint32  epochSeconds;        // wall seconds per auction block; 1..3600
+        uint16  maxClearsPerSync;    // E1 valve; 0 ⇒ default 64
         uint16  baseStepBps;         // demand-scaled at runtime, clamp >= 0
         uint16  walletCapBps;        // of total supply
         uint16  sizeBonusBps;        // per 2x capital; 0 = pure per-capita

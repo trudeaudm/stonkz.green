@@ -16,7 +16,7 @@ contract Forensic000Test is Test {
     address internal constant ADDR_B = address(0xB22);
 
     StonkzAuction internal auction;
-    uint256 internal _wall;
+    uint256 internal _t;
 
     function test_forensic000_traceBlock5() public {
         string memory json =
@@ -27,6 +27,8 @@ contract Forensic000Test is Test {
         p.floorMcapUsd = json.readUint(".params.floorMcap");
         p.graduationUsd = json.readUint(".params.threshold");
         p.durationBlocks = uint64(json.readUint(".params.blocks"));
+        p.epochSeconds = 1;
+        p.maxClearsPerSync = 0;
         p.baseStepBps = uint16(json.readUint(".params.baseStepBps"));
         p.walletCapBps = uint16(json.readUint(".params.walletCapBps"));
         p.sizeBonusBps = uint16(json.readUint(".params.sizeBonusBps"));
@@ -40,12 +42,12 @@ contract Forensic000Test is Test {
         auction.poke();
 
         uint256 actionIdx;
-        _wall = block.number;
+        _t = block.timestamp;
         // Advance until auctionIndex == 5 (about to clear block 5 → vector blocks[5])
         while (auction.auctionIndex() < 5 && !auction.done()) {
             actionIdx = _applyActions(json, actionIdx);
-            _wall += 1;
-            vm.roll(_wall);
+             _t += 1;
+            vm.warp(_t);
             auction.poke();
         }
         actionIdx = _applyActions(json, actionIdx);
@@ -70,8 +72,8 @@ contract Forensic000Test is Test {
         hits;
 
         uint256 raisedBefore = auction.raised();
-        _wall += 1;
-        vm.roll(_wall);
+         _t += 1;
+        vm.warp(_t);
         auction.poke();
         console2.log("FORENSIC_SOL postClear raised", auction.raised());
         console2.log("FORENSIC_SOL raisedDelta", auction.raised() - raisedBefore);

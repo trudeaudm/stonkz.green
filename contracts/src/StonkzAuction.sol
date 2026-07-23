@@ -30,6 +30,8 @@ contract StonkzAuction is IStonkzAuction {
     uint256 public immutable floorMcapUsd;
     uint256 public immutable graduationUsd;
     uint64 public immutable durationBlocks;
+    uint32 public immutable epochSeconds; // wall seconds per auction block (Task N)
+    uint16 public immutable maxClearsPerSync; // E1 overflow valve (default 64)
     uint16 public immutable baseStepBps;
     uint16 public immutable walletCapBps;
     uint16 public immutable sizeBonusBps;
@@ -47,8 +49,8 @@ contract StonkzAuction is IStonkzAuction {
     uint256 public flatBase; // auctionSupply * w[0] / WAD (phase A cap)
 
     // ─── live state ───────────────────────────────────────────────────────
-    uint64 public startBlock; // wall-clock block auction opened (0 = not started)
-    uint64 public auctionIndex; // schedule cursor = blocks completed (S.block in engine)
+    uint64 public startTime; // wall timestamp auction opened (0 = not started)
+    uint64 public auctionIndex; // schedule cursor = auction blocks completed (S.block in engine)
     uint256 public price;
     uint256 public sold; // total tokens sold (auction + reserve top-ups)
     uint256 public raised; // USD raised
@@ -74,11 +76,13 @@ contract StonkzAuction is IStonkzAuction {
 
     struct Position {
         address owner;
-        uint256 budget;
+        uint256 budget; // committed USD; never zeroed (lifecycle via flags)
         uint256 maxPrice;
         uint256 spent;
-        uint256 tokens;
+        uint256 tokens; // survives pre-settle USD claim (Task M)
         PosStatus status;
+        bool usdClaimed;
+        bool tokensClaimed;
     }
 
     struct Bidder {
@@ -105,14 +109,20 @@ contract StonkzAuction is IStonkzAuction {
     mapping(address => uint256) internal _activeIdx; // 1-based index into activeAddrs
 
     // Escrow
-    mapping(address => uint256) public claimableUsd; // priced-out / failed / leftover
-    mapping(address => uint256) public claimableTokens; // filled tokens after graduate settle
+    mapping(address => uint256) public claimableUsd; // priced-out / failed / leftover (indexer aid)
+    mapping(address => uint256) public claimableTokens; // filled tokens credited after settle claim
     uint256 public totalEscrowed;
+    /// @dev Tokens moved from positions into claimableTokens (Task G accounted set).
+    uint256 public totalTokensCredited;
+    /// @dev Tokens wiped on failure refund (not deliverable).
+    uint256 public totalTokensForfeited;
 
     // ─── constructor (spec §1, §7) ─────────────────────────────────────────
     constructor(Params memory p) {
         require(p.floorMcapUsd >= FLOOR_MCAP_MIN && p.floorMcapUsd <= FLOOR_MCAP_MAX, "floor mcap");
-        require(p.durationBlocks >= 5, "duration");
+        // Production launches: N ∈ [100,2000]. Differential vectors use N≥5 (oracle untouched).
+        require(p.durationBlocks >= 5 && p.durationBlocks <= 2000, "duration");
+        require(p.epochSeconds >= 1 && p.epochSeconds <= 3600, "epoch");
         require(p.totalSupply > 0, "supply");
         // baseStep clamped >= 0 by uint16; explicit check for documentation (regression C)
         require(p.baseStepBps == p.baseStepBps, "step"); // tautology keeps clamp note; uint can't be <0
@@ -122,6 +132,8 @@ contract StonkzAuction is IStonkzAuction {
         floorPrice = FixedPointMathLib.mulDiv(p.floorMcapUsd, WAD, p.totalSupply);
         graduationUsd = p.graduationUsd;
         durationBlocks = p.durationBlocks;
+        epochSeconds = p.epochSeconds;
+        maxClearsPerSync = p.maxClearsPerSync == 0 ? 64 : p.maxClearsPerSync;
         baseStepBps = p.baseStepBps;
         walletCapBps = p.walletCapBps;
         sizeBonusBps = p.sizeBonusBps;
@@ -201,7 +213,9 @@ contract StonkzAuction is IStonkzAuction {
             maxPrice: maxPrice,
             spent: 0,
             tokens: 0,
-            status: PosStatus.Active
+            status: PosStatus.Active,
+            usdClaimed: false,
+            tokensClaimed: false
         });
         _bidderPositions[msg.sender].push(positionId);
         totalEscrowed += budget;
@@ -243,44 +257,100 @@ contract StonkzAuction is IStonkzAuction {
     }
 
     /// @inheritdoc IStonkzAuction
+    /// @dev USD claim and token claim are independent (Task M). Pre-settle OutPrice USD
+    ///      claim must not erase p.tokens; tokens remain claimable after settle.
     function claim(uint256 positionId) external {
         _sync();
         Position storage p = positions[positionId];
         require(p.owner == msg.sender, "owner");
-        require(p.budget > 0, "claimed");
+        require(!(p.usdClaimed && p.tokensClaimed), "claimed");
         _harvest(msg.sender);
 
-        uint256 usd;
-        uint256 tok = p.tokens;
+        bool paidUsd;
+        bool paidTok;
 
-        if (done && !graduated) {
-            // Failure: full budget refund — invariants I5 / I8 (spec §7, §9)
-            usd = p.budget;
-            p.tokens = 0;
-        } else if (p.status == PosStatus.OutPrice) {
-            // Priced out: unspent claimable immediately — spec §3
-            usd = p.budget - p.spent;
-            if (!settled) tok = 0; // tokens stay until settle if any were filled
-        } else if (done && graduated) {
-            usd = p.budget - p.spent;
-        } else if (p.status == PosStatus.Capped && done) {
-            usd = p.budget - p.spent;
-        } else {
-            revert("not claimable");
+        // ── USD leg ───────────────────────────────────────────────────────
+        if (!p.usdClaimed) {
+            if (done && !graduated) {
+                // Failure: full budget refund; filled tokens forfeited (spec §7 / I8)
+                uint256 usd = p.budget;
+                if (p.tokens > 0 && !p.tokensClaimed) {
+                    totalTokensForfeited += p.tokens;
+                    p.tokens = 0;
+                    p.tokensClaimed = true;
+                }
+                totalEscrowed -= p.budget;
+                p.usdClaimed = true;
+                paidUsd = true;
+                if (usd > 0) {
+                    (bool ok,) = msg.sender.call{value: usd}("");
+                    require(ok, "usd");
+                }
+            } else if (p.status == PosStatus.OutPrice || (done && graduated)
+                    || (p.status == PosStatus.Capped && done)) {
+                // Unspent USD only; keep budget/spent/tokens for token leg + G ledger
+                uint256 usd = p.budget - p.spent;
+                totalEscrowed -= usd;
+                p.usdClaimed = true;
+                paidUsd = true;
+                if (usd > 0) {
+                    (bool ok,) = msg.sender.call{value: usd}("");
+                    require(ok, "usd");
+                }
+            }
         }
 
-        totalEscrowed -= (done && !graduated) ? p.budget : (p.budget - p.spent);
-        p.budget = 0;
-        p.spent = 0;
-        p.tokens = 0;
-
-        if (usd > 0) {
-            (bool ok,) = msg.sender.call{value: usd}("");
-            require(ok, "usd");
-        }
-        if (tok > 0 && settled) {
+        // ── Token leg (post-settle graduate only) ─────────────────────────
+        if (!p.tokensClaimed && settled && graduated && p.tokens > 0) {
+            uint256 tok = p.tokens;
             claimableTokens[msg.sender] += tok;
+            totalTokensCredited += tok;
+            p.tokens = 0;
+            p.tokensClaimed = true;
+            paidTok = true;
         }
+
+        require(paidUsd || paidTok, "not claimable");
+    }
+
+    /// @notice Task G: sold == tokens still on positions + credited to claimers + forfeited on fail.
+    function tokensAccounted() public view returns (uint256) {
+        uint256 onPositions;
+        uint256 n = nextPositionId;
+        for (uint256 id = 1; id <= n; id++) {
+            onPositions += positions[id].tokens;
+        }
+        return onPositions + totalTokensCredited + totalTokensForfeited;
+    }
+
+    /// @notice Escrow book: unclaimed budgets + spent-of-usdClaimed (raised held). Matches totalEscrowed.
+    function escrowBook() public view returns (uint256) {
+        uint256 s;
+        uint256 n = nextPositionId;
+        for (uint256 id = 1; id <= n; id++) {
+            Position storage p = positions[id];
+            if (p.owner == address(0)) continue;
+            if (p.usdClaimed) {
+                // Failure path refunded full budget (spent not retained in escrow).
+                if (!(done && !graduated)) s += p.spent;
+            } else {
+                s += p.budget;
+            }
+        }
+        return s;
+    }
+
+    /// @notice Unclaimed refundable USD only.
+    function escrowLiability() public view returns (uint256) {
+        uint256 liab;
+        uint256 n = nextPositionId;
+        for (uint256 id = 1; id <= n; id++) {
+            Position storage p = positions[id];
+            if (p.owner == address(0) || p.usdClaimed) continue;
+            if (done && !graduated) liab += p.budget;
+            else liab += p.budget - p.spent;
+        }
+        return liab;
     }
 
     /// @inheritdoc IStonkzAuction
@@ -416,16 +486,31 @@ contract StonkzAuction is IStonkzAuction {
     // ─── sync / poke core ─────────────────────────────────────────────────
 
     function _startIfNeeded() internal {
-        if (startBlock == 0) {
-            startBlock = uint64(block.number);
+        if (startTime == 0) {
+            startTime = uint64(block.timestamp);
         }
     }
 
-    /// @dev Advance auctionIndex to match wall-clock. Empty book ⇒ O(1) jump (spec: 100ms blocks).
-    function _sync() internal {
-        if (done || startBlock == 0) return;
-        uint256 target = block.number - uint256(startBlock);
+    /// @notice Auction blocks the wall clock is ahead of the cleared cursor.
+    function pendingClears() public view returns (uint256) {
+        if (done || startTime == 0) return 0;
+        uint256 target = _auctionTarget();
+        uint256 idx = auctionIndex;
+        return target > idx ? target - idx : 0;
+    }
+
+    function _auctionTarget() internal view returns (uint256) {
+        uint256 elapsed = block.timestamp - uint256(startTime);
+        uint256 target = elapsed / uint256(epochSeconds);
         if (target > durationBlocks) target = durationBlocks;
+        return target;
+    }
+
+    /// @dev Advance auctionIndex toward wall-clock target. Empty book ⇒ O(1) jump.
+    ///      Live book: at most maxClearsPerSync clears per call (Task N / E1).
+    function _sync() internal {
+        if (done || startTime == 0) return;
+        uint256 target = _auctionTarget();
 
         // Fast path: no active weight — schedule cursor jumps; price frozen; supply unsold (squish later)
         if (totalWeight == 0) {
@@ -436,10 +521,9 @@ contract StonkzAuction is IStonkzAuction {
             return;
         }
 
-        // Process pending auction blocks. Each clear is O(actives) water-fill;
-        // wall-clock empty stretches are handled by the fast path above.
         uint256 guard;
-        while (uint256(auctionIndex) < target && !done && guard++ < durationBlocks) {
+        uint256 cap = maxClearsPerSync;
+        while (uint256(auctionIndex) < target && !done && guard++ < cap) {
             _clearOneBlock();
         }
     }
