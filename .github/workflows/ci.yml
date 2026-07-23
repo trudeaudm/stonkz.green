@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  reference-oracle:
+    name: Reference engine (19 checks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run reference oracle
+        run: node reference/engine.test.js
+
+  foundry:
+    name: Foundry build + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Install deps, build, test
+        working-directory: contracts
+        run: |
+          forge install foundry-rs/forge-std --no-git
+          forge build
+          forge test -vv

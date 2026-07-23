@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S T O N K S — launchpad of grate value</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky1:#3D5AC8; --sky2:#7A4FC0; --sun:#FF8A3C;
+  --w95:#C6C6C6; --w95d:#7D7D7D; --w95l:#FFFFFF; --navy:#000A6B;
+  --green:#1DB954; --red:#E5484D; --amber:#E8A020; --ink:#101018;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Rubik',sans-serif;font-size:14px;color:var(--ink);line-height:1.5;
+ background:linear-gradient(180deg,var(--sky1),var(--sky2) 60%,#B0619F);min-height:100vh}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+.impact{font-family:Impact,'Arial Black',sans-serif;letter-spacing:.02em}
+.mono{font-family:'IBM Plex Mono',monospace}
+.up{color:var(--green)} .down{color:var(--red)}
+
+/* ---- floating scenery (always animated) ---- */
+.scenery{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.bob{animation:bob 5s ease-in-out infinite}
+.bob2{animation:bob 7s ease-in-out infinite reverse}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-16px) rotate(2deg)}}
+.bigarrow{position:absolute;right:-40px;top:14%;width:min(46vw,420px);opacity:.9;filter:drop-shadow(0 10px 30px rgba(0,0,0,.35))}
+.head{position:absolute;left:-30px;bottom:6%;width:min(30vw,240px);opacity:.95;filter:drop-shadow(0 14px 30px rgba(0,0,0,.4))}
+
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:18px 16px 90px}
+
+/* ---- win95 chrome ---- */
+.win{background:var(--w95);border:2px solid;border-color:var(--w95l) var(--w95d) var(--w95d) var(--w95l);box-shadow:3px 3px 0 rgba(0,0,0,.35);margin-bottom:16px}
+.title{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,var(--navy),#1E90FF);color:#fff;padding:5px 8px;font-weight:700;font-size:12.5px}
+.title.green{background:linear-gradient(90deg,#0B6B2C,#1DB954)}
+.title.amber{background:linear-gradient(90deg,#7A4E00,#E8B54A)}
+.title.red{background:linear-gradient(90deg,#8E1B1F,#E5484D)}
+.title .x{margin-left:auto;background:var(--w95);color:var(--ink);border:1.5px solid;border-color:var(--w95l) var(--w95d) var(--w95d) var(--w95l);width:18px;height:16px;font-size:10px;line-height:12px;text-align:center;font-weight:700}
+.body95{padding:12px}
+.btn95{background:var(--w95);border:2px solid;border-color:var(--w95l) var(--w95d) var(--w95d) var(--w95l);padding:9px 14px;font-weight:700;font-size:13px}
+.btn95:active{border-color:var(--w95d) var(--w95l) var(--w95l) var(--w95d);transform:translate(1px,1px)}
+.btn95.go{background:#B7F0C6}
+.btn95.no{background:#F6C1C3}
+.btn95.gold{background:#FFE3A1}
+.btn95.big{width:100%;font-size:15px;padding:12px}
+.btn95.on{border-color:var(--w95d) var(--w95l) var(--w95l) var(--w95d);background:#DFF5FF}
+.inset{background:#fff;border:2px solid;border-color:var(--w95d) var(--w95l) var(--w95l) var(--w95d);padding:8px 10px}
+.field95{margin-bottom:10px}
+.field95 .lab{font-size:10px;font-weight:700;letter-spacing:.06em;color:#3A3A46;display:block;margin-bottom:3px;text-transform:uppercase}
+.field95 input,.field95 select{width:100%;border:none;outline:none;font-family:'IBM Plex Mono';font-size:15px;background:transparent}
+
+/* ---- header ---- */
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.logo-impact{font-family:Impact,'Arial Black';font-size:clamp(34px,7vw,64px);color:#fff;-webkit-text-stroke:2.5px #000;text-shadow:4px 4px 0 #000;letter-spacing:.04em;transform:rotate(-2deg)}
+.tagline{background:#fff;border:2px solid #000;box-shadow:3px 3px 0 #000;padding:5px 11px;font-weight:700;font-size:11.5px;transform:rotate(1.5deg)}
+.topnav{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+/* ---- tape ---- */
+.tape{overflow:hidden;background:#000;border:2px solid #000;box-shadow:3px 3px 0 rgba(0,0,0,.35);margin-bottom:16px}
+.tape-track{display:flex;gap:34px;white-space:nowrap;padding:8px 0;font-family:'IBM Plex Mono';font-size:12px;color:#fff;animation:scroll 28s linear infinite;width:max-content}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tape .up{color:#6BF08E}.tape .down{color:#FF7B7B}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.grid2{display:grid;grid-template-columns:1.5fr 1fr;gap:16px}
+@media (max-width:840px){.grid2{grid-template-columns:1fr}}
+
+.coinrow{display:flex;align-items:center;gap:10px}
+.coinic{width:42px;height:42px;background:#fff;border:2px solid #000;display:flex;align-items:center;justify-content:center;font-size:21px;flex:none;box-shadow:2px 2px 0 #000}
+.grow{flex:1;min-width:0}
+.tk{font-weight:700;font-size:15px}
+.nm{font-size:11.5px;color:#4A4A56}
+.px{font-family:'IBM Plex Mono';text-align:right;font-weight:600}
+.stamp{display:inline-block;font-family:Impact,'Arial Black';font-size:12px;letter-spacing:.06em;padding:2px 8px;border:2px solid #000;transform:rotate(-3deg);box-shadow:2px 2px 0 #000;vertical-align:2px;transition:transform .15s}
+.stamp:hover{transform:rotate(3deg) scale(1.08)}
+.stamp.stonkz{background:#B7F0C6;color:#0B6B2C}
+.stamp.not{background:#F6C1C3;color:#8E1B1F}
+.stamp.gen{background:#FFD87A;color:#7A4E00}
+.stamp.gone{background:#DADAE2;color:#4A4A56}
+.stamp.insta{background:#BFE4FF;color:#0B4E8E}
+.coinic img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* ---- helth bar (shimmer always on) ---- */
+.helth{height:20px;background:#fff;border:2px solid #000;position:relative;overflow:hidden}
+.helth i{position:absolute;inset:0;width:0;background:repeating-linear-gradient(90deg,#1DB954 0 12px,#17A047 12px 24px);transition:width .6s}
+.helth i:after{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);animation:shimmer 2.2s linear infinite}
+@keyframes shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.helthlab{display:flex;justify-content:space-between;font-size:10px;font-weight:700;letter-spacing:.08em;margin-top:4px;color:#2F2F3A}
+
+/* ---- radar (win95 sonar.exe) ---- */
+.radar{width:112px;height:112px;border-radius:50%;border:2px solid #000;position:relative;margin:0 auto;background:radial-gradient(circle,#0F3D22 30%,#0A2A17 70%)}
+.radar:before{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(107,240,142,.6),transparent 75deg);animation:sweep 3s linear infinite}
+@keyframes sweep{to{transform:rotate(360deg)}}
+.radar b{position:absolute;width:5px;height:5px;border-radius:50%;background:#6BF08E;box-shadow:0 0 6px #6BF08E;animation:blip 2s infinite}
+@keyframes blip{50%{opacity:.3}}
+
+.bigpx{font-family:'IBM Plex Mono';font-size:32px;font-weight:700}
+.flash{animation:fl .5s}
+@keyframes fl{0%{background:#B7F0C6}100%{background:transparent}}
+.zig{width:100%;display:block;background:#fff;border:2px solid #000}
+.spark{width:70px;height:26px;flex:none;background:#fff;border:1.5px solid #000}
+.caption{font-family:Impact,'Arial Black';text-align:center;font-size:20px;color:#fff;-webkit-text-stroke:1.2px #000;text-shadow:2px 2px 0 #000;margin-top:8px}
+
+.dr{display:flex;justify-content:space-between;gap:10px;font-family:'IBM Plex Mono';font-size:11.5px;padding:5px 0;border-bottom:1px dotted #9A9AA6}
+.dr:last-child{border-bottom:none}
+.dr b{text-align:right}
+.booksort{display:flex;gap:6px;align-items:center;font-size:10px;margin-bottom:8px;flex-wrap:wrap}
+.booksort .btn95{padding:4px 8px;font-size:10.5px;font-family:'IBM Plex Mono'}
+.bookrow{display:grid;grid-template-columns:1.3fr .8fr .9fr .9fr .7fr;gap:6px;align-items:center;padding:5px 8px;font-family:'IBM Plex Mono';font-size:10.5px;border-bottom:1px dotted #C9C9D2}
+.bookrow:nth-child(odd){background:#F4F4F8}
+.bookrow.me{background:#FFF6D9;font-weight:600}
+.bookrow.bh{background:transparent;font-weight:700;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#6B6B78;border-bottom:1.5px solid #000;padding:3px 8px}
+.bookrow .bn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bookrow .num{text-align:right}
+.bookrow .bst{text-align:right;font-size:9.5px;font-weight:600}
+
+/* ---- presets / seg ---- */
+.presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.seg .btn95{text-align:left;font-size:12px}
+.seg .s-d{font-weight:400;font-size:10.5px;color:#3A3A46;margin-top:2px}
+
+/* ---- feed ---- */
+.feed95{height:26px;overflow:hidden;position:relative;background:#fff;border:2px solid;border-color:var(--w95d) var(--w95l) var(--w95l) var(--w95d)}
+.feed95 div{padding:4px 10px;font-family:'IBM Plex Mono';font-size:11px;animation:rise .3s ease}
+@keyframes rise{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+/* ---- confetti ---- */
+.confetti{position:fixed;top:-20px;z-index:97;width:10px;height:14px;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(115vh) rotate(720deg)}}
+
+/* ---- bell ---- */
+.bellico{font-size:80px;display:inline-block;animation:ring 1.4s ease infinite}
+@keyframes ring{0%,60%,100%{transform:rotate(0)}10%{transform:rotate(16deg)}25%{transform:rotate(-12deg)}40%{transform:rotate(7deg)}}
+
+/* ---- flex card ---- */
+.flexcard{background:linear-gradient(160deg,#3D5AC8,#7A4FC0);border:2px solid #000;box-shadow:3px 3px 0 #000;padding:14px;color:#fff;position:relative;overflow:hidden}
+.flexcard .fc-arrow{position:absolute;right:-8px;bottom:-6px;width:100px;opacity:.85}
+.flexcard .fc-big{font-family:Impact,'Arial Black';font-size:36px;-webkit-text-stroke:1.5px #000;text-shadow:3px 3px 0 #000;color:#B7F0C6}
+.flexcard .fc-s{font-family:'IBM Plex Mono';font-size:10.5px;opacity:.9}
+
+.hint{font-size:10.5px;color:#3A3A46;margin-top:8px;line-height:1.7;text-align:center}
+.back{display:inline-block;margin-bottom:12px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--w95);border:2px solid;border-color:var(--w95l) var(--w95d) var(--w95d) var(--w95l);box-shadow:3px 3px 0 rgba(0,0,0,.4);font-size:13px;font-weight:700;padding:12px 18px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
+.toast.show{opacity:1}
+footer{position:relative;z-index:1;text-align:center;color:#fff;font-size:11px;padding:20px;line-height:1.8;text-shadow:1px 1px 0 #000}
+</style>
+</head>
+<body>
+
+<div class="scenery">
+  <svg class="bigarrow bob" viewBox="0 0 300 220" fill="none">
+    <path d="M10 200 L70 160 L110 180 L180 110 L215 130 L275 45" stroke="#FF8A3C" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M225 38 L282 40 L278 96" stroke="#FF8A3C" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </svg>
+  <svg class="head bob2" viewBox="0 0 200 240" fill="none">
+    <ellipse cx="100" cy="110" rx="78" ry="92" fill="#E8E3DC"/>
+    <ellipse cx="100" cy="118" rx="78" ry="86" fill="#DDD6CC"/>
+    <ellipse cx="72" cy="96" rx="10" ry="13" fill="#2E4A9E"/>
+    <ellipse cx="128" cy="96" rx="10" ry="13" fill="#2E4A9E"/>
+    <ellipse cx="74" cy="93" rx="3.5" ry="4.5" fill="#fff"/>
+    <ellipse cx="130" cy="93" rx="3.5" ry="4.5" fill="#fff"/>
+    <path d="M70 150 Q100 172 130 150" stroke="#8F867A" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <path d="M40 210 L100 190 L160 210 L160 240 L40 240 Z" fill="#1B1F2E"/>
+    <rect x="92" y="192" width="16" height="30" fill="#fff"/>
+    <path d="M100 196 L92 210 L100 224 L108 210 Z" fill="#B3261E"/>
+  </svg>
+</div>
+
+<div class="wrap">
+  <div class="top">
+    <a href="#/"><div class="logo-impact">S T O N K S</div></a>
+    <div>
+      <div class="tagline">only go up ☝</div>
+      <div class="tagline" style="margin-top:6px;transform:rotate(-1deg)">robinhood chain</div>
+    </div>
+    <div class="topnav">
+      <a class="btn95 go" href="#/make">＋ make coin</a>
+      <a class="btn95" href="#/me">🧍 my stuff</a>
+      <a class="btn95" href="#/forum">💬 forum</a>
+    </div>
+  </div>
+
+  <div class="tape"><div class="tape-track" id="tape"></div></div>
+  <div class="caption" style="font-size:clamp(18px,3.4vw,28px);text-align:left;margin:2px 0 12px">EVRYTHING GETS A TICKER. THE LINE ONLY GO UP.*<br><span style="font-size:12px;-webkit-text-stroke:.8px #000">*line may also go down. this is the market. kalm.</span></div>
+  <div class="logrow">
+    <div class="deskicon" id="deskicon" onclick="forumOpen()" title="open forum">
+      <div class="ig">💬<span id="unread" class="unread" style="display:none">0</span></div>
+      <div class="il">stonkz_<br>forum.exe</div>
+    </div>
+    <div class="deskicon" id="logicon" style="display:none" onclick="logOpen()" title="open activity log">
+      <div class="ig">🖥</div><div class="il">activity_<br>log.exe</div></div>
+    <div class="win" style="flex:1;margin-bottom:16px" id="logwin"><div class="title">🖥 stonkz_activity.log<span class="x" onclick="logX()" title="send to desktop">×</span></div>
+     <div class="body95" style="padding:6px"><div class="feed95" id="feed"></div></div></div>
+  </div>
+
+  <main id="app"></main>
+</div>
+
+<footer>S T O N K S · stonkz.meme · complete memeworld build v0.2 · mock data<br>not affiliated with robinhood markets · this is not financal advice becuase we cannot spell financal · never trade money you cannot lose, fren</footer>
+<div class="toast" id="toast"></div>
+
+<div class="win dock" id="dock" style="display:none">
+  <div class="title">💬 forum — dock mode<span class="wbtns"><span class="tbtn" onclick="forumMax()" title="big forum">□</span><span class="x" onclick="forumX()" title="back to desktop">×</span></span></div>
+  <div class="body95" style="display:flex;flex-direction:column;height:calc(100% - 30px);padding:8px">
+    <div class="mono" id="dockhead" style="font-size:10px;font-weight:700;margin-bottom:4px">📌 gm general chat</div>
+    <div class="dockmsgs inset" id="dockmsgs"></div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <div class="inset" style="flex:1;padding:5px 8px"><input id="dockin" placeholder="say gm..." style="border:none;outline:none;width:100%;font-family:'IBM Plex Mono';font-size:12px;background:transparent" onkeydown="if(event.key==='Enter')postDock()"></div>
+      <button class="btn95" style="padding:5px 10px;font-size:12px" onclick="postDock()">go</button>
+    </div>
+    <div class="mono" style="font-size:9.5px;color:#3A3A46;margin-top:8px">threds (click one to chat in it):</div>
+    <div id="dockthreads" style="font-size:11px;line-height:1.8;overflow:auto"></div>
+  </div>
+</div>
+
+<style>
+/* ---- forum ---- */
+.logrow{display:flex;gap:14px;align-items:flex-start}
+.deskicon{width:80px;flex:none;text-align:center;cursor:pointer;user-select:none;padding:6px 2px}
+.deskicon .ig{font-size:34px;line-height:1;position:relative;display:inline-block;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.4))}
+.deskicon .il{font-family:'Rubik';font-size:10px;font-weight:700;color:#fff;text-shadow:1px 1px 0 #000;line-height:1.25;margin-top:4px}
+.deskicon:hover .il{background:var(--navy);outline:1px dotted #fff}
+.deskicon:active{transform:translate(1px,1px)}
+.deskicon .unread{position:absolute;top:-4px;right:-12px}
+.forumtiny{flex:0 0 12.5%;min-width:86px;margin-bottom:16px}
+.tbtn{background:var(--w95);color:var(--ink);border:1.5px solid;border-color:var(--w95l) var(--w95d) var(--w95d) var(--w95l);width:18px;height:16px;font-size:9px;line-height:12px;text-align:center;font-weight:700;cursor:pointer;margin-left:4px}
+.tbtn:active{border-color:var(--w95d) var(--w95l) var(--w95l) var(--w95d)}
+.unread{display:inline-block;background:var(--red);color:#fff;font-family:'IBM Plex Mono';font-size:9px;border-radius:8px;padding:1px 6px;margin-left:6px;animation:blink95 1.2s infinite}
+@keyframes blink95{50%{opacity:.4}}
+.dock{position:fixed;left:8px;top:88px;bottom:8px;width:272px;z-index:60;margin:0}
+.dockmsgs{flex:1;overflow:auto;font-family:'IBM Plex Mono';font-size:11px;line-height:1.6;padding:6px 8px}
+.dockmsgs b{color:#000A6B}
+@media (max-width:900px){.dock{width:min(272px,80vw)}}
+.wbtns{margin-left:auto;display:flex;gap:4px;align-items:center}
+.wbtns .x,.wbtns .tbtn{margin-left:0}
+.deskshelf{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 14px}
+.deskicon .ig img{width:36px;height:36px;object-fit:cover;border:2px solid #000;background:#fff;display:block}
+.thread-row{display:flex;align-items:center;gap:10px;padding:8px 10px;font-size:13px;border-bottom:1px solid #B9B9C2}
+.thread-row:nth-child(odd){background:#EFEFF4}
+.thread-row:nth-child(even){background:#E4E4EC}
+.thread-row:hover{background:#DFF5FF;cursor:pointer}
+.vote{font-family:'IBM Plex Mono';font-size:11px;text-align:center;min-width:38px;font-weight:700}
+.vote span{cursor:pointer}
+.vote span:hover{color:var(--sun)}
+.post{border:2px solid;border-color:var(--w95d) var(--w95l) var(--w95l) var(--w95d);background:#fff;margin-bottom:10px}
+.post-h{background:#E4E4EC;border-bottom:1px solid #B9B9C2;padding:5px 10px;font-family:'IBM Plex Mono';font-size:10.5px;color:#3A3A46;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.post-b{padding:10px;font-size:13.5px}
+</style>
+
+<script>
+/* ================= DATA ================= */
+const pick=a=>a[Math.random()*a.length|0];
+const fmt=(n,d=4)=>{n=Number(n);const dd=n>=1?2:n>=.01?d:n>=.0001?6:n>=1e-6?8:10;return '$'+n.toFixed(dd)};
+const fmt2=n=>'$'+Number(n).toFixed(2);
+const fmtK=n=>n>=1e6?'$'+(n/1e6).toFixed(2)+'M':'$'+(n/1e3).toFixed(1)+'K';
+function series(a,b,p=44){const o=[];let v=a;for(let i=0;i<p;i++){const d=(b-a)/p;v=Math.max(a*.9,v+d+(Math.random()-.42)*d*2.2);o.push(v)}return o}
+const T={
+ STONKZ4663:{tk:'STONKZ4663',nm:'the coin of the site. much protocol.',ic:'📈',state:'live',gen:true,route:'ipo',pair:'USDG',floor:.01,px:.0182,raised:124e4,ov:2.1,bidders:6412,ends:Date.now()+38*36e5,hist:series(.01,.0182),recon:{dev:'bonded ✓',top10:12,age:'2h'}},
+ DOGWIF:{tk:'DOGWIF',nm:'dog with intent. the intent is real.',ic:'🐶',state:'live',route:'ipo',pair:'USDG',floor:.005,px:.04213,raised:58e3,ov:3.2,bidders:1204,ends:Date.now()+14*6e4,hist:series(.005,.04213),recon:{dev:'bonded ✓',top10:18,age:'41m'}},
+ GMCAT:{tk:'GMCAT',nm:'gm. cats only. no dog allowed.',ic:'😼',state:'live',route:'ipo',pair:'ETH',floor:.002,px:.0087,raised:9200,ov:1.4,bidders:212,ends:Date.now()+42*6e4,hist:series(.002,.0087),recon:{dev:'bonded ✓',top10:22,age:'12m'}},
+ BELL:{tk:'BELL',nm:'rang it. very loud. good coin.',ic:'🔔',state:'listed',route:'ipo',pair:'USDG',px:.118,chg:18,print:.064,raised:7e4,ov:4.1,bidders:2033,hist:series(.064,.118),recon:{dev:'vested ✓',top10:14,age:'2d'}},
+ HODLR:{tk:'HODLR',nm:'never seling. direct listing. is instant coin.',ic:'💎',state:'listed',route:'direct',pair:'ETH',px:.0055,chg:7,print:.0051,raised:12e3,ov:null,bidders:388,hist:series(.0051,.0055),recon:{dev:'self-priced ⚡',top10:31,age:'1d'}},
+};
+Object.values(T).forEach(t=>{t.supply=t.supply||1e9;t.img=t.img||null;
+ if(t.route==='ipo'){t.auctionPct=t.auctionPct||80;t.lpPct=t.lpPct||80;t.walletCap=t.walletCap||1}
+ if(t.route==='direct'){t.startMcap=t.startMcap||8000}});
+// seed live auctions mid-flight
+T.STONKZ4663.supply=4.663e9;
+Object.assign(T.STONKZ4663,{floorMcap:50000,threshold:250000,blockN:430,_soldFrac:.34,dur:4*36e5});
+Object.assign(T.DOGWIF,{floorMcap:5000,threshold:20000,blockN:450,_soldFrac:.38,dur:40*6e4});
+Object.assign(T.GMCAT,{floorMcap:2000,threshold:15000,blockN:250,_soldFrac:.22,dur:3*36e5});
+
+/* ========= LADDER ENGINE — simulated StonkzAuction (no chain, same math) ========= */
+const G_P=1.015, G_QB=1.0015, FIN_R=1.05, TICK=1300; // demo pacing
+// release curve: flat until competition -> shallow growth -> finale (last 20% of time distributes >=60% of supply)
+function phaseOf(t,now){const frac=(now-t.t0)/(t.ends-t.t0);
+ if(frac>=0.8)return 'C';
+ return t._comp?'B':'A'}
+function trancheFor(t,now){
+ const rem=Math.max(0,t.auctionSupply-t.sold);
+ if(rem<=0)return 0;
+ if(phaseOf(t,now)==='C'){
+  const L=Math.max(1,Math.ceil((t.ends-now)/TICK));
+  const geo=rem*(FIN_R-1)/(Math.pow(FIN_R,L)-1);
+  const q=Math.max(isFinite(geo)&&geo>0?geo:rem, Math.min(t.qB,rem)); // never slower than the shallow curve
+  return Math.min(q,rem)}
+ const q=phaseOf(t,now)==='A'?t.q0:t.qB;
+ return Math.min(q,Math.max(0,t.auctionSupply*0.4-t.sold))} // the 40% wall
+function initLadder(t){
+ t.g=G_P;
+ t.auctionSupply=t.supply*(t.auctionPct||80)/100;
+ t.capTokens=t.supply*(t.walletCap||1)/100;
+ t.p0=(t.floorMcap||5000)/t.supply; t.floor=t.p0;
+ t.q0=t.auctionSupply*2e-5;
+ t.qB=t.q0;
+ t.t0=t.t0||(t.dur?t.ends-t.dur:Date.now());
+ t.blockN=t.blockN||0;
+ t.priceNow=t.p0*Math.pow(t.g,t.blockN);
+ t.px=t.priceNow;
+ t.sold=t.auctionSupply*(t._soldFrac||0);
+ t.raised=t.raised||0; t.unsold=t.unsold||0;
+ t.threshold=t.threshold||Math.round((t.floorMcap||5000)*2);
+ t.hist=Array.from({length:40},(_,i)=>t.p0*Math.pow(t.g,Math.max(0,t.blockN-40+i)));
+ // build an individual public book
+ const n=Math.max(0,t.bidders|0);
+ t.book=[];
+ for(let i=0;i<n;i++){
+  const r=Math.random();
+  const bud=r<.55?30+Math.random()*150 : r<.85?150+Math.random()*600 : r<.97?800+Math.random()*3000 : 5000+Math.random()*20000;
+  const maxP=t.priceNow*(0.6+Math.random()*(r<.97?8:3)); // some already priced out
+  t.book.push({name:bookName(),blk:Math.max(0,t.blockN-(Math.random()*t.blockN|0)),
+   n:1,bud,spent:0,tok:0,maxP,status:maxP<t.priceNow?'out_price':'active'});
+ }
+ // seed mid-flight fills so the book sums to sold
+ if(t.sold>0){
+  const act=t.book.filter(e=>e.status==='active');
+  const per=t.sold/Math.max(1,act.length);
+  let sum=0;
+  act.forEach(e=>{const avg=t.px*0.6;
+   e.tok=Math.min(per*(0.5+Math.random()),Math.max(0,e.bud)/avg);
+   e.spent=e.tok*avg;sum+=e.tok});
+  const f=sum>0?t.sold/sum:0;
+  act.forEach(e=>{e.tok*=f;e.spent*=f;
+   if(e.spent>=e.bud-1e-9){e.spent=e.bud;e.status='out_budget'}});
+ }
+ t.bidders=t.book.length;
+ t._comp=t.book.filter(e=>e.status==='active').length>1;
+ t.yous=[];
+ t.trancheNow=trancheFor(t,Date.now());
+}
+const BOOKNAMES=['trenchRat','0xkalm','gmSergeant','printDaddy','oneGoodTrade','jeetProof','fren','anon','wagmiWife','smolBrave','ladderLad','kalmDown','bagChaser','upOnly','wifeboyfrend','stonkzEnjoyer','tranchePapi','sirHodl'];
+function bookName(){return pick(BOOKNAMES)+(100+Math.random()*900|0)}
+function parties(t){return t.book.slice()}
+function activePos(t){return (t.yous||[]).filter(p=>p.status==='active')}
+function walletTok(t){return (t.yous||[]).reduce((a,p)=>a+p.tok,0)}
+function stepLadder(t){
+ if(t._s)return;
+ const now=Date.now();
+ // competition ratchet: 2+ unique active addresses ever seen -> curve begins (one-way)
+ const uniq=t.book.filter(e=>e.status==='active').length+((t.yous||[]).some(p=>p.status==='active')?1:0);
+ if(uniq>1)t._comp=true;
+ const price=t.priceNow, tranche=Math.min(trancheFor(t,now),Math.max(0,t.auctionSupply-t.sold));
+ // price-outs
+ t.book.forEach(c=>{if(c.status==='active'&&c.maxP<price)c.status='out_price'});
+ (t.yous||[]).forEach(p=>{if(p.status==='active'&&p.maxP<price)p.status='out_price'});
+ // wallet pseudo-participant (all your bids share ONE per-capita share)
+ let W=null;
+ if(activePos(t).length&&walletTok(t)<t.capTokens-1e-9){
+  const act=activePos(t);
+  W={n:1,status:'active',tok:walletTok(t),
+     spent:act.reduce((a,p)=>a+p.spent,0),
+     bud:act.reduce((a,p)=>a+p.bud,0)};
+ }
+ const all=W?t.book.concat([W]):t.book.slice();
+ let remaining=tranche;
+ for(let it=0;it<6&&remaining>1e-9;it++){
+  const act=all.filter(c=>c.status==='active');
+  const N=act.reduce((a,c)=>a+c.n,0); if(!N)break;
+  const per=remaining/N; let used=0;
+  act.forEach(c=>{
+   const capLeft=Math.max(0,t.capTokens-c.tok);
+   const budLeft=Math.max(0,c.bud-c.spent)/price;
+   const take=Math.min(per,capLeft,budLeft);
+   c.tok+=take; c.spent+=take*price; used+=take*c.n;
+   if(take<per-1e-12)c.status=(capLeft<=budLeft)?'capped':'out_budget';
+  });
+  remaining-=used;
+ }
+ // distribute the wallet's fill across your individual bids (mini water-fill)
+ if(W){
+  const preAct=activePos(t);
+  let dTok=W.tok-walletTok(t);
+  for(let it=0;it<5&&dTok>1e-12;it++){
+   const act=preAct.filter(p=>p.status==='active');if(!act.length)break;
+   const per2=dTok/act.length;let used2=0;
+   act.forEach(p=>{
+    const budLeft=Math.max(0,p.bud-p.spent)/price;
+    const take=Math.min(per2,budLeft);
+    p.tok+=take;p.spent+=take*price;used2+=take;
+    if(take<per2-1e-12)p.status='out_budget';
+   });
+   dTok-=used2;
+  }
+  if(W.status==='capped')activePos(t).forEach(p=>p.status='capped');
+  if(W.status==='out_budget')activePos(t).forEach(p=>{if(p.bud-p.spent<=1e-9)p.status='out_budget'});
+ }
+ const soldNow=tranche-Math.max(0,remaining);
+ const fullySold=tranche>0&&remaining<=Math.max(1e-9,tranche*1e-6);
+ t.sold+=soldNow; t.raised+=soldNow*price;
+ t.px=price; t.hist.push(price); if(t.hist.length>60)t.hist.shift();
+ t.blockN++;
+ if(fullySold){t.priceNow*=t.g;t._stall=0}
+ else{t._stall=(t._stall||0)+1} // no full sale -> price stays flat, tranche re-offered
+ if(phaseOf(t,now)==='B')t.qB*=G_QB; // shallow curve while competitive
+ t.trancheNow=trancheFor(t,Date.now());
+ // fresh frens arrive (keeps stalled ladders alive)
+ if(Math.random()<.4&&t.book.length<8000){const add=1+(Math.random()*3|0);
+  for(let j=0;j<add;j++)t.book.push({name:bookName(),blk:t.blockN,n:1,
+   bud:40+Math.random()*600,spent:0,tok:0,maxP:t.priceNow*(1.5+Math.random()*6),status:'active'});
+  t.bidders=t.book.length}
+ if(t.sold>=t.auctionSupply-1e-6)endLadder(t,'suply sold out');
+ else if(Date.now()>t.ends)endLadder(t,'time is up');
+}
+function endLadder(t,why){if(t._s)return;t._s=1;
+ if(t.raised>=t.threshold)settleLadder(t,why);else failLadder(t,why)}
+function settleLadder(t,why){
+ t.state='listed'; t.print=t.px; t.chg=0;
+ const tok=walletTok(t), spent=(t.yous||[]).reduce((a,p)=>a+p.spent,0);
+ if(tok>0){const cost=spent/tok;const ex=BAGS.find(h=>h.tk===t.tk);
+  if(ex){ex.cost=(ex.cost*ex.amt+spent)/(ex.amt+tok);ex.amt+=Math.round(tok)}
+  else BAGS.push({tk:t.tk,amt:Math.round(tok),cost});
+  toast('🔔 $'+t.tk+' setled — your '+Math.round(tok).toLocaleString()+' coins are in your bags')}
+ t.yous=[];
+ delete BIDS[t.tk];
+ pushFeed(`🔔 $${t.tk} bell has rang (${why}). print ${fmt(t.px)}. LP burned.`);
+ const m=location.hash.match(/^#\/t\/(\w+)/);
+ if(m&&m[1]===t.tk){confetti();location.hash='#/bell/'+t.tk}else render();
+}
+function failLadder(t,why){
+ t.state='failed'; delete BIDS[t.tk]; t.yous=[];
+ pushFeed(`💀 $${t.tk} did not graduate (${why}). raised ${fmtK(t.raised)} < ${fmtK(t.threshold)}. evryone refunded 100%.`);
+ render();
+}
+function posState(t,p){
+ if(p.status==='capped')return 'bag';
+ if(p.status==='out_budget')return 'allin';
+ if(p.status==='out_price'||p.maxP<t.priceNow)return 'panik';
+ if(p.maxP<t.priceNow*1.15)return 'hmm';
+ return 'kalm'}
+function bidStateL(t){const ys=t.yous||[];if(!ys.length)return null;
+ if(ys.every(p=>posState(t,p)==='bag'))return 'bag';
+ const acts=ys.filter(p=>p.status==='active');
+ if(acts.length)return acts.some(p=>posState(t,p)==='hmm')?'hmm':'kalm';
+ if(ys.every(p=>p.status==='out_budget'))return 'allin';
+ return 'panik'}
+const POSLAB={kalm:['green','😌 KALM — filling'],hmm:['amber','😬 HMMM — near your max'],panik:['red','😱 PANIK — priced out'],bag:['green','😎 FULL BAG — walet cap'],allin:['amber','🫡 ALL IN — budget deployed']};
+function lmetaTxt(t){
+ const ph=phaseOf(t,Date.now());
+ const lbl=ph==='C'?'🔥 FINALE — big tranches':(ph==='B'?'shallow climb (frens competing)':'flat release (no competition yet)');
+ return `block #${t.blockN.toLocaleString()} · tranche ${Math.round(t.trancheNow).toLocaleString()} coins · ${t.bidders.toLocaleString()} frens · ${lbl}`}
+function finTxt(t){
+ const finStart=t.t0+(t.ends-t.t0)*0.8;
+ if(Date.now()>=finStart)return '<b class="up">LIVE 🔥 — 60%+ of suply distributes now</b>';
+ return 'starts in '+left(finStart)+' · wil distribute 60%+ of suply'}
+function quantile(a,q){const s=a.slice().sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(q*s.length))]||1}
+function ladderChart(t){
+ const W=320,H=150,LW=212,pad=7;
+ const hist=t.hist;
+ const entries=bookEntries(t);
+ const yMax=Math.max(t.px*1.45, quantile(entries.map(e=>e.maxP),0.9));
+ const yMin=Math.min(...hist)*0.97;
+ const Y=v=>H-pad-(Math.max(yMin,Math.min(v,yMax))-yMin)/(yMax-yMin)*(H-2*pad);
+ const X=i=>pad+i/Math.max(1,hist.length-1)*(LW-2*pad);
+ const pts=hist.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ');
+ const NB=14, buckets=Array.from({length:NB},()=>({live:0,dead:0}));
+ entries.forEach(e=>{
+  const rem=Math.max(0,e.bud-e.spent); if(rem<=0)return;
+  const bi=Math.max(0,Math.min(NB-1,Math.floor((Math.min(e.maxP,yMax)-yMin)/(yMax-yMin)*NB)));
+  const alive=e.maxP>=t.px&&e.status!=='capped'&&e.status!=='out_budget';
+  if(alive)buckets[bi].live+=rem;else buckets[bi].dead+=rem});
+ const bmax=Math.max(1,...buckets.map(b=>b.live+b.dead));
+ const DW=W-LW-12;
+ const bars=buckets.map((b,i)=>{
+  const y0=H-pad-(i+1)/NB*(H-2*pad), bh=(H-2*pad)/NB-1.2;
+  const dw=b.dead/bmax*DW, lw=b.live/bmax*DW;
+  return `<rect x="${LW+5}" y="${y0.toFixed(1)}" width="${dw.toFixed(1)}" height="${bh.toFixed(1)}" fill="#C9C9D2"/><rect x="${(LW+5+dw).toFixed(1)}" y="${y0.toFixed(1)}" width="${lw.toFixed(1)}" height="${bh.toFixed(1)}" fill="#1DB954"/>`}).join('');
+ const cy=Y(t.px);
+ const yours=(t.yous||[]).map(p=>`<text x="${W-11}" y="${(Y(p.maxP)+3).toFixed(1)}" font-size="9" fill="#B8860B">⭐</text>`).join('');
+ const liveCap=buckets.reduce((a,b)=>a+b.live,0);
+ return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;background:#fff;border:2px solid;border-color:#5A5A66 #FDFDFF #FDFDFF #5A5A66;display:block">
+  <line x1="${LW}" y1="0" x2="${LW}" y2="${H}" stroke="#B9B9C2" stroke-dasharray="2,2"/>
+  ${bars}
+  <polyline points="${pts}" fill="none" stroke="#1DB954" stroke-width="2.4" stroke-linejoin="round"/>
+  <line x1="${pad}" y1="${cy.toFixed(1)}" x2="${W-pad}" y2="${cy.toFixed(1)}" stroke="#E5484D" stroke-dasharray="4,3" stroke-width="1.2"/>
+  <text x="${pad+2}" y="${(cy-4).toFixed(1)}" font-size="8.5" fill="#E5484D" font-family="IBM Plex Mono,monospace">now ${fmt(t.px)}</text>
+  ${yours}
+  <text x="${LW+5}" y="10" font-size="7.5" fill="#6B6B78" font-family="IBM Plex Mono,monospace">where bids live</text>
+ </svg>
+ <div class="hint" style="text-align:left;margin-top:4px">left: the line. right: frens capital stacked at their max prices — <b style="color:#128A40">green</b> = still bidding (above red = fuel for the climb, ${fmtK(liveCap)} of it), <b style="color:#8A8A96">gray</b> = priced out / spent / capped. ⭐ = your max${(t.yous&&t.yous.length>1)?'es':''}.</div>`}
+let BOOKSORT={key:'time',dir:1};
+function sortBook(key){if(BOOKSORT.key===key)BOOKSORT.dir*=-1;else BOOKSORT={key,dir:1};refreshBook()}
+function refreshBook(){const m=location.hash.match(/^#\/t\/(\w+)/);
+ if(m&&T[m[1]]&&T[m[1]].state==='live'){const el=document.getElementById('lbook');if(el)el.innerHTML=bookRows(T[m[1]])}}
+function bookEntries(t){
+ const yours=(t.yous||[]).map((p,i)=>({name:'⭐ you (bid #'+(i+1)+')',you:1,blk:p.blk||t.blockN,bud:p.bud,tok:p.tok,maxP:p.maxP,status:p.status}));
+ return t.book.map(e=>({name:e.name,you:0,blk:e.blk,bud:e.bud,tok:e.tok,maxP:e.maxP,status:e.status})).concat(yours)}
+function bookRows(t){
+ const ks={time:e=>e.blk,max:e=>e.maxP,cap:e=>e.bud,fill:e=>e.tok};
+ const es=bookEntries(t);
+ es.sort((a,b)=>BOOKSORT.dir*(ks[BOOKSORT.key](b)-ks[BOOKSORT.key](a)));
+ const st={active:['filling','up'],out_price:['priced out','down'],out_budget:['all in',''],capped:['capped','up']};
+ const rows=es.slice(0,30).map(e=>{const l=st[e.status]||['?',''];
+  return `<div class="bookrow${e.you?' me':''}">
+   <span class="bn">${e.name}</span>
+   <span class="num">${fmt2(e.bud)}</span>
+   <span class="num">${fmt(e.maxP)}</span>
+   <span class="num">${Math.round(e.tok).toLocaleString()}</span>
+   <span class="bst ${l[1]}">${l[0]}</span></div>`}).join('');
+ const more=es.length>30?`<div class="bookrow" style="justify-content:center;color:#6B6B78">… and ${(es.length-30).toLocaleString()} more frens in the book</div>`:'';
+ return rows+more}
+function arrow(k){return BOOKSORT.key===k?(BOOKSORT.dir>0?' ▼':' ▲'):''}
+function bookWin(t){
+ return `<div class="win"><div class="title">📖 the_book.exe — evryones bids (${(t.book.length+(t.yous?t.yous.length:0)).toLocaleString()})<span class="x">×</span></div>
+  <div class="body95" style="padding:8px">
+   <div class="booksort mono">sort by:
+    <button class="btn95" onclick="sortBook('time')">time${arrow('time')}</button>
+    <button class="btn95" onclick="sortBook('max')">max price${arrow('max')}</button>
+    <button class="btn95" onclick="sortBook('cap')">capital${arrow('cap')}</button>
+    <button class="btn95" onclick="sortBook('fill')">fill${arrow('fill')}</button>
+   </div>
+   <div class="bookrow bh"><span class="bn">fren</span><span class="num">capital</span><span class="num">max px</span><span class="num">filled</span><span class="bst">status</span></div>
+   <div class="inset" style="padding:0;max-height:300px;overflow:auto"><div id="lbook">${bookRows(t)}</div></div>
+   <div class="hint" style="text-align:left;margin-top:6px">notice: the $12k whale fill the same speed as the $80 fren. per-capita. is the whole point.</div>
+  </div></div>`}
+function youWin(t){const ys=t.yous||[];
+ if(!ys.length)return '<div class="nm" style="margin-bottom:10px">no bids yet. the ladder await you, fren.</div>';
+ const tok=walletTok(t), spent=ys.reduce((a,p)=>a+p.spent,0);
+ const capPct=Math.min(100,tok/t.capTokens*100);
+ const bidRows=ys.map((p,i)=>{const st=posState(t,p);const l=POSLAB[st];
+  const claim=(st==='panik'||st==='bag')?Math.max(0,p.bud-p.spent):0;
+  return `<div class="win" style="margin-bottom:8px"><div class="title ${l[0]}" style="font-size:11px">bid #${i+1} · ${l[1]}</div>
+   <div class="body95 mono" style="font-size:11px;padding:8px 10px">
+   <div class="dr"><span>coins</span><b>${Math.round(p.tok).toLocaleString()}</b></div>
+   <div class="dr"><span>spent / budget</span><b>${fmt2(p.spent)} / ${fmt2(p.bud)}</b></div>
+   <div class="dr"><span>max price</span><b>${fmt(p.maxP)}</b></div>
+   ${claim>0?`<div class="dr"><span>claimable</span><b class="up">${fmt2(claim)} ← take it anytime</b></div>`:''}
+   </div></div>`}).join('');
+ return `${bidRows}
+ <div class="win" style="margin-bottom:10px"><div class="title">🧾 your walet total (${ys.length} bid${ys.length>1?'s':''} · one equal share)</div>
+  <div class="body95 mono" style="font-size:11px;padding:8px 10px">
+  <div class="dr"><span>total coins</span><b>${Math.round(tok).toLocaleString()} $${t.tk}</b></div>
+  <div class="dr"><span>avg fill price</span><b>${tok>0?fmt(spent/tok):'—'}</b></div>
+  <div class="dr"><span>walet cap used</span><b>${capPct.toFixed(1)}% of ${t.walletCap}% cap</b></div>
+  <div class="hint" style="text-align:left;margin-top:4px">all your bids share ONE per-capita fill (no self-sybil, fren). they fill by whichever bids are still in range.</div>
+  </div></div>`}
+Object.values(T).forEach(t=>{if(t.state==='live')initLadder(t)});
+// restore seed raised after init reset ordering
+T.STONKZ4663.raised=124e4;T.DOGWIF.raised=58e3;T.GMCAT.raised=9200;
+
+/* ================= FORUM ================= */
+const FORUM={state:'icon',unread:0,thread:'general'};
+const ICONIZED=new Set();
+function goTok(tk,ev){ev.preventDefault();ev.stopPropagation();location.hash='#/t/'+tk}
+function iconize(tk,ev){ev.preventDefault();ev.stopPropagation();ICONIZED.add(tk);toast('$'+tk+' sent to desktop. quiet now.');render()}
+function restoreTok(tk){ICONIZED.delete(tk);render()}
+function logX(){document.getElementById('logwin').style.display='none';document.getElementById('logicon').style.display='block'}
+function logOpen(){document.getElementById('logwin').style.display='block';document.getElementById('logicon').style.display='none'}
+function setDockThread(id){FORUM.thread=id;renderDockMsgs();renderDockThreads()}
+const CHATTER=['gm','gm frens','the line go up today i can feel it','who is bidding dogwif rn','wagmi. probably. maybe.','kalm.','my helth bar is full','just aped. no regret. some regret.','this uniform clearing thing actualy slaps','one good trade away frens'];
+let THREADS=[
+ {id:'general',sticky:true,title:'gm general chat — say gm here',author:'mod_kalm',votes:463,time:'always',
+  replies:[{a:'mod_kalm',x:'this is the gm thread. say gm. that is all.'},{a:'trenchRat',x:'gm'},{a:'0xkalm',x:'gm frens. the line await.'},{a:'printDaddy',x:'gm. bidding the genesis rn.'}]},
+ {id:'wifthread',title:'DOGWIF is 3x oversubscrib. we eating good??',author:'trenchRat',votes:128,time:'12m ago',
+  replies:[{a:'trenchRat',x:'the dog has intent AND a 3.2x book. this is not financal advice becuase i cannot spell financal.'},{a:'gmSergeant',x:'i am dug in at 0.05 max. kalm.'},{a:'anon',x:'jeets will jeet. i hold.'}]},
+ {id:'thesis',title:'why uniform clearing kills snipers (smol essay)',author:'0xkalm',votes:96,time:'1h ago',
+  replies:[{a:'0xkalm',x:'every block clears at ONE price. sniper bot pays same as you. speed advantage = gone. conviction advantage = remains. this is the whole magic. the end.'},{a:'oneGoodTrade',x:'smol essay. big brain.'}]},
+ {id:'lore',title:'petition: meme man statue at stonkz HQ',author:'fren2',votes:74,time:'3h ago',
+  replies:[{a:'fren2',x:'he watch over the trenches. he deserve marble.'},{a:'mod_kalm',x:'petition recieved. hq does not exist yet. statue first, hq later.'}]},
+];
+function addThread(title,author){THREADS.splice(1,0,{id:'t'+Date.now(),title,author,votes:1,time:'now',replies:[{a:author,x:title}]});renderDockThreads()}
+function forumOpen(){FORUM.state='dock';FORUM.unread=0;forumShell()}
+function forumMin(){FORUM.state='dock';FORUM.unread=0;
+ if(location.hash.indexOf('#/forum')===0)location.hash='#/';else forumShell()}
+function forumMax(){location.hash='#/forum'}
+function forumX(){FORUM.state='icon';
+ if(location.hash.indexOf('#/forum')===0)location.hash='#/';else forumShell()}
+function forumShell(){
+ const d=document.getElementById('dock');
+ const lr=document.querySelector('.logrow');
+ if(lr)d.style.top=Math.max(8,Math.round(lr.getBoundingClientRect().top))+'px';
+ d.style.display=FORUM.state==='dock'?'block':'none';
+ document.getElementById('deskicon').style.display=FORUM.state==='icon'?'block':'none';
+ const u=document.getElementById('unread');
+ u.style.display=(FORUM.state==='icon'&&FORUM.unread>0)?'inline-block':'none';u.textContent=FORUM.unread;
+ if(FORUM.state==='dock'){renderDockMsgs();renderDockThreads()}}
+function renderDockMsgs(){const el=document.getElementById('dockmsgs');if(!el)return;
+ const g=THREADS.find(t=>t.id===FORUM.thread)||THREADS[0];
+ const h=document.getElementById('dockhead');
+ if(h)h.textContent=(g.sticky?'📌 ':'💬 ')+(g.title.length>32?g.title.slice(0,32)+'…':g.title);
+ el.innerHTML=g.replies.slice(-14).map(r=>`<div><b>${r.a}:</b> ${r.x}</div>`).join('');
+ el.scrollTop=el.scrollHeight}
+function renderDockThreads(){const el=document.getElementById('dockthreads');if(!el)return;
+ el.innerHTML=THREADS.slice(0,5).map(t=>`<div>${t.id===FORUM.thread?'▸':'·'} <span style="cursor:pointer;text-decoration:underline" onclick="setDockThread('${t.id}')">${t.title.slice(0,32)}${t.title.length>32?'…':''}</span></div>`).join('')}
+function postDock(){const i=document.getElementById('dockin');const x=(i.value||'').trim();if(!x)return;
+ const g=THREADS.find(t=>t.id===FORUM.thread)||THREADS[0];
+ g.replies.push({a:'you',x});i.value='';renderDockMsgs()}
+function postReply(id){const i=document.getElementById('replyin');const x=(i.value||'').trim();if(!x){toast('write something first, fren');return}
+ const t=THREADS.find(t=>t.id===id);t.replies.push({a:'you',x});i.value='';render();toast('posted ✓')}
+function upvote(id,ev){ev.stopPropagation();ev.preventDefault();const t=THREADS.find(t=>t.id===id);t.votes++;render()}
+function chatterTick(){const g=THREADS.find(t=>t.id==='general');
+ g.replies.push({a:pick(['trenchRat','0xkalm','gmSergeant','anon','printDaddy','fren2']),x:pick(CHATTER)});
+ if(g.replies.length>40)g.replies.splice(1,1);
+ if(FORUM.state==='dock')renderDockMsgs();
+ else if(FORUM.state==='icon'&&location.hash.indexOf('#/forum')!==0){FORUM.unread++;forumShell()}
+ if(location.hash==='#/forum/general')render()}
+
+function viewForum(){
+ return `<a class="back btn95" href="#/">← back to stonkz</a>
+ <div class="caption" style="font-size:clamp(22px,4vw,32px);text-align:left;margin-bottom:14px">THE FORUM. WHERE FRENS TALK.</div>
+ <div class="win"><div class="title">💬 stonkz_forum.exe — ${THREADS.length} threds · very civil mostly<span class="wbtns"><span class="tbtn" onclick="forumMin()" title="minimize to side">＿</span><span class="x" onclick="forumX()" title="back to desktop">×</span></span></div>
+  <div class="body95" style="padding:8px">
+   <div style="display:flex;gap:6px;margin-bottom:8px">
+    <div class="inset" style="flex:1;padding:6px 8px"><input id="newthread" placeholder="start a new thred... (what is on your mind, fren)" style="border:none;outline:none;width:100%;font-family:'IBM Plex Mono';font-size:12px;background:transparent" onkeydown="if(event.key==='Enter')newThread()"></div>
+    <button class="btn95 go" onclick="newThread()">post thred</button>
+   </div>
+   <div class="inset" style="padding:0">
+    ${THREADS.map(t=>`<div class="thread-row" onclick="location.hash='#/forum/${t.id}'">
+     <div class="vote"><span onclick="upvote('${t.id}',event)">▲</span><br>${t.votes}</div>
+     <div class="grow"><b>${t.sticky?'📌 ':''}${t.title}</b><div class="mono" style="font-size:10px;color:#4A4A56">by ${t.author} · ${t.time}</div></div>
+     <div class="mono" style="font-size:11px;color:#3A3A46">💬 ${t.replies.length}</div>
+    </div>`).join('')}
+   </div>
+  </div></div>`;
+}
+function newThread(){const i=document.getElementById('newthread');const x=(i.value||'').trim();if(!x){toast('thred need words, fren');return}
+ addThread(x,'you');i.value='';render();toast('thred posted ✓ very brave')}
+function viewThread(id){
+ const t=THREADS.find(t=>t.id===id);if(!t)return viewForum();
+ return `<a class="back btn95" href="#/forum">← all threds</a>
+ <div class="win"><div class="title">💬 ${t.sticky?'📌 ':''}${t.title}<span class="wbtns"><span class="tbtn" onclick="forumMin()" title="minimize to side">＿</span><span class="x" onclick="forumX()" title="back to desktop">×</span></span></div>
+  <div class="body95">
+   <div class="mono" style="font-size:10.5px;color:#4A4A56;margin-bottom:8px">by ${t.author} · ${t.time} · ▲ ${t.votes} <span style="cursor:pointer;text-decoration:underline" onclick="upvote('${t.id}',event)">upvote</span></div>
+   ${t.replies.map((r,i)=>`<div class="post"><div class="post-h"><span><b>${r.a}</b>${i===0?' (OP)':''}</span><span>#${i+1}</span></div><div class="post-b">${r.x}</div></div>`).join('')}
+   <div style="display:flex;gap:6px;margin-top:10px">
+    <div class="inset" style="flex:1;padding:6px 8px"><input id="replyin" placeholder="reply to the thred..." style="border:none;outline:none;width:100%;font-family:'IBM Plex Mono';font-size:12px;background:transparent" onkeydown="if(event.key==='Enter')postReply('${t.id}')"></div>
+    <button class="btn95 go" onclick="postReply('${t.id}')">reply</button>
+   </div>
+  </div></div>`;
+}
+const icHTML=t=>t.img?`<div class="coinic"><img src="${t.img}" alt=""></div>`:`<div class="coinic">${t.ic}</div>`;
+const fmtSup=n=>n>=1e9?(n/1e9).toLocaleString(undefined,{maximumFractionDigits:2})+' bilion':(n/1e6).toLocaleString(undefined,{maximumFractionDigits:1})+' milion';
+let PFP_DATA=null;
+function loadPfp(inp){const f=inp.files&&inp.files[0];if(!f)return;const r=new FileReader();
+ r.onload=()=>{PFP_DATA=r.result;const p=document.getElementById('pfp-prev');if(p)p.innerHTML=`<img src="${PFP_DATA}" alt="" style="width:100%;height:100%;object-fit:cover;display:block">`};
+ r.readAsDataURL(f)}
+let EMOJI_SEL='🚀';
+const EMOJIS=['🚀','🐶','😼','🐸','💎','🔔','📈','🦍','🌙','🔥','🧢','🥓','🍖','👑','🤡','🗿','🐳','🦴','🍌','⚡','🎩','🫡','😹','🪙'];
+function togglePicker(){const p=document.getElementById('picker');const show=p.style.display==='none';
+ p.style.display=show?'block':'none';
+ if(show){const g=document.getElementById('pickgrid');
+  g.innerHTML=EMOJIS.map(e=>`<button class="btn95" style="padding:6px 0;font-size:18px" onclick="pickEmoji('${e}')">${e}</button>`).join('')}}
+function pickEmoji(e){EMOJI_SEL=e;
+ const sh=document.getElementById('f-ic-show');if(sh)sh.textContent=e;
+ if(!PFP_DATA){const p=document.getElementById('pfp-prev');if(p)p.textContent=e}
+ document.getElementById('picker').style.display='none'}
+function pfpEmoji(inp){}
+let BIDS={};
+let BAGS=[{tk:'BELL',amt:52000,cost:.064},{tk:'HODLR',amt:210000,cost:.0051}];
+const LEAGUE=[['printDaddy',41200],['0xkalm',28700],['trenchRat',19300],['gmSergeant',12100],['oneGoodTrade',9800]];
+const FEEDS=[t=>`fren aped ${[50,100,250][Math.random()*3|0]} usdg into $${t}. stonkz.`,
+ t=>`$${t} helth bar go up. is good.`,
+ t=>`someone try to snipe $${t}. cannot. same price for all. kalm.`,
+ t=>`$${t} is ${T[t]&&T[t].auctionSupply?Math.round(T[t].sold/T[t].auctionSupply*100)+'%':'?'} sold. wow.`,
+ t=>`fren got early bird badg on $${t} 🐦`];
+
+/* ================= HELPERS ================= */
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2400)}
+function left(e){let s=Math.max(0,(e-Date.now())/1e3|0);const h=s/3600|0,m=(s%3600)/60|0;return h>0?h+'h '+m+'m':String(m).padStart(2,'0')+':'+String(s%60|0).padStart(2,'0')}
+function chart(d,c,h=140){const w=320,mx=Math.max(...d),mn=Math.min(...d),p=10;
+ const pts=d.map((v,i)=>((i/(Math.max(1,d.length-1)))*(w-2*p)+p).toFixed(1)+','+((h-p-((v-mn)/((mx-mn)||1))*(h-2*p))).toFixed(1));
+ const last=pts[pts.length-1].split(',').map(Number);
+ return `<svg class="zig" style="height:${h}px" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+  <polyline points="${pts.join(' ')}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M${last[0]-16} ${last[1]-2} L${last[0]+2} ${last[1]} L${last[0]-3} ${last[1]+15}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
+function spark(d,c){const w=70,h=26,s=d.slice(-24),mx=Math.max(...s),mn=Math.min(...s);
+ const pts=s.map((v,i)=>((i/Math.max(1,s.length-1))*(w-4)+2).toFixed(1)+','+((h-3-((v-mn)/((mx-mn)||1))*(h-6))).toFixed(1));
+ return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts.join(' ')}" stroke="${c}" stroke-width="2.5" fill="none"/></svg>`}
+function pushFeed(msg){const f=document.getElementById('feed');if(!f)return;const d=document.createElement('div');d.textContent=msg;f.appendChild(d);while(f.children.length>1)f.removeChild(f.firstChild)}
+function confetti(){const colors=['#B7F0C6','#FFD87A','#FF8A3C','#fff','#6BF08E'];
+ for(let i=0;i<70;i++){const c=document.createElement('div');c.className='confetti';
+  c.style.left=Math.random()*100+'vw';c.style.background=pick(colors);
+  c.style.animationDuration=(2.2+Math.random()*2.5)+'s';c.style.animationDelay=(Math.random()*0.8)+'s';
+  c.style.transform=`rotate(${Math.random()*360}deg)`;
+  document.body.appendChild(c);setTimeout(()=>c.remove(),6000)}}
+function reconWin(t){return `<div class="win"><div class="title">🔍 recon.exe — is coin ok?<span class="x">×</span></div>
+ <div class="body95">
+  <div class="dr"><span>launch method</span><b>${t.route==='direct'?'⚡ instant (self-priced · '+(t.startMcap===4000?'thinner 🥓':t.startMcap===8000?'thicker 🍖':'$'+(t.startMcap||8000).toLocaleString())+')':'🔨 IPO bookbuild (market-priced)'}</b></div>
+  ${t.route==='ipo'?`<div class="dr"><span>floor mcap</span><b>$${(t.floorMcap||Math.round(t.floor*t.supply)).toLocaleString()}</b></div>
+  <div class="dr"><span>suply in auction</span><b>${t.auctionPct||80}%</b></div>
+  <div class="dr"><span>raised money → pool</span><b>${t.lpPct||80}%</b></div>
+  <div class="dr"><span>max bag per walet</span><b>${t.walletCap||1}% of suply</b></div>
+  <div class="dr"><span>graduation</span><b>raise ${fmtK(t.threshold||((t.floorMcap||5000)*2))} or evryone refunded 100%</b></div>`:''}
+  <div class="dr"><span>dev</span><b class="${t.recon.dev.includes('⚠')?'down':(t.recon.dev.includes('✓')?'up':'')}">${t.recon.dev}</b></div>
+  <div class="dr"><span>token suply</span><b>${fmtSup(t.supply)}</b></div>
+  <div class="dr"><span>top-10 frens hold</span><b class="${t.recon.top10>25?'down':'up'}">${t.recon.top10}%${t.recon.top10>25?' (is a lot. carefull.)':''}</b></div>
+  <div class="dr"><span>snipers / bundles</span><b class="up">0% — cannot. same price for all ✓</b></div>
+  <div class="dr"><span>likwidity at bell</span><b class="up">15% $STONKZ4663 · 85% ${t.pair} · LP burned 🔥</b></div>
+  <div class="dr"><span>if dev run away</span><b class="up">all money come back. gas on dev. kalm ✓</b></div>
+ </div></div>`}
+
+/* ================= VIEWS ================= */
+const WB=t=>`<span class="wbtns"><span class="tbtn" onclick="goTok('${t.tk}',event)" title="open big">□</span><span class="x" onclick="iconize('${t.tk}',event)" title="send to desktop">×</span></span>`;
+function card(t){
+ if(ICONIZED.has(t.tk))return '';
+ if(t.state==='withdrawn')return `<div class="win" style="opacity:.75">
+  <div class="title" style="background:linear-gradient(90deg,#4A4A56,#7D7D7D)">📁 ${t.tk.toLowerCase()}.exe — dev has ran away${WB(t)}</div>
+  <div class="body95"><div class="coinrow">${icHTML(t)}
+   <div class="grow"><div class="tk">$${t.tk} <span class="stamp gone">DEV GONE</span></div><div class="nm">everyone got refund. is ok.</div></div></div></div></div>`;
+ if(t.state==='failed')return `<div class="win" style="opacity:.8">
+  <div class="title" style="background:linear-gradient(90deg,#4A4A56,#7D7D7D)">📁 ${t.tk.toLowerCase()}.exe — did not graduate${WB(t)}</div>
+  <div class="body95"><div class="coinrow">${icHTML(t)}
+   <div class="grow"><div class="tk">$${t.tk} <span class="stamp gone">NO GRADUATE</span></div><div class="nm">book too smol. evryone refunded 100%. kalm.</div></div></div></div></div>`;
+ if(t.state==='live'){const pct=Math.min(100,t.sold/t.auctionSupply*100);
+  return `<div class="win">
+  <div class="title">📁 ${t.tk.toLowerCase()}_ipo.exe — running${WB(t)}</div>
+  <div class="body95">
+   <div class="coinrow">${icHTML(t)}
+    <div class="grow"><div class="tk">$${t.tk} <span class="stamp ${t.gen?'gen':'stonkz'}">${t.gen?'GENESIS':'STONKZ'}</span></div><div class="nm">${t.nm}</div></div>
+    ${spark(t.hist,'#1DB954')}
+    <div><div class="px up">${fmt(t.px)}</div><div class="px" style="font-size:10px;color:#4A4A56">${fmtK(t.raised)} raised</div></div></div>
+   <div class="helthlab" style="margin-top:10px"><span>HELTH BAR (suply sold)</span><span>${pct.toFixed(0)}% · bell in ${left(t.ends)}</span></div>
+   <div class="helth"><i style="width:${pct}%"></i></div>
+  </div></div>`}
+ return `<div class="win">
+  <div class="title">📁 ${t.tk.toLowerCase()}.exe — on the market${WB(t)}</div>
+  <div class="body95"><div class="coinrow">${icHTML(t)}
+   <div class="grow"><div class="tk">$${t.tk} <span class="stamp ${t.chg>=0?'stonkz':'not'}">${t.chg>=0?'STONKZ':'NOT STONKZ'}</span>${t.route==='direct'?' <span class="stamp insta">⚡ INSTANT</span>':''}</div><div class="nm">${t.nm}</div></div>
+   ${spark(t.hist,t.chg>=0?'#1DB954':'#E5484D')}
+   <div><div class="px">${fmt(t.px,4)}</div><div class="px ${t.chg>=0?'up':'down'}" style="font-size:11px">${t.chg>=0?'▲':'▼'} ${Math.abs(t.chg)}%</div></div></div>
+  </div></div>`;
+}
+
+function viewFloor(){
+ const live=Object.values(T).filter(t=>t.state==='live');
+ const listed=Object.values(T).filter(t=>t.state==='listed');
+ const gone=Object.values(T).filter(t=>t.state==='withdrawn'||t.state==='failed');
+ const g=T.STONKZ4663;
+ return `
+ ${ICONIZED.size?`<div class="deskshelf">${[...ICONIZED].map(k=>{const t=T[k];if(!t)return '';
+   return `<div class="deskicon" onclick="restoreTok('${k}')" title="open $${k}"><div class="ig">${t.img?`<img src="${t.img}" alt="">`:t.ic}</div><div class="il">${k.toLowerCase()}.exe</div></div>`}).join('')}</div>`:''}
+ ${g&&g.state==='live'&&!ICONIZED.has('STONKZ4663')?`
+ <div class="win"><div class="title amber">⭐ genesis_auction.exe — the first coin is the site itself${WB(g)}</div>
+  <div class="body95"><div class="grid2" style="margin:0;gap:12px">
+   <div>
+    <div class="coinrow">${icHTML(g)}<div class="grow"><div class="tk">$STONKZ4663 <span class="stamp gen">GENESIS</span></div><div class="nm">${g.nm}</div></div></div>
+    <div class="helthlab" style="margin-top:10px"><span>HELTH BAR (suply sold)</span><span>${Math.min(100,g.sold/g.auctionSupply*100).toFixed(0)}% · bell in ${left(g.ends)}</span></div>
+    <div class="helth"><i style="width:${Math.min(100,g.sold/g.auctionSupply*100)}%"></i></div>
+    <div class="mono" style="font-size:10px;color:#3A3A46;margin-top:6px">raised ${fmtK(g.raised)} / graduate at ${fmtK(g.threshold)} ${g.raised>=g.threshold?'✓':'…'}</div>
+    <button class="btn95 big go" style="margin-top:10px" onclick="location.hash='#/t/STONKZ4663'">JOIN THE FIRST IPO ☝</button>
+   </div>
+   <div style="text-align:center">
+    <div class="radar"><b style="top:24px;left:60px"></b><b style="top:58px;left:30px"></b><b style="top:70px;left:78px"></b><b style="top:40px;left:48px"></b></div>
+    <div class="mono" style="font-size:10px;color:#3A3A46;margin-top:6px">sonar.exe — ${g.bidders.toLocaleString()} frens on the field</div>
+   </div>
+  </div></div></div>`:''}
+ <div class="grid">${live.filter(t=>!t.gen).map(card).join('')}</div>
+ <div class="caption" style="margin:18px 0 10px">— ON THE MARKET —</div>
+ <div class="grid">${listed.map(card).join('')}</div>
+ ${gone.length?`<div class="caption" style="margin:18px 0 10px">— DID NOT MAKE IT —</div><div class="grid">${gone.map(card).join('')}</div>`:''}`;
+}
+
+function viewToken(k){
+ const t=T[k];if(!t)return '<div class="win" style="max-width:460px;margin:0 auto"><div class="title red">⚠ error<span class="x">×</span></div><div class="body95">coin not found. is gone. <a href="#/"><b>← go back</b></a></div></div>';
+ if(t.state==='withdrawn')return viewGone(t);
+ if(t.state==='failed')return viewFailed(t);
+ if(t.state!=='live')return viewListed(t);
+ const pct=Math.min(100,t.sold/t.auctionSupply*100);
+ const gradOk=t.raised>=t.threshold;
+ return `<a class="back btn95" href="#/">← back to stonkz</a>
+ <div class="grid2">
+  <div>
+   <div class="win"><div class="title">🔨 ${t.tk.toLowerCase()}_ipo.exe — LADDER LIVE · bell in <span class="cd" data-e="${t.ends}">${left(t.ends)}</span><span class="x">×</span></div>
+    <div class="body95">
+     <div class="coinrow" style="margin-bottom:8px">${icHTML(t)}
+      <div class="grow"><div class="tk">$${t.tk} <span class="stamp ${t.gen?'gen':'stonkz'}">${t.gen?'GENESIS':'STONKZ'}</span></div><div class="nm">${t.nm}</div></div></div>
+     <div class="bigpx" id="lpx">${fmt(t.px)} ☝</div>
+     <div class="nm" style="margin:2px 0 8px" id="lmeta">${lmetaTxt(t)}</div>
+     <div id="lchart">${ladderChart(t)}</div>
+     <div class="caption" style="font-size:16px">the ladder. it climb where the fuel is.</div>
+     <div class="helthlab" style="margin-top:8px"><span>HELTH BAR (suply sold)</span><span id="lsold">${pct.toFixed(1)}% OF ${Math.round(t.auctionSupply/1e6)}M COINS</span></div>
+     <div class="helth"><i id="lgauge" style="width:${pct}%"></i></div>
+     <div class="dr" style="margin-top:10px"><span>graduation</span><b id="lgrad" class="${gradOk?'up':''}">raised ${fmtK(t.raised)} / need ${fmtK(t.threshold)} ${gradOk?'✓ wil graduate':'… not yet'}</b></div>
+     <div class="dr"><span>floor price (block 0)</span><b>${fmt(t.p0)}</b></div>
+     <div class="dr"><span>next block price</span><b id="lnext">${fmt(t.priceNow)}</b></div>
+     <div class="dr"><span>the finale (last 20%)</span><b id="lfin">${finTxt(t)}</b></div>
+     <div class="dr"><span>settles into</span><b>${t.gen?'100% → usdg pool':'15% $STONKZ4663 · 85% '+t.pair.toLowerCase()}</b></div>
+    </div></div>
+   ${bookWin(t)}
+   ${reconWin(t)}
+  </div>
+  <div>
+   <div id="lyou">${youWin(t)}</div>
+   <div class="win"><div class="title">🪙 ${(t.yous&&t.yous.length)?'place another bid':'place bid'} (is like IPO but fun)<span class="x">×</span></div>
+    <div class="body95">
+     <div class="presets">
+      <button class="btn95" onclick="preset(50)">50</button><button class="btn95" onclick="preset(100)">100</button>
+      <button class="btn95" onclick="preset(250)">250</button><button class="btn95" onclick="preset(500)">500</button>
+     </div>
+     <div class="field95"><span class="lab">budget (usdg, min 10)</span><div class="inset"><input id="bb" type="number" placeholder="250"></div></div>
+     <div class="field95"><span class="lab">max price you wil pay</span><div class="inset"><input id="bm" type="number" step="any" placeholder="${(t.priceNow*2).toPrecision(3)}"></div></div>
+     <button class="btn95 big go" onclick="bid('${t.tk}')">${(t.yous&&t.yous.length)?'PLACE BID #'+(t.yous.length+1)+' ☝':'BUY STONKZ ☝'}</button>
+     <div class="hint">each block: a tranche release at the ladder price, split EQUAL between all bidders.<br>$100 fren fill same speed as $100k whale. min bid 10 + flat fee = walet-splitting cost money.<br>hit your walet cap or your max → you stop, leftover money is claimable. is fair. is stonkz.</div>
+    </div></div>
+   <div class="win"><div class="title">🛠 dev_tools.exe (mockup only)<span class="x">×</span></div>
+    <div class="body95">
+     <button class="btn95 big gold" onclick="settle('${t.tk}')">🔔 ring bell now (end auction early)</button>
+     <div class="hint">ring bell = close the book NOW at the current ladder price.<br>only works if graduation is met — else it would FAIL and refund evryone (we warn you).<br>pools deploy at the print, LP burns 🔥. cannot undo.</div>
+     <button class="btn95 big no" style="margin-top:8px" onclick="devRun('${t.tk}')">🏃 run away (cancel + refund all)</button>
+     <div class="hint">run away = cancel the whole IPO. every fren refunded auto, gas from your bond.<br>part of bond is forfeit + 7 day time-out. shame is forever.</div>
+    </div></div>
+  </div>
+ </div>`;
+}
+
+function viewFailed(t){
+ return `<a class="back btn95" href="#/">← back to stonkz</a>
+ <div class="win" style="max-width:520px;margin:0 auto"><div class="title red">💀 ${t.tk.toLowerCase()}.exe — did not graduate<span class="x">×</span></div>
+  <div class="body95" style="text-align:center">
+   <div style="font-size:60px">🪦</div>
+   <div class="caption" style="color:#101018;-webkit-text-stroke:0;text-shadow:none;font-size:24px">THE BOOK WAS TOO SMOL.<br>EVRYONE GETS REFUND. KALM.</div>
+   <div class="mono" style="font-size:11px;color:#3A3A46;margin:8px 0">graduation threshold not met. contract auto-refunds 100%. dev never touched the money.</div>
+   <div class="dr"><span>raised</span><b>${fmtK(t.raised)}</b></div>
+   <div class="dr"><span>needed to graduate</span><b>${fmtK(t.threshold)}</b></div>
+   <div class="dr"><span>refunded</span><b class="up">100% · automatic</b></div>
+   <button class="btn95 big" style="margin-top:10px" onclick="toast('refund claim: done ✓ (was already automatic. is double ok.)')">claim refund manualy (if paranoid)</button>
+   <button class="btn95 big go" style="margin-top:8px" onclick="location.hash='#/'">← back to the floor</button>
+  </div></div>`;
+}
+
+function viewListed(t){
+ return `<a class="back btn95" href="#/">← back to stonkz</a>
+ <div class="grid2">
+  <div>
+   <div class="win"><div class="title">📈 ${t.tk.toLowerCase()}.exe — market chart<span class="x">×</span></div>
+    <div class="body95">
+     <div class="coinrow" style="margin-bottom:8px">${icHTML(t)}
+      <div class="grow"><div class="tk">$${t.tk} <span class="stamp ${t.chg>=0?'stonkz':'not'}">${t.chg>=0?'STONKZ':'NOT STONKZ'}</span>${t.route==='direct'?' <span class="stamp insta">⚡ INSTANT</span>':''}</div><div class="nm">${t.nm}</div></div></div>
+     <div class="bigpx">${fmt(t.px,4)} <span class="${t.chg>=0?'up':'down'}" style="font-size:15px">${t.chg>=0?'▲':'▼'} ${Math.abs(t.chg)}%</span></div>
+     ${chart(t.hist,t.chg>=0?'#1DB954':'#E5484D')}
+     <div class="dr" style="margin-top:8px"><span>opening print</span><b>${t.print?fmt(t.print):'creator say so'}</b></div>
+     <div class="dr"><span>holders</span><b>${t.bidders.toLocaleString()} frens</b></div>
+    </div></div>
+   ${reconWin(t)}
+  </div>
+  <div class="win"><div class="title">💰 do trade<span class="x">×</span></div>
+   <div class="body95">
+    <div class="presets">
+     <button class="btn95" onclick="quickBuy('${t.tk}',50)">buy 50</button><button class="btn95" onclick="quickBuy('${t.tk}',100)">buy 100</button>
+     <button class="btn95" onclick="quickBuy('${t.tk}',250)">buy 250</button><button class="btn95" onclick="quickBuy('${t.tk}',500)">buy 500</button>
+    </div>
+    <div class="field95"><span class="lab">or type how much (usdg)</span><div class="inset"><input id="tb" type="number" placeholder="100"></div></div>
+    <button class="btn95 big go" onclick="doBuy('${t.tk}')">BUY. STONKZ ☝</button>
+    <button class="btn95 big no" style="margin-top:8px" onclick="doSell('${t.tk}')">SELL. (no judge)</button>
+    <div class="hint">no comission. gas is sponsered. fill in 100 milisecond which is fast<br>your bag apear in <a href="#/me"><b>my stuff</b></a></div>
+   </div></div>
+ </div>`;
+}
+
+function viewGone(t){
+ return `<a class="back btn95" href="#/">← back to stonkz</a>
+ <div class="win" style="max-width:520px;margin:0 auto"><div class="title red">🏃 ${t.tk.toLowerCase()}.exe — dev has ran away<span class="x">×</span></div>
+  <div class="body95" style="text-align:center">
+   <div style="font-size:60px">🏃💨</div>
+   <div class="caption" style="color:#101018;-webkit-text-stroke:0;text-shadow:none;font-size:24px">THE DEV HAS RAN AWAY.<br>BUT IS OK. KALM.</div>
+   <div class="mono" style="font-size:11px;color:#3A3A46;margin:8px 0">every fren was refunded automatic. gas came from dev bond.</div>
+   <div class="dr"><span>refunded</span><b>${fmtK(t.raised)}</b></div>
+   <div class="dr"><span>frens made whole</span><b>${t.bidders.toLocaleString()}</b></div>
+   <div class="dr"><span>dev bond</span><b class="down">part forfeit + 7 day time-out</b></div>
+   <button class="btn95 big" style="margin-top:10px" onclick="toast('refund claim: done ✓ (was already done. is double ok.)')">claim refund manualy (if paranoid)</button>
+   <button class="btn95 big go" style="margin-top:8px" onclick="location.hash='#/'">← back to the floor</button>
+  </div></div>`;
+}
+
+function viewMake(){
+ return `<a class="back btn95" href="#/">← back to stonkz</a>
+ <div class="caption" style="font-size:clamp(22px,4vw,32px);text-align:left;margin-bottom:14px">MAKE COIN. IS EASY. TAKE ONE MINUT.</div>
+ <div class="grid2">
+  <div class="win"><div class="title">🛠 coin_wizard.exe — step 1 of 1 (we made it simple)<span class="x">×</span></div>
+   <div class="body95">
+    <div class="seg" id="route">
+     <button class="btn95 on" data-r="ipo" onclick="pickRoute(this)"><div>🔨 IPO (bookbuild)</div><div class="s-d">market decide the price. is fair. snipers cry.</div></button>
+     <button class="btn95" data-r="direct" onclick="pickRoute(this)"><div>⚡ instant coin</div><div class="s-d">you fund likwidity. live now. frens see a friendly ⚡ INSTANT tag.</div></button>
+    </div>
+    <div class="field95"><span class="lab">coin pfp (upload picture, is best)</span>
+     <div class="inset" style="display:flex;align-items:center;gap:10px">
+      <div class="coinic" id="pfp-prev" style="box-shadow:none">🚀</div>
+      <input type="file" accept="image/*" onchange="loadPfp(this)" style="font-size:11px;font-family:'Rubik'">
+     </div></div>
+    <div class="field95"><span class="lab">or emoji of coin (if no picture)</span>
+     <div class="inset" style="cursor:pointer" onclick="togglePicker()"><span id="f-ic-show" style="font-size:20px;vertical-align:middle">🚀</span> <span class="mono" style="font-size:10px;color:#3A3A46">← click to choose a diferent one</span></div>
+     <div class="win" id="picker" style="display:none;margin:6px 0 0">
+      <div class="title" style="font-size:11px">😀 emoji_picker.exe<span class="x" onclick="togglePicker()">×</span></div>
+      <div class="body95" id="pickgrid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;padding:8px"></div>
+     </div></div>
+    <div class="field95"><span class="lab">ticker</span><div class="inset"><input id="f-tk" placeholder="MOONBOI" maxlength="10" style="text-transform:uppercase"></div></div>
+    <div class="field95"><span class="lab">name of coin</span><div class="inset"><input id="f-nm" placeholder="moon boi industries"></div></div>
+    <div class="field95"><span class="lab">prospectus (one line. what is frens buying)</span><div class="inset"><input id="f-pr" placeholder="to the moon, obviosly."></div></div>
+    <div class="field95"><span class="lab">token suply (how many coins wil exist)</span><div class="inset"><input id="f-sup" type="number" value="1000000000" min="1000000" oninput="updMake()"></div></div>
+    <div class="field95"><span class="lab">85% pool pair</span><div class="inset"><select id="f-pair"><option>USDG</option><option>ETH</option></select></div></div>
+    <div id="f-ipofields">
+      <div class="field95"><span class="lab">auction time</span><div class="inset"><select id="f-dur"><option value="15">15 minut (degen speed)</option><option value="60">1 hour (kalm speed)</option><option value="1440">24 hour (serius coin)</option></select></div></div>
+      <div class="field95"><span class="lab">floor starting mcap — <span id="mcv">$5,000</span> → floor price <span id="fpv">$0.0000050</span>/coin</span>
+       <div class="inset"><input id="f-mc" type="range" min="2000" max="100000" step="1000" value="5000" oninput="updMake()" style="width:100%"></div>
+       <div class="hint" style="margin-top:3px;text-align:left">between $2k (smol brave) and $100k (big serius). market bids UP from here.</div></div>
+      <div class="field95"><span class="lab">how much of suply go in the auction — <span id="apv">80%</span></span>
+       <div class="inset"><input id="f-ap" type="range" min="10" max="100" step="5" value="80" oninput="updMake()" style="width:100%"></div></div>
+      <div class="field95"><span class="lab">of the money raised, how much go into the pool — <span id="lpv">80%</span></span>
+       <div class="inset"><input id="f-lp" type="range" min="50" max="100" step="5" value="80" oninput="updMake()" style="width:100%"></div>
+       <div class="hint" style="margin-top:3px;text-align:left">rest go to you (minus 2% protocol fee). more pool = frens trust more. frens can see this number.</div></div>
+      <div class="field95"><span class="lab">max bag per walet — <span id="wcv">1%</span> of suply</span>
+       <div class="inset"><input id="f-wc" type="range" min="0.1" max="5" step="0.1" value="1" oninput="updMake()" style="width:100%"></div>
+       <div class="hint" style="margin-top:3px;text-align:left">walet hits the cap → it stop filling, leftover money is claimable. whale must split walets and pay fees to go around it. is friction, not magic. we are honest.</div></div>
+    </div>
+    <div id="f-directfields" style="display:none">
+      <div class="field95"><span class="lab">starting thickness (how much likwidity you fund)</span>
+       <div class="seg" id="thick" style="margin-bottom:6px">
+        <button class="btn95 on" data-mc="4000" onclick="pickThick(this)"><div>🥓 thinner</div><div class="s-d">$4k starting mcap. cheap entry. spicy.</div></button>
+        <button class="btn95" data-mc="8000" onclick="pickThick(this)"><div>🍖 thicker</div><div class="s-d">$8k starting mcap. more cushion. kalm.</div></button>
+       </div>
+       <div class="hint" style="text-align:left">starting price: <span id="dstart">$0.0000040</span>/coin. frens see the thickness.</div></div>
+    </div>
+    <button class="btn95 big go" onclick="fileCoin()">MAKE THE COIN ☝</button>
+   </div></div>
+  <div class="win"><div class="title">📜 terms.txt (do read)<span class="x">×</span></div>
+   <div class="body95">
+    <div class="dr"><span>supply</span><b>you choose. default 1 bilion</b></div>
+    <div class="dr"><span>presale</span><b class="up">no. never. is fair launch</b></div>
+    <div class="dr"><span>team bags</span><b class="up">no bags for team</b></div>
+    <div class="dr"><span>likwidity at bell</span><b>15% $STONKZ4663 · 85% your pair</b></div>
+    <div class="dr"><span>LP</span><b>burned 🔥 forever</b></div>
+    <div class="dr"><span>filing fee</span><b>5 usdg + refund bond</b></div>
+    <div class="dr"><span>protocol fee</span><b>2% of money raised</b></div>
+    <div class="dr"><span>graduation</span><b>raise 2× floor mcap or auction fails + evryone auto-refunded</b></div>
+    <div class="dr"><span>release curve</span><b>flat til frens compete → shallow climb (max 40% pre-finale) → last 20% of time distributes 60%+ of suply 🔥</b></div>
+    <div class="dr"><span>anti-sybil</span><b>min bid 10 usdg + flat bid fee · no gas sponsor on bids</b></div>
+    <div class="dr"><span>run away claus</span><b>can cancel before bell. frens auto-refund, gas on your bond. part bond forfeit + 7 day time-out</b></div>
+    <div class="hint" style="text-align:left">instant coin extra: minimum likwidity floor + LP burn is forced + friendly ⚡ INSTANT tag so frens know the launch method. is honest, not scary.</div>
+   </div></div>
+ </div>`;
+}
+
+function viewBell(k){
+ const t=T[k];if(!t)return viewFloor();
+ return `<div class="win" style="max-width:560px;margin:0 auto"><div class="title green">🔔 bell.exe — IS PUBLIC NOW<span class="x">×</span></div>
+  <div class="body95" style="text-align:center">
+   <div class="bellico">🔔</div>
+   <div class="caption" style="color:#101018;-webkit-text-stroke:0;text-shadow:none;font-size:28px">$${t.tk} HAS GONE PUBLIC.<br>CONGARTULATION.</div>
+   <div class="mono" style="font-size:11px;color:#3A3A46;margin:6px 0">${t.route==='ipo'?'bookbuild complete · opening print '+fmt(t.print):'instant coin · self-priced ⚡ · frens can see the launch method'}</div>
+   <div class="dr"><span>${t.route==='ipo'?'raised':'likwidity'}</span><b>${fmtK(t.raised)}</b></div>
+   <div class="dr"><span>auction suply sold</span><b>${t.route==='ipo'&&t.auctionSupply?Math.min(100,t.sold/t.auctionSupply*100).toFixed(0)+'%':'— (instant)'}</b></div>
+   <div class="dr"><span>pools</span><b>${t.gen?t.tk+'/USDG is live':'15% '+t.tk+'/STONKZ4663 + 85% '+t.tk+'/'+t.pair}</b></div>
+   <div class="dr"><span>LP</span><b>burned 🔥</b></div>
+   <div class="flexcard" style="margin-top:12px;text-align:left">
+    <div class="impact" style="font-size:18px">$${t.tk} — OPENING PRINT FLEX</div>
+    <div class="fc-big">${t.print?'+'+((Math.random()*60+20)|0)+'%':'LIVE'}</div>
+    <div class="fc-s">${t.print?'avg fill beat the print. early bird 🐦':'creator priced. we watch. we wait.'}<br>@you · stonkz.meme</div>
+    <svg class="fc-arrow" viewBox="0 0 300 220" fill="none"><path d="M10 200 L110 180 L180 110 L275 45" stroke="#FF8A3C" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/><path d="M225 38 L282 40 L278 96" stroke="#FF8A3C" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   </div>
+   <button class="btn95 big gold" style="margin-top:10px" onclick="toast('flex card copyed 📸 go forth and flex')">📸 share the flex</button>
+   <button class="btn95 big go" style="margin-top:8px" onclick="location.hash='#/t/${t.tk}'">trade on open market →</button>
+  </div></div>`;
+}
+
+function viewMe(){
+ const bids=Object.values(T).filter(t=>t.state==='live'&&t.yous&&t.yous.length).map(t=>{
+  const bs=bidStateL(t);const l=POSLAB[bs];
+  const tok=walletTok(t),spent=t.yous.reduce((a,p)=>a+p.spent,0),bud=t.yous.reduce((a,p)=>a+p.bud,0);
+  return `<a class="win" style="display:block" href="#/t/${t.tk}"><div class="title ${l[0]}">${l[1]} — $${t.tk} (${t.yous.length} bid${t.yous.length>1?'s':''})<span class="x">×</span></div>
+   <div class="body95 mono" style="font-size:11.5px">${Math.round(tok).toLocaleString()} coins filled · spent ${fmt2(spent)} / ${fmt2(bud)} · bell in ${left(t.ends)}</div></a>`}).join('');
+ let total=0;
+ const bags=BAGS.map(h=>{const t=T[h.tk];if(!t)return '';const val=h.amt*t.px;total+=val;const pnl=(t.px-h.cost)/h.cost*100;
+  return `<a class="win" style="display:block" href="#/t/${h.tk}"><div class="title">💼 ${h.tk.toLowerCase()}_bag.zip<span class="x">×</span></div>
+   <div class="body95"><div class="coinrow">${icHTML(t)}
+    <div class="grow"><div class="tk">$${h.tk} <span class="stamp ${pnl>=0?'stonkz':'not'}">${pnl>=0?'STONKZ':'NOT STONKZ'}</span></div><div class="nm">${h.amt.toLocaleString()} coins · got at ${fmt(h.cost)}</div></div>
+    <div><div class="px">${fmtK(val)}</div><div class="px ${pnl>=0?'up':'down'}" style="font-size:11px">${pnl>=0?'+':''}${pnl.toFixed(0)}%</div></div></div></div></a>`}).join('');
+ const best=BAGS.map(h=>({h,t:T[h.tk]})).filter(x=>x.t).sort((a,b)=>((b.t.px-b.h.cost)/b.h.cost)-((a.t.px-a.h.cost)/a.h.cost))[0];
+ const bestPnl=best?((best.t.px-best.h.cost)/best.h.cost*100):0;
+ const rank=total>5e4?'STONKZ LORD 👑':total>1e4?'BIG FREN 🦍':'SMOL FREN 🐣';
+ return `<a class="back btn95" href="#/">← back to stonkz</a>
+ <div class="caption" style="font-size:clamp(22px,4vw,32px);text-align:left;margin-bottom:14px">MY STUFF. THE BAGS. THE GLORY.</div>
+ <div class="grid2">
+  <div>
+   <div class="caption" style="font-size:16px;text-align:left;margin:0 0 8px">— live bids —</div>
+   ${bids||'<div class="win"><div class="body95 nm">no bids yet. the book is waiting for you, fren.</div></div>'}
+   <div class="caption" style="font-size:16px;text-align:left;margin:12px 0 8px">— the bags —</div>
+   ${bags||'<div class="win"><div class="body95 nm">no bags. very light. very fast.</div></div>'}
+  </div>
+  <div>
+   <div class="win"><div class="title gold" style="background:linear-gradient(90deg,#7A4E00,#E8B54A)">🏆 leage_of_underwriters.exe — season 1<span class="x">×</span></div>
+    <div class="body95">
+     <div class="dr"><span>your rank</span><b>${rank} · bags worth ${fmtK(total)}</b></div>
+     ${LEAGUE.map((l,i)=>`<div class="dr"><span>${i+1}. ${l[0]}</span><b class="up">+${fmtK(l[1])}</b></div>`).join('')}
+     <div class="hint">seson points may become $STONKZ4663 airdrop. may. we not promis. kalm.</div>
+    </div></div>
+   <div class="win"><div class="title">📸 flex_card_maker.exe<span class="x">×</span></div>
+    <div class="body95">
+     ${best?`<div class="flexcard">
+      <div class="impact" style="font-size:18px">$${best.h.tk} — BAG FLEX</div>
+      <div class="fc-big">${bestPnl>=0?'+':''}${bestPnl.toFixed(0)}%</div>
+      <div class="fc-s">got at ${fmt(best.h.cost)} · now ${fmt(best.t.px)}<br>@you · certified fren · stonkz.meme</div>
+      <svg class="fc-arrow" viewBox="0 0 300 220" fill="none"><path d="M10 200 L110 180 L180 110 L275 45" stroke="#FF8A3C" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/><path d="M225 38 L282 40 L278 96" stroke="#FF8A3C" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/></svg>
+     </div>
+     <button class="btn95 big gold" style="margin-top:10px" onclick="toast('flex card copyed 📸 spred the word')">📸 copy the flex</button>`:'<div class="nm">get a bag first. then we flex. is the natural order.</div>'}
+    </div></div>
+  </div>
+ </div>`;
+}
+
+/* ================= ACTIONS ================= */
+function preset(v){const e=document.getElementById('bb');if(e)e.value=v}
+function pickRoute(btn){document.querySelectorAll('#route .btn95').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+ const ipo=btn.dataset.r==='ipo';
+ document.getElementById('f-ipofields').style.display=ipo?'block':'none';
+ document.getElementById('f-directfields').style.display=ipo?'none':'block';updMake()}
+function pickThick(btn){document.querySelectorAll('#thick .btn95').forEach(b=>b.classList.remove('on'));btn.classList.add('on');updMake()}
+function fpx(mc,sup){const p=mc/sup;return '$'+(p<0.001?p.toFixed(8):p.toFixed(5))}
+function updMake(){
+ const supEl=document.getElementById('f-sup');if(!supEl)return;
+ const sup=Math.max(1e6,+supEl.value||1e9);
+ const mcEl=document.getElementById('f-mc');
+ if(mcEl){const mc=+mcEl.value;
+  document.getElementById('mcv').textContent='$'+mc.toLocaleString();
+  document.getElementById('fpv').textContent=fpx(mc,sup);
+  document.getElementById('apv').textContent=document.getElementById('f-ap').value+'%';
+  document.getElementById('lpv').textContent=document.getElementById('f-lp').value+'%';
+  document.getElementById('wcv').textContent=document.getElementById('f-wc').value+'%';}
+ const th=document.querySelector('#thick .btn95.on');
+ if(th)document.getElementById('dstart').textContent=fpx(+th.dataset.mc,sup);}
+function bid(k){const t=T[k];
+ const bud=+document.getElementById('bb').value,max=+document.getElementById('bm').value;
+ if(!bud||!max){toast('need budget and max price, fren');return}
+ if(bud<10){toast('minimum bid is 10 usdg. is anti-sybil, fren.');return}
+ if(max<t.priceNow){toast('your max ('+fmt(max)+') is below the ladder ('+fmt(t.priceNow)+'). you would fill nothing. raise it.');return}
+ t.yous=t.yous||[];
+ if(!t.yous.length)t.bidders++;
+ t.yous.push({n:1,bud,spent:0,tok:0,maxP:max,status:'active',blk:t.blockN});
+ BIDS[k]={count:t.yous.length};
+ document.getElementById('bb').value='';document.getElementById('bm').value='';
+ pushFeed(`you placed bid #${t.yous.length} on $${k}. equal fill, evry block. brave.`);
+ toast('bid #'+t.yous.length+' deployed ⚔ your bids share one equal fill. kalm.');render()}
+function quickBuy(k,v){const t=T[k];const amt=v/t.px;
+ const ex=BAGS.find(h=>h.tk===k);
+ if(ex){ex.cost=(ex.cost*ex.amt+v)/(ex.amt+amt);ex.amt+=amt}else BAGS.push({tk:k,amt,cost:t.px});
+ pushFeed(`you buyed ${v} usdg of $${k}. stonkz.`);toast(`buyed ${v} usdg of $${k} ✓ is in your bags`)}
+function doBuy(k){const v=+document.getElementById('tb').value||100;quickBuy(k,v)}
+function doSell(k){const i=BAGS.findIndex(h=>h.tk===k);
+ if(i<0){toast('you have no bag of this coin, fren');return}
+ BAGS.splice(i,1);pushFeed(`you selled the $${k} bag. we dont judge. mostly.`);toast('selled ✓ bag is gone. lighter now.')}
+function settle(k){const t=T[k];
+ if(t.route==='ipo'&&t.threshold&&t.raised<t.threshold){
+  if(!confirm(`the book is below graduation (${fmtK(t.raised)} / ${fmtK(t.threshold)}).\n\nringing now = auction FAILS and evryone is refunded 100%. still ring?`))return;
+  t._s=1;failLadder(t,'dev rang under threshold');location.hash='#/t/'+k;return}
+ t._s=1;
+ if(t.route==='ipo'&&t.auctionSupply){settleLadder(t,'dev rang early')}
+ else{t.state='listed';t.print=t.px;t.chg=0;
+  pushFeed(`🔔 $${k} bell has rang. print ${fmt(t.px)}. congartulation.`);confetti();location.hash='#/bell/'+k}}
+function devRun(k){const t=T[k];
+ if(!confirm(`run away from $${k}?\n\nall ${t.bidders.toLocaleString()} frens get refund automatic (${fmtK(t.raised)}). gas from your bond. part of bond forfeit. 7 day time-out. shame is forever.`))return;
+ t.state='withdrawn';delete BIDS[k];t.yous=[];
+ pushFeed(`🏃 dev of $${k} has ran away. all frens refunded. kalm.`);toast('🏃 you ran. frens are refunded. shame acquired.');location.hash='#/t/'+k}
+function fileCoin(){
+ const ic=EMOJI_SEL||'🚀';
+ const tk=(document.getElementById('f-tk').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+ const nm=document.getElementById('f-nm').value||'untitled industries';
+ const pr=document.getElementById('f-pr').value||'no prospectus. much mystery.';
+ const pair=document.getElementById('f-pair').value;
+ const route=document.querySelector('#route .btn95.on').dataset.r;
+ if(!tk){toast('coin need a ticker, fren');return}
+ if(T[tk]){toast('ticker is taken. tickers are uniqe on stonkz.');return}
+ const sup=Math.max(1e6,+document.getElementById('f-sup').value||1e9);
+ if(route==='ipo'){
+  const mins=+document.getElementById('f-dur').value;
+  const mc=Math.min(1e5,Math.max(2e3,+document.getElementById('f-mc').value||5e3));
+  const ap=+document.getElementById('f-ap').value||80, lp=+document.getElementById('f-lp').value||80;
+  const wc=+document.getElementById('f-wc').value||1;
+  const floor=mc/sup;
+  T[tk]={tk,nm:pr,ic,img:PFP_DATA,supply:sup,state:'live',route,pair,floor,px:floor,floorMcap:mc,threshold:mc*2,auctionPct:ap,lpPct:lp,walletCap:wc,raised:0,bidders:0,dur:mins*6e4,ends:Date.now()+mins*6e4,hist:[floor,floor],recon:{dev:'bonded ✓',top10:0,age:'now'}};
+  initLadder(T[tk]);
+  addThread('new coin $'+tk+'. bookbuild is open. discus.','you');
+  pushFeed(`new coin $${tk} has been maked. the book is open.`);confetti();toast('coin maked ✓ your bookbuild is LIVE');location.hash='#/t/'+tk;
+ }else{
+  const th=document.querySelector('#thick .btn95.on');const mc=+th.dataset.mc;
+  const px=mc/sup;
+  T[tk]={tk,nm:pr,ic,img:PFP_DATA,supply:sup,state:'listed',route,pair,px,chg:0,print:null,startMcap:mc,raised:mc,ov:null,bidders:1,hist:[px,px],recon:{dev:'self-priced ⚡',top10:0,age:'now'}};
+  addThread('instant coin $'+tk+' just apeared ('+(mc===4000?'thinner 🥓':'thicker 🍖')+'). discus.','you');
+  pushFeed(`instant coin $${tk} apeared. ⚡ instant tag applied. frens are informed.`);confetti();toast('instant coin is LIVE ⚡ frens can see the launch method');location.hash='#/bell/'+tk;
+ }}
+
+/* ================= SIM ================= */
+setInterval(()=>{
+ Object.values(T).forEach(t=>{if(t.state==='live')stepLadder(t)});
+ const m=location.hash.match(/^#\/t\/(\w+)/);
+ if(m&&T[m[1]]&&T[m[1]].state==='live'){const t=T[m[1]];const e=document.getElementById('lpx');
+  if(e){e.textContent=fmt(t.px)+' ☝';e.classList.remove('flash');void e.offsetWidth;e.classList.add('flash');
+   const pct=Math.min(100,t.sold/t.auctionSupply*100), gradOk=t.raised>=t.threshold;
+   document.getElementById('lmeta').textContent=lmetaTxt(t);
+   const lf=document.getElementById('lfin');if(lf)lf.innerHTML=finTxt(t);
+   document.getElementById('lchart').innerHTML=ladderChart(t);
+   document.getElementById('lsold').textContent=pct.toFixed(1)+'% OF '+Math.round(t.auctionSupply/1e6)+'M COINS';
+   const g=document.getElementById('lgauge');if(g)g.style.width=pct+'%';
+   const gr=document.getElementById('lgrad');if(gr){gr.textContent=`raised ${fmtK(t.raised)} / need ${fmtK(t.threshold)} ${gradOk?'✓ wil graduate':'… not yet'}`;gr.className=gradOk?'up':''}
+   const nx=document.getElementById('lnext');if(nx)nx.textContent=fmt(t.priceNow);
+   const ly=document.getElementById('lyou');if(ly)ly.innerHTML=youWin(t);
+   refreshBook();}}
+ document.querySelectorAll('.cd').forEach(el=>el.textContent=left(+el.dataset.e));
+ if(Math.random()<.6){const live=Object.values(T).filter(t=>t.state==='live');if(live.length)pushFeed(pick(FEEDS)(pick(live).tk))}
+ tapeR();
+},1300);
+function tapeR(){const el=document.getElementById('tape');
+ const s=Object.values(T).filter(t=>t.state!=='withdrawn'&&t.state!=='failed').map(t=>t.state==='live'
+  ?`<span><b>$${t.tk}</b> ${fmt(t.px)} <b class="up">☝ LADDER ${Math.min(100,t.sold/t.auctionSupply*100).toFixed(0)}% SOLD</b></span>`
+  :`<span><b>$${t.tk}</b> ${fmt(t.px)} <b class="${t.chg>=0?'up':'down'}">${t.chg>=0?'☝ STONKZ':'👇 NOT STONKZ'}</b></span>`).join('');
+ el.innerHTML=s+s}
+
+/* ================= ROUTER ================= */
+function render(){const h=location.hash||'#/';const app=document.getElementById('app');let m;
+ if(h==='#/make'){PFP_DATA=null;EMOJI_SEL='🚀';app.innerHTML=viewMake();}
+ else if(h==='#/me')app.innerHTML=viewMe();
+ else if(h==='#/forum'){FORUM.state='page';FORUM.unread=0;app.innerHTML=viewForum();}
+ else if(m=h.match(/^#\/forum\/(\w+)/)){FORUM.state='page';FORUM.unread=0;app.innerHTML=viewThread(m[1]);}
+ else if(m=h.match(/^#\/bell\/(\w+)/))app.innerHTML=viewBell(m[1]);
+ else if(m=h.match(/^#\/t\/(\w+)/))app.innerHTML=viewToken(m[1]);
+ else app.innerHTML=viewFloor();
+ if(h.indexOf('#/forum')!==0&&FORUM.state==='page')FORUM.state='icon';
+ forumShell();
+ window.scrollTo(0,0)}
+window.addEventListener('hashchange',render);tapeR();render();forumShell();
+pushFeed('welcom to stonkz. the line await you.');
+setInterval(()=>{if(Math.random()<.3)chatterTick()},2600);
+</script>
+</body>
+</html>

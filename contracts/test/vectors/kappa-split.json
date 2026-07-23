@@ -1,0 +1,196 @@
+{
+  "name": "kappa-split",
+  "params": {
+    "blocks": 5,
+    "supply": "1000000000000000000000000000",
+    "floorMcap": "5000000000000000000000",
+    "threshold": "0",
+    "baseStepBps": 20,
+    "walletCapBps": 10000,
+    "sizeBonusBps": 0,
+    "lpShareBps": 8000,
+    "holdbackBps": 0,
+    "kappaHundredths": 130
+  },
+  "derived": {
+    "floor": "5000000000000",
+    "launchSupply": "1000000000000000000000000000",
+    "auctionSupply": "619047619047618964218707968",
+    "reserve": "380952380952381049068847104",
+    "auctPct": "61904761904761905152",
+    "alpha": "0",
+    "lpShare": "800000000000000000",
+    "weights": [
+      "40000000000000000",
+      "80000000000000000",
+      "120000000000000016",
+      "160000000000000000",
+      "600000000000000000"
+    ]
+  },
+  "bids": [
+    {
+      "name": "A",
+      "positions": [
+        {
+          "budget": "10000000000000000000",
+          "maxPrice": "1000000000000000000000000000",
+          "spent": "10000000000000000000",
+          "tokens": "1999999999999999698010112",
+          "status": "out_budget"
+        }
+      ]
+    },
+    {
+      "name": "B",
+      "positions": [
+        {
+          "budget": "10000000000000000000",
+          "maxPrice": "1000000000000000000000000000",
+          "spent": "10000000000000000000",
+          "tokens": "1999999999999999698010112",
+          "status": "out_budget"
+        }
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "block": 1,
+      "price": "5000000000000",
+      "offered": "24761904761904761489326080",
+      "sold": "4000000000000000000000000",
+      "fills": {
+        "A": "1999999999999999698010112",
+        "B": "1999999999999999698010112"
+      },
+      "statuses": {
+        "A": [
+          "active"
+        ],
+        "B": [
+          "active"
+        ]
+      },
+      "raised": "20000000000000000000",
+      "auctionSold": "4000000000000000000000000",
+      "extraSold": "0",
+      "reserveRem": "380952380952381049068847104",
+      "competition": true,
+      "done": false,
+      "graduated": null
+    },
+    {
+      "block": 2,
+      "price": "5000000000000",
+      "offered": "51253968253968257940193280",
+      "sold": "0",
+      "fills": {
+        "A": "0",
+        "B": "0"
+      },
+      "statuses": {
+        "A": [
+          "out_budget"
+        ],
+        "B": [
+          "out_budget"
+        ]
+      },
+      "raised": "20000000000000000000",
+      "auctionSold": "4000000000000000000000000",
+      "extraSold": "0",
+      "reserveRem": "380952380952381049068847104",
+      "competition": true,
+      "done": false,
+      "graduated": null
+    },
+    {
+      "block": 3,
+      "price": "5000000000000",
+      "offered": "83870129870129875067600896",
+      "sold": "0",
+      "fills": {
+        "A": "0",
+        "B": "0"
+      },
+      "statuses": {
+        "A": [
+          "out_budget"
+        ],
+        "B": [
+          "out_budget"
+        ]
+      },
+      "raised": "20000000000000000000",
+      "auctionSold": "4000000000000000000000000",
+      "extraSold": "0",
+      "reserveRem": "380952380952381049068847104",
+      "competition": true,
+      "done": false,
+      "graduated": null
+    },
+    {
+      "block": 4,
+      "price": "5000000000000",
+      "offered": "129483709273182959290023936",
+      "sold": "0",
+      "fills": {
+        "A": "0",
+        "B": "0"
+      },
+      "statuses": {
+        "A": [
+          "out_budget"
+        ],
+        "B": [
+          "out_budget"
+        ]
+      },
+      "raised": "20000000000000000000",
+      "auctionSold": "4000000000000000000000000",
+      "extraSold": "0",
+      "reserveRem": "380952380952381049068847104",
+      "competition": true,
+      "done": false,
+      "graduated": null
+    },
+    {
+      "block": 5,
+      "price": "5000000000000",
+      "offered": "615047619047618992203104256",
+      "sold": "0",
+      "fills": {
+        "A": "0",
+        "B": "0"
+      },
+      "statuses": {
+        "A": [
+          "out_budget"
+        ],
+        "B": [
+          "out_budget"
+        ]
+      },
+      "raised": "20000000000000000000",
+      "auctionSold": "4000000000000000000000000",
+      "extraSold": "0",
+      "reserveRem": "380952380952381049068847104",
+      "competition": true,
+      "done": true,
+      "graduated": true
+    }
+  ],
+  "final": {
+    "sold": "4000000000000000000000000",
+    "raised": "20000000000000000000",
+    "price": "5000000000000",
+    "lastSoldPrice": "5000000000000",
+    "extraSold": "0",
+    "auctionSold": "4000000000000000000000000",
+    "reserveRem": "380952380952381049068847104",
+    "done": true,
+    "graduated": true,
+    "block": 5
+  }
+}

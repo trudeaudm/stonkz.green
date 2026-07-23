@@ -1,0 +1,38 @@
+# STONKZ — project rules
+
+You are building STONKZ (stonkz.meme): a token launchpad on Robinhood Chain
+(Arbitrum-based L2, ~100ms blocks, ERC-4337, Uniswap v4 settlement venue).
+Solo founder + you. Trust is the product: the competitor (Noxa) took $12M in
+fees and went dark; our positioning is "the launchpad that can't run away
+with your money."
+
+## Read order (before writing any code)
+1. docs/mechanism-spec.md        — THE mechanism. Formulas are final.
+2. reference/engine.test.js      — 19 locked behaviors (run: node reference/engine.test.js)
+3. docs/launch-plan.md           — business context, decisions log, security ladder
+
+## Hard rules
+- NEVER change mechanism math without asking. The spec was designed and
+  simulator-validated over many sessions; formulas (κ̂ split, guard headroom,
+  weight pacing, gate, size tilt α) are decisions, not suggestions.
+- Every Solidity rule must be DIFFERENTIALLY TESTED against reference/engine.js.
+  If Solidity and the reference disagree, the reference wins until the human
+  rules otherwise.
+- The 10 invariants in spec §9 are non-negotiable. New code paths must not
+  weaken them; add invariant tests before features.
+- All mechanism fractions are of LAUNCH supply; all economics in mcap/$ terms
+  (units principle, spec §0). No token-count-dependent logic.
+- 100ms blocks: no per-block iteration on-chain. Lazy O(1) accumulator
+  accounting only (masterchef-style, exits bucketed at price ticks).
+- Never sponsor gas on bids. Min bid + flat fee stay.
+- Security posture: guarded launch caps, immutable contracts, admin to hardened
+  keys at construction, deployer ends powerless. Do not add upgradeability.
+- Regression-lock the failure modes listed in contracts/test/StonkzAuction.t.sol
+  section C — each was found the hard way.
+
+## Style
+- Solidity 0.8.26, via-ir, NatSpec references spec sections (e.g. "spec §6").
+- Frontend voice: memeworld/win95, deliberate misspellings ("likwidity",
+  "is not financal advice becuase we cannot spell financal") — see
+  reference/memeworld-mockup.html. Never correct the misspellings.
+- Ticker: $STONKZ4663. Domain: stonkz.meme (stonkz.green redirects).

@@ -1,0 +1,432 @@
+{
+  "name": "frozen-book-thaw",
+  "params": {
+    "blocks": 10,
+    "supply": "100000000000000000000",
+    "floorMcap": "5000000000000000000000",
+    "threshold": "0",
+    "baseStepBps": 5000,
+    "walletCapBps": 10000,
+    "sizeBonusBps": 0,
+    "lpShareBps": 0,
+    "holdbackBps": 0,
+    "kappaHundredths": 130
+  },
+  "derived": {
+    "floor": "50000000000000000000",
+    "launchSupply": "100000000000000000000",
+    "auctionSupply": "100000000000000000000",
+    "reserve": "0",
+    "auctPct": "100000000000000000000",
+    "alpha": "0",
+    "lpShare": "0",
+    "weights": [
+      "11111111111111112",
+      "22222222222222224",
+      "33333333333333340",
+      "44444444444444448",
+      "55555555555555552",
+      "66666666666666680",
+      "77777777777777776",
+      "88888888888888896",
+      "88888888888888864",
+      "511111111111111040"
+    ]
+  },
+  "actions": [
+    {
+      "at": 0,
+      "bid": {
+        "name": "A",
+        "budget": "500000000000000000000",
+        "maxPrice": "50500000000000000000"
+      }
+    },
+    {
+      "at": 0,
+      "bid": {
+        "name": "B",
+        "budget": "500000000000000000000",
+        "maxPrice": "50500000000000000000"
+      }
+    },
+    {
+      "at": 4,
+      "bid": {
+        "name": "C",
+        "budget": "5000000000000000000000",
+        "maxPrice": "1000000000000000000000000000"
+      }
+    },
+    {
+      "at": 4,
+      "bid": {
+        "name": "D",
+        "budget": "5000000000000000000000",
+        "maxPrice": "1000000000000000000000000000"
+      }
+    }
+  ],
+  "bids": [
+    {
+      "name": "A",
+      "positions": [
+        {
+          "budget": "500000000000000000000",
+          "maxPrice": "50500000000000000000",
+          "spent": "27777777777777778688",
+          "tokens": "555555555555555584",
+          "status": "out_price"
+        }
+      ]
+    },
+    {
+      "name": "B",
+      "positions": [
+        {
+          "budget": "500000000000000000000",
+          "maxPrice": "50500000000000000000",
+          "spent": "27777777777777778688",
+          "tokens": "555555555555555584",
+          "status": "out_price"
+        }
+      ]
+    },
+    {
+      "name": "C",
+      "positions": [
+        {
+          "budget": "5000000000000000000000",
+          "maxPrice": "1000000000000000000000000000",
+          "spent": "5000000000000000000000",
+          "tokens": "21877857796067672064",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "name": "D",
+      "positions": [
+        {
+          "budget": "5000000000000000000000",
+          "maxPrice": "1000000000000000000000000000",
+          "spent": "5000000000000000000000",
+          "tokens": "21877857796067672064",
+          "status": "active"
+        }
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "block": 1,
+      "price": "50000000000000000000",
+      "offered": "1111111111111111168",
+      "sold": "1111111111111111168",
+      "fills": {
+        "A": "555555555555555584",
+        "B": "555555555555555584"
+      },
+      "statuses": {
+        "A": [
+          "active"
+        ],
+        "B": [
+          "active"
+        ]
+      },
+      "raised": "55555555555555557376",
+      "auctionSold": "1111111111111111168",
+      "extraSold": "0",
+      "reserveRem": "0",
+      "competition": true,
+      "done": false,
+      "graduated": null
+    },
+    {
+      "block": 2,
+      "price": "75000000000000000000",
+      "offered": "2222222222222222336",
+      "sold": "0",
+      "fills": {
+        "A": "0",
+        "B": "0"
+      },
+      "statuses": {
+        "A": [
+          "out_price"
+        ],
+        "B": [
+          "out_price"
+        ]
+      },
+      "raised": "55555555555555557376",
+      "auctionSold": "1111111111111111168",
+      "extraSold": "0",
+      "reserveRem": "0",
+      "competition": true,
+      "done": false,
+      "graduated": null
+    },
+    {
+      "block": 3,
+      "price": "75000000000000000000",
+      "offered": "3409961685823755776",
+      "sold": "0",
+      "fills": {
+        "A": "0",
+        "B": "0"
+      },
+      "statuses": {
+        "A": [
+          "out_price"
+        ],
+        "B": [
+          "out_price"
+        ]
+      },
+      "raised": "55555555555555557376",
+      "auctionSold": "1111111111111111168",
+      "extraSold": "0",
+      "reserveRem": "0",
+      "competition": true,
+      "done": false,
+      "graduated": null
+    },
+    {
+      "block": 4,
+      "price": "75000000000000000000",
+      "offered": "4708994708994708480",
+      "sold": "0",
+      "fills": {
+        "A": "0",
+        "B": "0"
+      },
+      "statuses": {
+        "A": [
+          "out_price"
+        ],
+        "B": [
+          "out_price"
+        ]
+      },
+      "raised": "55555555555555557376",
+      "auctionSold": "1111111111111111168",
+      "extraSold": "0",
+      "reserveRem": "0",
+      "competition": true,
+      "done": false,
+      "graduated": null
+    },
+    {
+      "block": 5,
+      "price": "75000000000000000000",
+      "offered": "6180555555555555328",
+      "sold": "6180555555555555328",
+      "fills": {
+        "A": "0",
+        "B": "0",
+        "C": "3090277777777777664",
+        "D": "3090277777777777664"
+      },
+      "statuses": {
+        "A": [
+          "out_price"
+        ],
+        "B": [
+          "out_price"
+        ],
+        "C": [
+          "active"
+        ],
+        "D": [
+          "active"
+        ]
+      },
+      "raised": "519097222222222196736",
+      "auctionSold": "7291666666666665984",
+      "extraSold": "0",
+      "reserveRem": "0",
+      "competition": true,
+      "done": false,
+      "graduated": null
+    },
+    {
+      "block": 6,
+      "price": "112500000000000000000",
+      "offered": "7416666666666668032",
+      "sold": "7416666666666668032",
+      "fills": {
+        "A": "0",
+        "B": "0",
+        "C": "3708333333333334016",
+        "D": "3708333333333334016"
+      },
+      "statuses": {
+        "A": [
+          "out_price"
+        ],
+        "B": [
+          "out_price"
+        ],
+        "C": [
+          "active"
+        ],
+        "D": [
+          "active"
+        ]
+      },
+      "raised": "1353472222222222098432",
+      "auctionSold": "14708333333333334016",
+      "extraSold": "0",
+      "reserveRem": "0",
+      "competition": true,
+      "done": false,
+      "graduated": null
+    },
+    {
+      "block": 7,
+      "price": "168750000000000000000",
+      "offered": "8652777777777780736",
+      "sold": "8652777777777780736",
+      "fills": {
+        "A": "0",
+        "B": "0",
+        "C": "4326388888888890368",
+        "D": "4326388888888890368"
+      },
+      "statuses": {
+        "A": [
+          "out_price"
+        ],
+        "B": [
+          "out_price"
+        ],
+        "C": [
+          "active"
+        ],
+        "D": [
+          "active"
+        ]
+      },
+      "raised": "2813628472222222385152",
+      "auctionSold": "23361111111111114752",
+      "extraSold": "0",
+      "reserveRem": "0",
+      "competition": true,
+      "done": false,
+      "graduated": null
+    },
+    {
+      "block": 8,
+      "price": "253125000000000000000",
+      "offered": "9888888888888889344",
+      "sold": "9888888888888889344",
+      "fills": {
+        "A": "0",
+        "B": "0",
+        "C": "4944444444444444672",
+        "D": "4944444444444444672"
+      },
+      "statuses": {
+        "A": [
+          "out_price"
+        ],
+        "B": [
+          "out_price"
+        ],
+        "C": [
+          "active"
+        ],
+        "D": [
+          "active"
+        ]
+      },
+      "raised": "5316753472222222352384",
+      "auctionSold": "33250000000000000000",
+      "extraSold": "0",
+      "reserveRem": "0",
+      "competition": true,
+      "done": false,
+      "graduated": null
+    },
+    {
+      "block": 9,
+      "price": "379687500000000016384",
+      "offered": "9888888888888887296",
+      "sold": "9888888888888887296",
+      "fills": {
+        "A": "0",
+        "B": "0",
+        "C": "4944444444444442624",
+        "D": "4944444444444442624"
+      },
+      "statuses": {
+        "A": [
+          "out_price"
+        ],
+        "B": [
+          "out_price"
+        ],
+        "C": [
+          "active"
+        ],
+        "D": [
+          "active"
+        ]
+      },
+      "raised": "9071440972222222565376",
+      "auctionSold": "43138888888888885248",
+      "extraSold": "0",
+      "reserveRem": "0",
+      "competition": true,
+      "done": false,
+      "graduated": null
+    },
+    {
+      "block": 10,
+      "price": "569531249999999991808",
+      "offered": "56861111111111114752",
+      "sold": "1727937814357566976",
+      "fills": {
+        "A": "0",
+        "B": "0",
+        "C": "863968907178783488",
+        "D": "863968907178783488"
+      },
+      "statuses": {
+        "A": [
+          "out_price"
+        ],
+        "B": [
+          "out_price"
+        ],
+        "C": [
+          "active"
+        ],
+        "D": [
+          "active"
+        ]
+      },
+      "raised": "10055555555555555672064",
+      "auctionSold": "44866826703246450688",
+      "extraSold": "0",
+      "reserveRem": "0",
+      "competition": true,
+      "done": true,
+      "graduated": true
+    }
+  ],
+  "final": {
+    "sold": "44866826703246450688",
+    "raised": "10055555555555555672064",
+    "price": "569531249999999991808",
+    "lastSoldPrice": "569531249999999991808",
+    "extraSold": "0",
+    "auctionSold": "44866826703246450688",
+    "reserveRem": "0",
+    "done": true,
+    "graduated": true,
+    "block": 10
+  }
+}
