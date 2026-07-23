@@ -17,13 +17,20 @@ jobs:
           node-version: "20"
       - name: Run reference oracle
         run: node reference/engine.test.js
+      - name: Generate fuzz vectors (fixed seed 4663)
+        run: node reference/fuzz-vectors.js 4663
 
   foundry:
     name: Foundry build + test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
       - uses: foundry-rs/foundry-toolchain@v1
+      - name: Generate fuzz vectors (fixed seed 4663)
+        run: node reference/fuzz-vectors.js 4663
       - name: Install deps, build, test
         working-directory: contracts
         run: |

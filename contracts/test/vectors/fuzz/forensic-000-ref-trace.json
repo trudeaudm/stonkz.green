@@ -1,0 +1,53 @@
+{
+  "traceBlock": 5,
+  "stateAfter": {
+    "block": 6,
+    "price": 35.464237940032035,
+    "raised": 5163.593044068664,
+    "sold": 145.6
+  },
+  "waterFillTrace": [
+    {
+      "iteration": 0,
+      "remainingBefore": 46.490666666666684,
+      "actives": [
+        {
+          "name": "A",
+          "weight": 9.14211108829189,
+          "committedBasis": 4719.018498347141,
+          "share": 23.886880575750105,
+          "capLeft": 17.06394532324976,
+          "budLeft": 77.32809028885502,
+          "take": 17.06394532324976,
+          "constraintHit": "cap",
+          "tokBefore": 55.736054676750236,
+          "spentBefore": 1976.6367048949057
+        },
+        {
+          "name": "B",
+          "weight": 8.651038498050399,
+          "committedBasis": 3821.1012627510354,
+          "share": 22.60378609091658,
+          "capLeft": 12.309388010083552,
+          "budLeft": 47.25458386660514,
+          "take": 12.309388010083552,
+          "constraintHit": "cap",
+          "tokBefore": 60.490611989916445,
+          "spentBefore": 2145.253456748552
+        }
+      ],
+      "remainingAfter": 17.11733333333337,
+      "used": 29.373333333333314,
+      "totW": 17.793149586342288
+    },
+    {
+      "summary": true,
+      "offered": 46.490666666666684,
+      "remaining": 17.11733333333337,
+      "hitIterCap": false,
+      "stoppedNoActives": true,
+      "iterations": 1,
+      "constraintHits": 2
+    }
+  ]
+}
