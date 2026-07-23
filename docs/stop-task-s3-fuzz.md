@@ -190,3 +190,67 @@ invariant_exactWeiLedger: 	okensAccounted == sold + 1 on a shrunk mid-auction cl
 
 ### Push
 Branch lazy-flip — this forensic + F1' implementation commits before ruling.
+
+---
+
+## G1 SET-DIFF — fuzz-001 block 10 (double-final-block hypothesis)
+
+**Hypothesis:** lazy has exactly one extra **address** — exit-marked during clear 9,
+re-admitted at 10 via channel-B — whose take ≈ 1.58e18 ≈ raised Δ 1.01e21.
+
+**Verdict: REFUTED** (address set). Related position-mark drift **CONFIRMED**
+(explains the same numbers). Per ruling: STOP — no improvising.
+
+### Forensic
+contracts/test/ForensicG1SetDiff.t.sol — eager/lazy lockstep, pre-clear actives
++ position statuses + Filled/AllIn logs for clears b=7..10.
+
+### Address set at pre-clear b=10
+
+| Path | nActive | Addresses |
+|------|--------:|-----------|
+| Eager | 1 | B only |
+| Lazy | 1 | B only |
+
+C marked AllIn(pos3) on **both** at b=9; absent at b=10 on both. **No extra address.
+No channel-B re-admission of a b−1-marked address.**
+
+### Position set for B (the real delta)
+
+| Clear | Eager B positions | Lazy B positions | Notes |
+|------:|-------------------|------------------|-------|
+| post b=7 | pos6 → OutBudget (AllIn) | **pos6 still Active** (no AllIn B) | first drift |
+| pre b=9 | 5 Active, 6 OutBudget, 7 Active (ac=2) | 5/6/7 all Active (ac=3) | |
+| post b=9 | AllIn **pos5**; C AllIn pos3 | AllIn **pos6**; C AllIn pos3 | different pos exhausted |
+| pre b=10 | 5 OutBudget, 6 OutBudget, **7 Active** (ac=1) | **5 Active**, 6 OutBudget, 7 Active (ac=2) | |
+| post b=10 | fill B tok ≈ 3.288e18 | fill B tok ≈ 4.872e18 | |
+
+### Numbers (hypothesis scale — confirmed as B's extra capacity)
+
+| Signal | Eager | Lazy | Δ (lazy−eager) |
+|--------|------:|-----:|---------------:|
+| b=10 dSold | 3288084884037710767 | 4872253420497133901 | **1584168536459423134** ≈ 1.58e18 |
+| b=10 dRaised | 2101698029323757559279 | 3114276478060449500505 | **1012578448736691942508** ≈ 1.01e21 |
+| pre b=10 B headroom | ≈2.102e21 | ≈3.114e21 | ≈1.012e21 |
+
+Price ≈ 639.186e18 WAD; extra tok × px ≈ extra raised. Match.
+
+### Interpretation
+Not double-final-block of an **address**. Lazy and eager **spend across B's
+positions differently** (eager distribute vs lazy ACC/WRITE materialize), so
+different positions hit OutBudget at b=7 and b=9. At b=10 the address set
+matches; lazy's B still carries **pos5 Active** (eager marked it at b=9) →
+higher weight/budget → oversell.
+
+### Ruling needed (hypothesis refuted — no G1 fix applied)
+
+| Opt | Action |
+|-----|--------|
+| **G1′** | Redefine participantsAt to **position-level** (or force mark-set
+           equivalence): same positions Active at clear start; single source
+           of truth for mark/spend so eager↔lazy position sets match |
+| **G1″** | Keep address-level participantsAt as written; separately fix
+           position spend/mark twin so OutBudget marks match per clear |
+| **G1‴** | Other — human specifies after reading the table |
+
+Task T / production green still blocked.
