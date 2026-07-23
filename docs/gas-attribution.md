@@ -3,7 +3,9 @@
 Status: **per-position write dominance REFUTED**. Task Q (H2+ lazy
 materialization) **STOPPED** pending redesign. Numbers from
 `contracts/test/GasAttribution.t.sol` (300 actives, 1 pos each, Foundry
-`startStateDiffRecording` + `gasleft`).
+`startStateDiffRecording` + `gasleft`). Run locally with
+`forge test --match-contract GasAttributionTest -vv --gas-limit 5000000000`
+(excluded from default CI — stateDiff MemoryOOG under stock limits).
 
 ## Gas: 7.35M avg vs ~32M single
 
