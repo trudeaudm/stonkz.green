@@ -215,6 +215,11 @@ M3.5 may run in parallel with Milestone 4; M4 does not lift D1–D3.
   - **Deployment ladder D2/D3 (M3 review):** factory wires token custody at construction; production filings REVERT on `liquidityStrategy == address(0)` — both block testnet
   - Creator compensation is expected post-launch from what they build; reserves are tools, not fees
   - ✅ M3 REVIEW ACCEPTED (2026-07-25): §8 framing + M3.5∥M4 sequencing confirmed
+- ✅ Fees + Direct + CTO (M4 — see `docs/fees-and-governance.md`):
+  - Primary-pool fees: hook-based per-swap conversion (Doppler/Bankr parity); best-effort; 80% feeReceiver / 20% protocolTreasury; feeReceiver transferable (blocked during active CTO)
+  - Direct listing: $4k/$8k start mcap; 95% `[startTick, MAX_TICK]` + 5% side pool; rug-impossible by construction; emergent tier volatility
+  - Checkpointed launch token (ERC20Votes-style); per-token CTO (≥1% initiate, 24h, 80% of frozen eligible, early-fail, 7d cooldown)
+  - FeeLocker v2 for new launches; M4 hook C1 provisional on mock → M3.5 real-v4 re-run
 - ✅ Brand: STONKZ (stonks was taken). Domains: stonkz.meme (primary — a launchpad at .meme sells itself) + stonkz.green (redirect, "the line is green"); protocol token $STONKZ4663
 - ✅ Build: solo, with Claude + Cursor, on Uniswap's CCA contracts
 - ✅ STONKZ4663 launch: Genesis Auction — the first CCA on Stonkz itself (see 4b)
