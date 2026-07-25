@@ -246,6 +246,15 @@ contract StonkzAuction is IStonkzAuction {
         return uint112(x);
     }
 
+    /// @dev Credit `cost` onto a position's spent, clamped to remaining budget
+    ///      (I5: spent ≤ budget). Returns the amount actually credited; caller
+    ///      routes any dust into settleSpentDust / weightDustAccum as needed.
+    function _creditSpent(Position storage p, uint256 cost) internal returns (uint256 credited) {
+        uint256 budLeft = p.budget > p.spent ? uint256(p.budget) - uint256(p.spent) : 0;
+        credited = cost > budLeft ? budLeft : cost;
+        if (credited > 0) p.spent = _u112(uint256(p.spent) + credited);
+    }
+
     /// @dev maxPrice only: price caps are user-domain (sentinels ≫ PACKED_MAX).
     function _u128(uint256 x) internal pure returns (uint128) {
         require(x <= type(uint128).max, "pack u128");
@@ -1097,16 +1106,19 @@ contract StonkzAuction is IStonkzAuction {
                 } else {
                     gotTok = takeAmt[i];
                     cost = costAmt[i];
-                    Bidder storage bd = bidders[who];
-                    bd.tokens = _u112(uint256(bd.tokens) + gotTok);
-                    bd.activeSpent = _u112(uint256(bd.activeSpent) + cost);
-                    soldMaterialized += gotTok;
                     uint256[] storage ids = _bidderPositions[who];
                     if (ids.length > 0) {
                         Position storage p0 = positions[ids[0]];
                         p0.tokens = _u112(uint256(p0.tokens) + gotTok);
-                        p0.spent = _u112(uint256(p0.spent) + cost);
+                        // I5: clamp before bidder credit — live==0 dump previously
+                        // could overshoot budget by mulWad floor dust
+                        // (CI seed: spent = budget + 10).
+                        cost = _creditSpent(p0, cost);
                     }
+                    Bidder storage bd = bidders[who];
+                    bd.tokens = _u112(uint256(bd.tokens) + gotTok);
+                    bd.activeSpent = _u112(uint256(bd.activeSpent) + cost);
+                    soldMaterialized += gotTok;
                 }
                 // Align globals to credited mass when distribute floors (eager twin).
                 if (gotTok < takeAmt[i]) {
@@ -1325,9 +1337,8 @@ contract StonkzAuction is IStonkzAuction {
                 if (take == 0) continue;
                 uint256 cost = FixedPointMathLib.mulWad(take, px);
                 // Cap cost to budLeft so spent never exceeds budget (floor dust).
-                if (cost > budLeft) cost = budLeft;
+                cost = _creditSpent(p, cost);
                 p.tokens = _u112(uint256(p.tokens) + take);
-                p.spent = _u112(uint256(p.spent) + cost);
                 tokOut += take;
                 spentOut += cost;
                 used += take;
@@ -1522,7 +1533,9 @@ contract StonkzAuction is IStonkzAuction {
             if (ids.length == 0) return;
             Position storage p0 = positions[ids[0]];
             p0.tokens = _u112(uint256(p0.tokens) + dTok);
-            p0.spent = _u112(uint256(p0.spent) + dUsd);
+            // I5: clamp — ACC dump onto a solitary (possibly OutBudget) position
+            // must not push spent past budget.
+            _creditSpent(p0, dUsd);
             if (dTok > 0) soldMaterialized += dTok;
             return;
         }
@@ -1575,11 +1588,8 @@ contract StonkzAuction is IStonkzAuction {
         }
         for (uint256 i = 0; i < live; i++) {
             Position storage p = positions[liveIds[i]];
-            uint256 u = uShare[i];
-            uint256 budLeft = p.budget > p.spent ? p.budget - p.spent : 0;
-            if (u > budLeft) u = budLeft;
             p.tokens = _u112(uint256(p.tokens) + tShare[i]);
-            p.spent = _u112(uint256(p.spent) + u);
+            _creditSpent(p, uShare[i]);
         }
         if (dTok > 0) soldMaterialized += dTok;
     }
