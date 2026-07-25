@@ -154,7 +154,8 @@ Wired into both IPO and Direct factories at mint.
 ### 4.4 Finalize
 
 - Permissionless after window or early-fail; one final re-clamp.
-- On success: transfers **feeReceiver + token-page admin**.  
+- On success: transfers **feeReceiver + token-page admin** to the **CTO
+  initiator** (the address that opened the vote — the candidate).  
   **Nothing else** transfers (reserves, vesting, LP untouched).
 
 ### 4.5 Cooldown
