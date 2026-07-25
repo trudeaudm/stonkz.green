@@ -61,8 +61,8 @@ contract EagerLazyEquivalenceTest is Test {
         delete weightDustSum[ADDR_D];
 
         string memory json = vm.readFile(string.concat(vm.projectRoot(), "/test/vectors/", name, ".json"));
-        // Packed storage targets the guarded-launch envelope (≤1e6 ether supply).
-        if (json.readUint(".params.supply") > type(uint80).max) return;
+        // Packed storage: uint112 domain covers vanity supplies + budget sentinels.
+        if (json.readUint(".params.supply") > type(uint112).max) return;
         StonkzAuction eager = new StonkzAuction(_params(json, true));
         StonkzAuction lazy = new StonkzAuction(_params(json, false));
         eager.poke();
@@ -267,7 +267,7 @@ contract EagerLazyEquivalenceTest is Test {
         string memory nm = json.readString(string.concat(ab, ".bid.name"));
         uint256 budget = json.readUint(string.concat(ab, ".bid.budget"));
         uint256 maxP = json.readUint(string.concat(ab, ".bid.maxPrice"));
-        if (maxP > type(uint80).max) maxP = type(uint80).max;
+        if (maxP > type(uint128).max) maxP = type(uint128).max;
         address who = _addr(nm);
         vm.deal(who, budget + BID_FEE + 1 ether);
         vm.prank(who);
@@ -282,7 +282,7 @@ contract EagerLazyEquivalenceTest is Test {
             string memory pb = string.concat(base, ".positions[0]");
             uint256 budget = json.readUint(string.concat(pb, ".budget"));
             uint256 maxP = json.readUint(string.concat(pb, ".maxPrice"));
-            if (maxP > type(uint80).max) maxP = type(uint80).max;
+            if (maxP > type(uint128).max) maxP = type(uint128).max;
             address who = _addr(nm);
             vm.deal(who, budget + BID_FEE + 1 ether);
             vm.prank(who);

@@ -12,7 +12,7 @@ contract EpochSyncTest is Test {
     address internal constant B = address(0xB22);
 
     function test_partialSync_byteIdenticalToFullSync() public {
-        IStonkzAuction.Params memory fullP = _base(0); // uncapped clears (still â‰¤64 default but we warp gradually)
+        IStonkzAuction.Params memory fullP = _base(64); // explicit uncapped (Task T default 0→4 is too small)
         IStonkzAuction.Params memory partP = _base(2); // max 2 clears per poke
 
         StonkzAuction full = new StonkzAuction(fullP);

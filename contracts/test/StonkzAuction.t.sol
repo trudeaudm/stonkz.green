@@ -258,6 +258,37 @@ contract StonkzAuctionTest is Test {
         assertGe(auction.price(), p0);
     }
 
+    /// @dev Task T regression (fuzz seed 4663 scenario 1, block 4): packing
+    ///      Position.maxPrice (and budgets) to uint80 made the pack-guard revert
+    ///      on the reference's "any price" / "all in" sentinels (1e27 wei) —
+    ///      bids silently dropped under try/catch harnesses, skewing every
+    ///      weight basis. Quantity packs are uint112 (covers vanity supplies +
+    ///      budget sentinels); maxPrice is uint128 (user-domain, unbounded).
+    function testRegression_maxPriceSentinelAccepted() public {
+        auction = new StonkzAuction(_toy(0));
+        uint256 sentinel = 1e9 ether; // 1e27 — the vector generator's "no cap"
+        _bid(ADDR_A, 100 ether, sentinel);
+        (, uint256 maxP,,,,,,) = auction.positions(1);
+        assertEq(maxP, sentinel, "sentinel stored exactly");
+        _bid(ADDR_B, sentinel, type(uint128).max); // budget + price at domain edges
+        (uint256 budB,,,,,,,) = auction.positions(2);
+        assertEq(budB, sentinel, "budget sentinel stored");
+        _step();
+        assertGt(auction.bidderTokens(ADDR_A), 0, "sentinel bid fills");
+        assertGt(auction.bidderTokens(ADDR_B), 0, "boundary bid fills");
+        // Above the stored maxPrice domain the revert must be LOUD, never a silent clamp.
+        vm.deal(ADDR_C, 200 ether);
+        vm.prank(ADDR_C);
+        vm.expectRevert(bytes("pack u128"));
+        auction.placeBid{value: 100 ether + BID_FEE}(100 ether, uint256(type(uint128).max) + 1);
+        // Same for budget above uint112.
+        uint256 overBudget = uint256(type(uint112).max) + 1;
+        vm.deal(ADDR_D, overBudget + BID_FEE + 1 ether);
+        vm.prank(ADDR_D);
+        vm.expectRevert(bytes("pack u112"));
+        auction.placeBid{value: overBudget + BID_FEE}(overBudget, type(uint128).max);
+    }
+
     function testRegression_settlementOpensAtPrint() public {
         IStonkzAuction.Params memory p = _toy(0);
         p.lpShareBps = 8000;
