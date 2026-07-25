@@ -173,6 +173,19 @@ You're building this yourself with AI pair-programming. Realistic and increasing
 5. **Week 9 — Mainnet dress rehearsal (burner deploy).** Deploy the full stack to Robinhood Chain mainnet from a throwaway deployer and test everything against real conditions (real gas, real Uniswap v4, real indexer latency). Nothing announced, nothing official — no allowlists or stealth measures; the rehearsal runs the exact production code path. Anyone who finds and apes an unannounced test contract does so at their own risk; the guarded-launch caps (already in the contracts) keep any stranger exposure tiny. The deploy must be a scripted one-command Foundry run with all config in code, so the rehearsal also tests the deploy script itself.
 6. **Week 9+ — Fresh production deploy + guarded mainnet.** Redeploy everything clean from the same script: new addresses, zero test history, admin/pauser/fee roles assigned at construction to hardened keys (hardware wallet minimum; 2-of-3 multisig + timelock preferred) — deployer key ends the day with no powers. STONKZ4663 genesis runs ONLY on these contracts. Launch with raise/TVL caps + day-one bug bounty; scale caps with confidence; tier-1 audit at the ~$1M fee milestone removes them publicly.
 
+### Deployment ladder — named preconditions (M3 review)
+
+**Testnet deploy (build step 3) is blocked until all of the following hold.**
+These bind later gates; they are not optional polish:
+
+| # | Precondition | Origin |
+|---|---|---|
+| D1 | **M3.5 complete** — C1/C2 (+ C3 conversion + C5 price-setting / naive-full-range) green against real `v4-core` | spec §10.1 / `docs/settlement.md` |
+| D2 | **Factory wires token custody at construction** — user token is minted and custody-wired before the auction opens; settle does not invent `userToken` | M3 STOP #4 → promoted |
+| D3 | **Production filings REVERT on `liquidityStrategy == address(0)`** — zero-address accounting-only settle is test-only; live filings must bind a deployed `StonkzLiquidityStrategy` | M3 STOP #3 → promoted |
+
+M3.5 may run in parallel with Milestone 4; M4 does not lift D1–D3.
+
 **Solo-founder budget:** audit $30–80k, infra $200–500/mo pre-scale, legal consult $5–15k, small incentive pool. Roughly $50–100k to a credible mainnet launch — the audit dominates.
 
 ## 9. Decisions log
@@ -198,8 +211,10 @@ You're building this yourself with AI pair-programming. Realistic and increasing
   - FeeLocker: main pair-fees → accumulator / user-token fees → burn; side fees compound via crank
   - creatorReserve delivery mode (`INSTANT` + 10-min window | `VEST`) chosen at filing; `declaredUse` optional transparency string
   - Terminal states Settled / Failed / RanAway mutually exclusive
-  - M3.5 required before testnet: re-run C1/C2 against real v4-core
+  - M3.5 required before testnet: C1/C2 unmodified on real v4-core; C3 conversion re-validated on real pool; named real-v4 tests for price-setting ratio + naive-full-range (`test_C5_*` already exist on mock)
+  - **Deployment ladder D2/D3 (M3 review):** factory wires token custody at construction; production filings REVERT on `liquidityStrategy == address(0)` — both block testnet
   - Creator compensation is expected post-launch from what they build; reserves are tools, not fees
+  - ✅ M3 REVIEW ACCEPTED (2026-07-25): §8 framing + M3.5∥M4 sequencing confirmed
 - ✅ Brand: STONKZ (stonks was taken). Domains: stonkz.meme (primary — a launchpad at .meme sells itself) + stonkz.green (redirect, "the line is green"); protocol token $STONKZ4663
 - ✅ Build: solo, with Claude + Cursor, on Uniswap's CCA contracts
 - ✅ STONKZ4663 launch: Genesis Auction — the first CCA on Stonkz itself (see 4b)

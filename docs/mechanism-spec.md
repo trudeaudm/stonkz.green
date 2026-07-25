@@ -273,9 +273,24 @@ caps publicly.
 ### 10.1 M3.5 — real Uniswap v4 integration (required before testnet)
 
 M3 lands settlement against a minimal internal v4 surface + mock PoolManager so
-routing / state-machine / conservation suites (C3–C6) can gate. Pool-seam (C1)
+routing / state-machine / conservation suites (C4–C6) can gate. Pool-seam (C1)
 and side-pool economics (C2) suites are **provisional when green on mocks** —
-those suites exist precisely to catch where our model of v4 is wrong. An M3.5
-integration pass that vendors real `v4-core` (+ periphery as needed) and re-runs
-C1 / C2 **unmodified** against the real PoolManager is **REQUIRED before any
-testnet deploy**. The C1/C2 harness is dual-backend from day one.
+those suites exist precisely to catch where our model of v4 is wrong. C3
+(BuybackAccumulator) is **partially provisional**: crank bounds / cooldown /
+burn / pre-genesis park gate on mock; the **conversion path** uses 1:1 mock
+pricing until re-validated against a real pool.
+
+An M3.5 integration pass that vendors real `v4-core` (+ periphery as needed)
+must, before any testnet deploy:
+
+1. Re-run C1 and C2 **unmodified** against the real PoolManager
+2. Assert **price-setting ratio** (`tokens × P == usd`) with a **named test
+   against real v4** (mock: `test_C5_priceSettingInvariant`)
+3. Keep / re-run **`test_C5_naiveFullRangeUnreachable`** (full-range all-tokens
+   deposit unreachable) against real v4 — already exists under that name
+4. Re-validate C3's conversion path against a real STONKZ4663 pool
+
+The C1/C2 harness is dual-backend from day one. M3.5 may run in parallel with
+Milestone 4. Separate deployment-ladder preconditions (factory token custody at
+construction; production filings revert on `liquidityStrategy == address(0)`)
+also block testnet — see `docs/launch-plan.md` §8 and `docs/settlement.md`.
