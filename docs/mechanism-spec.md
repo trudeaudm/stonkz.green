@@ -1,10 +1,13 @@
-# StonkzAuction — Mechanism Specification v1.0
+# StonkzAuction — Mechanism Specification v1.1
 
 > The source of truth for the Solidity implementation. Every rule here was designed
 > interactively and validated in `reference/ladder-simulator.html`; the executable
 > version of this spec is `reference/engine.js` (regression suite: `engine.test.js`,
 > 19 checks). **Solidity behavior must match the reference engine** — differential
 > tests are mandatory, not optional.
+>
+> v1.1 (Milestone 3): settlement rewrite (§8), reserve renames (§0–§1), default
+> `lpShareBps = 10000`. Auction-engine math (§2–§7, §9 I2–I10) is unchanged.
 
 ## 0. Units principle
 
@@ -17,13 +20,22 @@ Supply hierarchy (all mechanism fractions are of **launch supply**):
 
 ```
 total supply
-├── creator holdback %          (staking emissions etc. — never sold, never paired)
+├── creatorReserve %     (token-side holdback — operating capital: emissions,
+│                         rewards, protocol-owned LP; never sold, never paired)
 └── launch supply
-    ├── auction allocation      (sold on the ladder)     = κ̂ / (κ̂ + LP-share)
-    └── LP reserve              (pairs the pool)         = LP-share / (κ̂ + LP-share)
+    ├── auction allocation   (sold on the ladder)  = κ̂ / (κ̂ + LP-share)
+    └── LP reserve           (pairs the pools)     = LP-share / (κ̂ + LP-share)
 ```
 
-## 1. Creator parameters (constructor args)
+Raise-side holdback (of raised funds, when LP-share < 100%): **treasuryReserve** —
+operating capital for treasury / post-graduation dip defense. Opt-down filing
+parameter; default is zero (100% of raise → LP).
+
+Reserves are tools, not fees. Creator compensation is expected post-launch from
+what they build — never framed as a "cut" or "compensation" in contracts, events,
+or UI copy.
+
+## 1. Creator parameters (constructor / filing args)
 
 | Param | Range / default | Notes |
 |---|---|---|
@@ -33,12 +45,15 @@ total supply
 | base price step | basis points | scales with demand (§4); clamp ≥ 0 |
 | wallet cap | % of total supply | max any address accumulates |
 | size bonus | % per 2× capital, default 10, 0 = pure per-capita | §3 |
-| LP share of raise | %, default 80 | creator receives the rest |
-| creator holdback | % of total supply, default 0 | |
+| LP share of raise | %, **default 100** (`lpShareBps = 10000`) | opt-down: remainder is `treasuryReserve` |
+| creatorReserve | % of total supply, default 0 | token-side holdback; see §8.4 |
 | κ̂ (design print/avg ratio) | default 1.3 | calibrate via simulator batches |
 | leftover disposal | thicker-LP / holders-airdrop / creator / burn | shown in recon |
+| declaredUse (per reserve) | optional short string, may be empty | immutable; transparency only — §8.5 |
+| creatorReserve delivery | `INSTANT` \| `VEST(duration, linear rate)` | chosen at filing, immutable — §8.4 |
 
 **Derived (never inputs):** auction:reserve split = κ̂ : LP-share.
+At the canonical default (κ̂ = 1.3, LP-share = 100%): **auction:LP = 56.5 : 43.5**.
 
 ## 2. Bids
 
@@ -115,33 +130,134 @@ reserve sales can never cause pairing insolvency. Result: the reserve ends
 
 ## 8. Settlement
 
-Let `P` = last price that actually sold, `F = LP-share × raised`.
+Let `P` = last price that actually sold (the print). Let
+`F = LP-share × raised` (LP-designated pair-currency funds).
 
-- Sold tokens → bidders (claim at their per-position accounting).
-- **Price-setting position**: `F` dollars + `F / P` tokens spanning the print —
-  the ratio IS the opening price. (Depositing everything full-range instead
-  opens the pool at `F / all_tokens`, catastrophically below the print.)
-- **Leftover = pairing surplus + auction excess** → creator's disposal choice:
+### 8.0 Terminal state machine
+
+Exactly one terminal flag, mutually exclusive:
+
+| State | Entered when | Claim paths |
+|---|---|---|
+| **Settled** | `settle()` succeeds after graduation | post-settle token + unspent USD claims |
+| **Failed** | auction ends below threshold | full-budget refunds (I8) |
+| **RanAway** | creator `runAway()` pre-settlement | bonded keeper/pull refunds |
+
+No settle / refund / runAway claim path may interleave across states; every claim
+is keyed to the single flag. Settles fully or reverts fully (I9).
+
+### 8.1 Funds split at settle (no market buys)
+
+```
+F_main  = 95% × F     → main pool (pair currency ↔ userToken) at the print
+F_carve =  5% × F     → BuybackAccumulator (pair currency; see §8.3)
+```
+
+The 5% carve is **flat for ALL launches** — no raise threshold, no tiers.
+Rationale on record: a tiered carve (e.g. "5% only above $X") creates a cliff
+that launchers game by splitting filings or sizing just under the threshold; a
+uniform carve removes the game. **No market purchases inside `settle()`** —
+atomic STONKZ4663 conversion is sandwichable / griefable; the accumulator is
+cranked asynchronously (§8.3).
+
+`treasuryReserve = (1 − LP-share) × raised` (zero at the default) delivers to the
+creator/treasury wallet at settle.
+
+### 8.2 Main pool — price-setting + surplus
+
+Sold tokens → bidders (claim at their per-position accounting).
+
+- **Price-setting position**: `F_main` dollars + `F_main / P` tokens spanning the
+  print — the ratio IS the opening price.
+  **INVARIANT**: `pricePosition.tokens × P == pricePosition.usd` (wei-derived
+  bound). A naive full-range deposit of all remaining tokens MUST be unreachable
+  (explicit test): that would open the pool at `F / all_tokens`, catastrophically
+  below the print.
+- **Surplus** = pairing surplus + auction excess → creator's disposal choice
+  (immutable at filing, shown in recon):
   - thicker LP → single-sided range depth ABOVE the print (does not move open)
   - holders → pro-rata airdrop by auction holdings
   - creator wallet (visible in recon up front)
-  - burn 🔥
+  - burn
+- `settleDustSurplus` sweeps residual dust after positioning.
 - Realized κ = P / avg-sale-price is emitted; κ > κ̂ → surplus (appreciation
   dividend); κ < κ̂ → shortfall, covered by single-sided fallback (warned).
-- Dual-pool: 15% of LP funds vs $STONKZ4663 (market-bought), 85% vs ETH/USDG
-  (creator's pick). LP burned. Deployed contracts immutable.
+
+### 8.2a STONKZ4663 side pool
+
+At settle, **5% of LP-designated tokens** (the tokens sized for LP pairing, not
+of total supply) are set aside and deposited into a STONKZ4663 / userToken v4
+pool as a **SINGLE-SIDED range**:
+
+- **bottom** = 1 tick above the graduation price expressed in STONKZ4663 terms:
+  `gradPriceUsd / stonkz4663SpotUsd`, rounded to the next usable tick above.
+- **top** = 1000× bottom (tick-math edges respected).
+
+Dump-immunity is a design property: the position starts with **zero STONKZ4663
+exposure**, so a post-graduation dump of the user token cannot pull STONKZ4663
+out of the position.
+
+**Pre-genesis:** launches that settle before the STONKZ4663 genesis pool exists
+park the side-pool tokens (+ any associated funds) in the BuybackAccumulator.
+Permissionless `deploySidePool()` creates the position once the genesis spot is
+readable.
+
+### 8.3 BuybackAccumulator
+
+Immutable. Holds: (a) the 5% pair-currency carve from every settle, (b) main-pool
+pair-currency fees routed by FeeLocker (§8.6), (c) pre-genesis side-pool parking.
+Keeper-cranked, **bounded** STONKZ4663 buys: per-crank size cap + cooldown,
+hardcoded at construction (no admin knobs). Purchased STONKZ4663 is **burned**.
+
+### 8.4 Reserve delivery
+
+- **creatorReserve** (token-side): delivery mode chosen **at filing**
+  (`INSTANT` | `VEST(duration, linear rate)`), immutable, visible in recon from
+  block one. `INSTANT` still passes a **10-minute timelock** at graduation claim
+  (grief / fat-finger window). `VEST` streams at exactly the committed rate.
+- **treasuryReserve** (raise-side, if opted): delivers at settle.
+- Events for all transitions (filed / unlocked / vested-chunk / delivered).
+
+### 8.5 Declared-use (optional transparency)
+
+Filing accepts an immutable short string per reserve (`declaredUse`, may be
+empty). Emitted in the filing event, rendered in recon and on the token page.
+**Not validated or enforced** — pure transparency surface.
+
+### 8.6 FeeLocker
+
+Immutable custody for every position we create.
+
+| Pool | Pair-currency fees | User-token fees |
+|---|---|---|
+| Main | → BuybackAccumulator | → burn |
+| Side | compound back into the same position via permissionless crank (thickens over time) | (same — compounds) |
+
+### 8.7 Pool lifecycle (both pools)
+
+- **Initialize** at the earliest moment the price basis exists:
+  - main pool: auction construction at the floor tick
+  - side pool: at `deploySidePool()` (or settle, if genesis spot is already live)
+- `settle()` / `deploySidePool()` **sync spot to target** with a bounded swap
+  budget before adding liquidity. Overrun → **retryable revert** (caller retries
+  with a fresh budget / after the market moves).
+- Front-creation of either pool key is an **expected attack**; the sync-to-target
+  step is the defense (see suite C1).
+
+Deployed contracts are immutable. No upgradeability.
 
 ## 9. Invariants (Foundry suite — differential-test all against reference/engine.js)
 
-1. **Conservation**: sold + paired + surplus + auctionExcess == launch supply (to the token).
+1. **Conservation**: at settle (100% LP default), wei-exact post-sweep:
+   `sold + mainPaired + sidePoolTokens + surplusRouted + excessRouted + creatorReserve == launch supply`.
 2. **Solvency**: top-ups only with positive guard slack; reserve sales never cause insolvency.
 3. **Gate**: price advances iff scheduled quantity sold; never advances on partial/topup-only sales.
 4. **Per-capita**: equal committed capital ⇒ equal fills; weight ratio == (c2/c1)^α exactly.
 5. **One share per address**: N positions from one address fill identically to 1 position of equal total weight basis.
 6. **Wallet cap**: address total never exceeds cap; capped leftover claimable at end.
-7. **Committed bids**: no path reduces a position's budget except fills; priced-out ⇒ full unspent claimable.
+7. **Committed bids**: no path reduces a position's budget except fills; priced-out ⇒ full unspent claimable; spent ≤ budget.
 8. **Refund-all on failure**: below threshold ⇒ every position's full budget claimable; auction can never be drained.
-9. **Settlement atomicity**: settles fully or reverts fully.
+9. **Settlement atomicity**: settles fully or reverts fully; terminal states mutually exclusive.
 10. **Weights**: Σ = 1, monotone, 40/60 phase split, seamless handoff — for all N.
 
 ## 10. Security posture (see docs/launch-plan.md for full ladder)
@@ -153,3 +269,13 @@ production code, scripted one-command deploy) → **fresh production redeploy**,
 admin roles to hardened keys at construction, deployer ends powerless. Genesis
 ($STONKZ4663) runs only on final contracts. Tier-1 audit at ~$1M fees removes
 caps publicly.
+
+### 10.1 M3.5 — real Uniswap v4 integration (required before testnet)
+
+M3 lands settlement against a minimal internal v4 surface + mock PoolManager so
+routing / state-machine / conservation suites (C3–C6) can gate. Pool-seam (C1)
+and side-pool economics (C2) suites are **provisional when green on mocks** —
+those suites exist precisely to catch where our model of v4 is wrong. An M3.5
+integration pass that vendors real `v4-core` (+ periphery as needed) and re-runs
+C1 / C2 **unmodified** against the real PoolManager is **REQUIRED before any
+testnet deploy**. The C1/C2 harness is dual-backend from day one.

@@ -52,7 +52,7 @@ The stock-market framing maps perfectly: memes are penny stocks, projects are li
 - **Bidders exit** when (a) their budget is exhausted, (b) the ladder price exceeds their max price, or (c) they hit the per-wallet supply cap. On exit, unconverted funds become claimable.
 - **Per-wallet supply cap (creator parameter):** max % of total supply any single address can accumulate in the auction (e.g., 1%). On hitting the cap, the wallet stops filling and its remaining budget is claimable.
 - **Creator parameters:** floor starting mcap ($2k–$100k), % of supply in auction, % of proceeds to LP, per-wallet cap %, ladder growth rate, duration.
-- **Settlement & the LP reserve (the auction never sells everything):** the auction sells only a fraction of supply; the remainder is RESERVED to pair against raised funds in the pool — pools need both sides. At settlement, the pool is seeded with (LP% × raised) funds + (LP% × raised ÷ P_final) reserve tokens at the final price; same 15/85 dual-pool split; LP burned. **The reserve rulebook (auto-sized, fully deployed):** the auction/reserve split is DERIVED, not chosen: **auction : reserve = κ̂ : LP-share** (a = κ̂/(κ̂+LP), r = LP/(κ̂+LP)), where κ̂ = design print-to-average-sale-price ratio. Derivation: at a full raise, pairing need = LP% × raise ÷ P_final = LP% × auction-tokens ÷ κ; setting reserve = need gives the ratio. κ is pinned in a narrow band (~1.3) by the back-loaded schedule (60% of volume sells in the finale near the print) — measure it in the simulator, which logs realized κ every settlement. At κ̂=1.3: 100% LP share → 56.5:43.5; 80% → 61.9:38.1 (≈60:40). A full raise at κ=κ̂ consumes the reserve exactly; hotter paths (κ>κ̂) leave surplus (appreciation dividend → disposal choice); flatter paths (κ<κ̂) trigger the single-sided fallback, warned at settlement. Feasibility: selling the whole allocation at the floor raises only sell% × floor-mcap × launch-fraction, so graduation targets above that imply price appreciation and targets above the ladder's raise ceiling are auto-fails. **Oversubscription sells from the reserve:** once graduation is met, each block's tranche is topped up from the reserve (excess demand buys reserve tokens at the same block price), guarded so remaining reserve always covers pairing at the current price (conservative since P_final ≥ p); the price gate stays at the scheduled quantity, and post-graduation top-ups are GUARD-LIMITED ONLY (no pace throttle) — the full drainable reserve is on offer every block. Result: the reserve ends paired or sold whenever demand persists; pairing surplus survives only when buyers run out (the irreducible case: tokens cannot be sold to nobody), plus the appreciation dividend when the print far exceeds the average sale price. **Leftover tokens = auction excess (offered but unsold) + pairing surplus (solvency slack the guard preserved — small by construction). Leftover disposal is a creator parameter** (shown in recon, chosen at filing): thicker LP (extra pool depth), pro-rata airdrop to auction holders 🎁, creator wallet, or burn 🔥. Creator supply/capital parameters are HIERARCHICAL: total supply → creator holdback % (staking emissions etc.) + launch supply; launch supply → auction-sold % + LP reserve (the rest of the launch); plus LP share of raised capital (creator receives the rest). Sizing guarantee (from the ladder itself): every block sold at ≤ P_final, so tokens needed ≤ LP-share% × tokens sold; reserve covers any outcome iff sell% ≤ 100/(1 + LP-share%) of launch supply — independent of holdback; enforce in the constructor; if overridden and short, leftover funds seed single-sided range liquidity. Calibration note (simulator-derived): the graduation threshold must fit the auction's raise ceiling (~avg block price × auction supply) — a threshold above what a fully-sold auction can raise is an auto-fail.
+- **Settlement & the LP reserve (the auction never sells everything):** the auction sells only a fraction of supply; the remainder is RESERVED to pair against raised funds in the pool — pools need both sides. At settlement (spec §8): 95% of (LP% × raised) funds + matching tokens seed the main pool at P_final; a flat 5% carve → BuybackAccumulator; 5% of LP-designated tokens → STONKZ4663 side pool (single-sided, dump-immune); FeeLocker custodies LP. **The reserve rulebook (auto-sized, fully deployed):** the auction/reserve split is DERIVED, not chosen: **auction : reserve = κ̂ : LP-share** (a = κ̂/(κ̂+LP), r = LP/(κ̂+LP)), where κ̂ = design print-to-average-sale-price ratio. Derivation: at a full raise, pairing need = LP% × raise ÷ P_final = LP% × auction-tokens ÷ κ; setting reserve = need gives the ratio. κ is pinned in a narrow band (~1.3) by the back-loaded schedule (60% of volume sells in the finale near the print) — measure it in the simulator, which logs realized κ every settlement. At κ̂=1.3: **100% LP share (canonical default) → 56.5:43.5**; 80% → 61.9:38.1 (≈60:40). A full raise at κ=κ̂ consumes the reserve exactly; hotter paths (κ>κ̂) leave surplus (appreciation dividend → disposal choice); flatter paths (κ<κ̂) trigger the single-sided fallback, warned at settlement. Feasibility: selling the whole allocation at the floor raises only sell% × floor-mcap × launch-fraction, so graduation targets above that imply price appreciation and targets above the ladder's raise ceiling are auto-fails. **Oversubscription sells from the reserve:** once graduation is met, each block's tranche is topped up from the reserve (excess demand buys reserve tokens at the same block price), guarded so remaining reserve always covers pairing at the current price (conservative since P_final ≥ p); the price gate stays at the scheduled quantity, and post-graduation top-ups are GUARD-LIMITED ONLY (no pace throttle) — the full drainable reserve is on offer every block. Result: the reserve ends paired or sold whenever demand persists; pairing surplus survives only when buyers run out (the irreducible case: tokens cannot be sold to nobody), plus the appreciation dividend when the print far exceeds the average sale price. **Leftover tokens = auction excess (offered but unsold) + pairing surplus (solvency slack the guard preserved — small by construction). Leftover disposal is a creator parameter** (shown in recon, chosen at filing): thicker LP (extra pool depth), pro-rata airdrop to auction holders 🎁, creator wallet, or burn 🔥. Creator supply/capital parameters are HIERARCHICAL: total supply → `creatorReserve` % (token-side operating capital) + launch supply; launch supply → auction-sold % + LP reserve; plus LP share of raised capital (default 100%; opt-down remainder = `treasuryReserve`). Sizing guarantee (from the ladder itself): every block sold at ≤ P_final, so tokens needed ≤ LP-share% × tokens sold; reserve covers any outcome iff sell% ≤ 100/(1 + LP-share%) of launch supply — independent of creatorReserve; enforce in the constructor; if overridden and short, leftover funds seed single-sided range liquidity. Calibration note (simulator-derived): the graduation threshold must fit the auction's raise ceiling (~avg block price × auction supply) — a threshold above what a fully-sold auction can raise is an auto-fail.
 - **Graduation threshold (adopted):** each auction sets a minimum raise; if unmet by auction end, the launch fails and 100% of committed funds are automatically claimable. Creator never touches funds from a failed raise.
 - **End conditions:** supply exhausted (finale guarantees full offering) or time elapsed; graduation threshold decides success vs. full refund either way. (Formerly-open rules — unsold tranches and end condition — are now resolved by the flat-price rule and finale design.)
 
@@ -72,7 +72,13 @@ The stock-market framing maps perfectly: memes are penny stocks, projects are li
 
 **Mode 2 — Direct Listing.** Creator supplies initial liquidity and lists straight to the DEX. Fastest path, meme-friendly. Guardrails required: minimum liquidity floor, enforced LP burn or timelock, and a prominent "creator-priced" label since the opening price isn't market-discovered. This is the rug-vector mode — the UI must say so plainly.
 
-**Both modes** settle into the same dual-pool structure: **15% of liquidity paired against STONKZ4663, 85% against ETH or USDG (creator's choice at filing)**, deployed atomically, LP burned. The 15% leg market-buys STONKZ4663 with half its budget — structural, recurring buy pressure on the protocol token. Implemented as a custom post-auction liquidity strategy on top of Uniswap's launcher rather than a from-scratch migrator. Risk note: the 15% leg correlates launched tokens to STONKZ4663 — great flywheel up, transmission risk down. Make the ratio governance-tunable (10–20%).
+**Both modes** settle into the M3 dual-pool structure (spec §8): **95% of LP
+funds seed the main pair-currency/userToken pool at the print; a flat 5% carve
+goes to the BuybackAccumulator** (keeper-cranked STONKZ4663 buys + burn — never
+market-bought inside `settle()`). Separately, **5% of LP-designated tokens** seed
+a STONKZ4663/userToken side pool as a single-sided range above the print
+(dump-immune). FeeLocker custodies every position. Default LP share of raise is
+100%; any opt-down remainder is `treasuryReserve`.
 
 **Fees:** filing fee (higher for Blue Chip) + protocol fee on auction proceeds (e.g. 2%) or on direct-listing liquidity + ongoing swap-fee share where pool hooks allow.
 
@@ -93,15 +99,19 @@ Design guardrail: gamify participation, not overbidding. Estimated cost and wors
 
 ## 4b. STONKZ4663 — the protocol token
 
-**Utility (v1):** the 15% pairing leg (constant graduation buy pressure), fee discounts on filing/trading when paid in STONKZ4663, staking share of protocol fees, and Blue Chip tier governance later.
+**Utility (v1):** the 5% settle carve + main-pool pair-currency fees → BuybackAccumulator
+→ burned STONKZ4663 (structural buy pressure without settle-time sandwich risk);
+the side-pool single-sided range (dump-immune STONKZ4663/userToken depth);
+fee discounts on filing/trading when paid in STONKZ4663; staking share of
+protocol fees; Blue Chip tier governance later.
 
 **Supply/ticker:** the "4663" suffix is distinctive — lean into it in lore (e.g., total supply 4,663,000,000).
 
-**Launch route (decided): the Genesis Auction.** STONKZ4663 launches as the first-ever CCA on Stonkz itself — "the first IPO on Stonkz is Stonkz." This also solves a hard sequencing dependency: the 15% pairing leg needs a live STONKZ4663 pool and price before any other token can list, so the protocol token must launch first regardless.
+**Launch route (decided): the Genesis Auction.** STONKZ4663 launches as the first-ever CCA on Stonkz itself — "the first IPO on Stonkz is Stonkz." This also solves a hard sequencing dependency: side-pool deployment and BuybackAccumulator cranks need a live STONKZ4663/USDG spot before they can convert or place the STONKZ4663-denominated range, so the protocol token must launch first regardless (pre-genesis launches park in the accumulator; `deploySidePool()` is permissionless once the spot is readable).
 
 **Genesis mechanics:**
 - Bookbuild runs in USDG (or ETH); longer duration than meme auctions (days, not minutes) to maximize participation and the story. Reference: Aztec sold ~15% of supply over five days.
-- Special case: the genesis listing can't do the 15/85 split against its own token — it settles 100% into a single STONKZ4663/USDG pool at the discovered price. That pool becomes the reference every future launch's 15% leg buys into.
+- Special case: the genesis listing can't do the side-pool split against its own token — it settles 100% into a single STONKZ4663/USDG pool at the discovered price. That pool becomes the reference spot every future launch's side pool and buyback crank read.
 - Supply split to finalize (e.g., X% genesis auction / Y% early-user rewards / Z% treasury with locked on-chain vesting / LP reserve for pairing legs).
 - Floor price, duration, and per-wallet parameters TBD.
 
@@ -114,8 +124,9 @@ Publish the full allocation on-chain with vesting contracts *before* the auction
 - `StonkzAuction` — the custom Ladder Auction: deterministic tranche/price schedule, per-capita fills via per-share accumulator accounting, per-wallet caps, exit bucketing, claimable refunds. Now our highest-risk contract alongside the liquidity strategy.
 - Uniswap Liquidity Launchpad periphery — referenced for pool seeding at settlement; the CCA auction engine itself is no longer used.
 - `StonkzAuctionManager` — wraps the auction with issuer withdrawal: refund bond, REFUNDING state, keeper-driven batch refunds + instant pull-claims, cooldowns, forfeiture.
-- `StonkzLiquidityStrategy` — custom post-auction strategy: market-buys STONKZ4663, deploys the 15/85 dual pools atomically, burns LP. This is our highest-risk custom contract.
-- `StonkzDirectListing` — direct-listing wrapper: liquidity floor checks, LP burn/lock enforcement, same dual-pool split.
+- `StonkzLiquidityStrategy` — custom post-auction strategy (spec §8): sync-to-print, main-pool price-setting + surplus, 95/5 carve → BuybackAccumulator, side-pool module, FeeLocker custody. Highest-risk custom contract; M3.5 re-runs pool-seam suites against real v4-core.
+- `StonkzDirectListing` — direct-listing wrapper: liquidity floor checks, FeeLocker custody, same settlement split.
+- `BuybackAccumulator` / `FeeLocker` — immutable; permissionless cranks with hardcoded bounds; no admin beyond construction.
 - `Stonkz4663` — protocol token + staking/fee-share contract.
 - Token: minimal ERC-20 with transfer restrictions off (freely tradable), metadata pointer on-chain.
 
@@ -175,10 +186,20 @@ You're building this yourself with AI pair-programming. Realistic and increasing
 - ✅ Anti-sybil baseline: no sponsored gas on bids, flat per-bid fee, minimum bid size
 - ✅ Release curve: flat until competition (one-way ratchet) → shallow (40% pre-finale cap) → finale: last 20% of time distributes ≥60% of supply
 - ✅ Price rule: advances when a block's ORIGINALLY SCHEDULED quantity sells; squished rollover is bonus supply at flat price
-- ✅ LP reserve: auction sells ≤ ~55% of supply (constructor-enforced vs LP share); reserve pairs the pool at P_final; excess reserve burned
+- ✅ LP reserve: auction sells ≤ ~55% of supply (constructor-enforced vs LP share); reserve pairs the pool at P_final; excess → disposal choice
 - ⬜ Ladder parameters to finalize: default price growth rate, shallow-curve rate, finale ramp ratio
 - ✅ Withdraw IPO: creator can cancel pre-settlement; full refunds, gas paid via creator's refund bond
-- ✅ Graduation liquidity: 15% vs STONKZ4663, 85% vs ETH or USDG (creator picks)
+- ✅ Graduation liquidity (M3 supersedes 15/85 market-buy split):
+  - default `lpShareBps = 10000` (100% of raise → LP); raise-side holdback is opt-down `treasuryReserve`
+  - token-side holdback renamed `creatorReserve` (operating capital; never "compensation" / "creator cut")
+  - at settle: 95% of LP funds → main pool at the print; **flat 5% carve** (all launches, no tiers — cliff-gaming rationale) → BuybackAccumulator; **no market buys in settle()**
+  - 5% of LP-designated tokens → STONKZ4663/userToken side pool as single-sided range (bottom = 1 tick above grad price in STONKZ4663 terms, top = 1000×); dump-immune (zero STONKZ4663 exposure at open); pre-genesis parks in accumulator, permissionless `deploySidePool()`
+  - BuybackAccumulator: immutable, keeper-cranked bounded buys, STONKZ4663 burned
+  - FeeLocker: main pair-fees → accumulator / user-token fees → burn; side fees compound via crank
+  - creatorReserve delivery mode (`INSTANT` + 10-min window | `VEST`) chosen at filing; `declaredUse` optional transparency string
+  - Terminal states Settled / Failed / RanAway mutually exclusive
+  - M3.5 required before testnet: re-run C1/C2 against real v4-core
+  - Creator compensation is expected post-launch from what they build; reserves are tools, not fees
 - ✅ Brand: STONKZ (stonks was taken). Domains: stonkz.meme (primary — a launchpad at .meme sells itself) + stonkz.green (redirect, "the line is green"); protocol token $STONKZ4663
 - ✅ Build: solo, with Claude + Cursor, on Uniswap's CCA contracts
 - ✅ STONKZ4663 launch: Genesis Auction — the first CCA on Stonkz itself (see 4b)
