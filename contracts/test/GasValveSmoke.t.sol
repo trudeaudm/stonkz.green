@@ -11,7 +11,10 @@ contract GasValveSmoke is Test {
       durationBlocks: 100, epochSeconds: 1, maxClearsPerSync: 4, maxUniqueActives: 0,
       baseStepBps: 500, walletCapBps: 10_000, sizeBonusBps: 0, lpShareBps: 8000,
       holdbackBps: 0, kappaHundredths: 130, disposalMode: 0, pairToken: address(0),
-      maxLivePositionsPerAddress: 0, eagerFills: false
+      maxLivePositionsPerAddress: 0, eagerFills: false,
+      creatorDeliveryMode: 0, creatorVestDuration: 0,
+      creatorDeclaredUse: bytes32(0), treasuryDeclaredUse: bytes32(0),
+      liquidityStrategy: address(0)
     }));
     for (uint256 i = 1; i <= 3; i++) {
       address who = address(uint160(i));

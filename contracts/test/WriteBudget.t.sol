@@ -103,7 +103,12 @@ contract WriteBudgetTest is Test {
                 disposalMode: 0,
                 pairToken: address(0),
                 maxLivePositionsPerAddress: 2,
-                eagerFills: false
+                eagerFills: false,
+            creatorDeliveryMode: 0,
+            creatorVestDuration: 0,
+            creatorDeclaredUse: bytes32(0),
+            treasuryDeclaredUse: bytes32(0),
+            liquidityStrategy: address(0)
             })
         );
         address who = address(0xBEEF);
@@ -136,7 +141,12 @@ contract WriteBudgetTest is Test {
                 disposalMode: 0,
                 pairToken: address(0),
                 maxLivePositionsPerAddress: 0,
-                eagerFills: false
+                eagerFills: false,
+            creatorDeliveryMode: 0,
+            creatorVestDuration: 0,
+            creatorDeclaredUse: bytes32(0),
+            treasuryDeclaredUse: bytes32(0),
+            liquidityStrategy: address(0)
             })
         );
     }
