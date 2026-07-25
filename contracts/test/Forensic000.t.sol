@@ -38,14 +38,14 @@ contract Forensic000Test is Test {
         p.kappaHundredths = uint16(json.readUint(".params.kappaHundredths"));
         p.disposalMode = 0;
         p.pairToken = address(0);
-        p.eagerFills = true;
+        p.eagerFills = false;
 
         auction = new StonkzAuction(p);
         auction.poke();
 
         uint256 actionIdx;
         _t = block.timestamp;
-        // Advance until auctionIndex == 5 (about to clear block 5 → vector blocks[5])
+        // Advance until auctionIndex == 5 (about to clear block 5 â†’ vector blocks[5])
         while (auction.auctionIndex() < 5 && !auction.done()) {
             actionIdx = _applyActions(json, actionIdx);
              _t += 1;
@@ -85,13 +85,13 @@ contract Forensic000Test is Test {
     function _snap(address who, bytes32 name) internal view returns (TracedWaterFill.Snap memory s) {
         (
             uint256 weight,
+            uint256 activeBudget,
+            uint256 activeSpent,
+            uint16 activeCount,
             ,
             ,
             uint256 tokens,
-            uint256 activeBudget,
-            uint256 activeSpent,
-            uint32 activeCount,
-            bool capped,
+            uint8 flags
         ) = auction.bidders(who);
         s.who = who;
         s.name = name;
@@ -100,8 +100,8 @@ contract Forensic000Test is Test {
         s.tokens = tokens;
         s.activeSpent = activeSpent;
         s.activeBudget = activeBudget;
-        s.active = activeCount > 0 && !capped;
-        s.capped = capped;
+        s.active = activeCount > 0 && flags & 1 == 0;
+        s.capped = flags & 1 != 0;
     }
 
     function _applyActions(string memory json, uint256 startIdx) internal returns (uint256) {

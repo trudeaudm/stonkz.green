@@ -28,6 +28,7 @@ contract MaxUniqueActivesTest is Test {
                 kappaHundredths: 130,
                 disposalMode: 0,
                 pairToken: address(0),
+            maxLivePositionsPerAddress: 0,
             eagerFills: false
             })
         );
@@ -41,7 +42,7 @@ contract MaxUniqueActivesTest is Test {
         vm.deal(c, MIN_BID + BID_FEE + 1 ether);
         vm.prank(c);
         vm.expectRevert(bytes("max unique actives"));
-        a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint256).max);
+        a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint80).max);
 
         // Existing address may add another position
         _bid(a, address(0xA11), MIN_BID);
@@ -67,6 +68,7 @@ contract MaxUniqueActivesTest is Test {
                 kappaHundredths: 130,
                 disposalMode: 0,
                 pairToken: address(0),
+            maxLivePositionsPerAddress: 0,
             eagerFills: false
             })
         );
@@ -79,6 +81,6 @@ contract MaxUniqueActivesTest is Test {
     function _bid(StonkzAuction a, address who, uint256 budget) internal {
         vm.deal(who, budget + BID_FEE + 1 ether);
         vm.prank(who);
-        a.placeBid{value: budget + BID_FEE}(budget, type(uint256).max);
+        a.placeBid{value: budget + BID_FEE}(budget, type(uint80).max);
     }
 }

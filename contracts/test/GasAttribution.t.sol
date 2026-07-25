@@ -13,9 +13,9 @@ contract GasAttributionTest is Test {
     uint256 internal constant MIN_BID = 10 ether;
     uint256 internal constant N = 300;
 
-    // Layout bases from `forge inspect StonkzAuction storage-layout` (post Task R)
-    uint256 internal constant SLOT_POSITIONS = 14;
-    uint256 internal constant SLOT_BIDDERS = 15;
+    // Layout bases from `forge inspect StonkzAuction storage-layout` (post F1')
+    uint256 internal constant SLOT_POSITIONS = 15;
+    uint256 internal constant SLOT_BIDDERS = 16;
 
     mapping(bytes32 => uint8) internal _kind; // 1=position, 2=bidder
 
@@ -142,7 +142,7 @@ contract GasAttributionTest is Test {
     }
 
     function _isGlobalScalar(uint256 slot) internal pure returns (bool) {
-        // slots 2–13 (incl. uniqueBidders), activeAddrs length@17, escrow totals@21–23
+        // slots 2â€“13 (incl. uniqueBidders), activeAddrs length@17, escrow totals@21â€“23
         if (slot >= 2 && slot <= 13) return true;
         if (slot == 17 || slot == 21 || slot == 22 || slot == 23) return true;
         return false;
@@ -184,6 +184,7 @@ contract GasAttributionTest is Test {
                 kappaHundredths: 130,
                 disposalMode: 0,
                 pairToken: address(0),
+            maxLivePositionsPerAddress: 0,
             eagerFills: false
             })
         );
@@ -194,7 +195,7 @@ contract GasAttributionTest is Test {
             address who = address(uint160(i));
             vm.deal(who, MIN_BID + BID_FEE + 1 ether);
             vm.prank(who);
-            a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint256).max);
+            a.placeBid{value: MIN_BID + BID_FEE}(MIN_BID, type(uint80).max);
         }
     }
 }

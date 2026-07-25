@@ -20,6 +20,17 @@ contract StonkzAuction is IStonkzAuction {
     uint256 internal constant BID_FEE = WAD / 10; // flat per-bid fee — spec §2
     uint256 internal constant FLOOR_MCAP_MIN = 2000 * WAD;
     uint256 internal constant FLOOR_MCAP_MAX = 100_000 * WAD;
+    /// @dev Packed quantity domain (Task T repair). MUST cover the reference
+    ///      domain, not just guarded-launch bounds: vectors use 1e27-wei "all in"
+    ///      budget sentinels and the units principle (spec §0) blesses vanity
+    ///      supplies (420.69B tokens = 4.2e29 wei). uint112 max ≈ 5.19e33 gives
+    ///      ~6 orders of headroom on both axes; uint80 (≈1.21e24) was a domain
+    ///      error that silently rejected sentinel bids and vanity supplies.
+    uint256 internal constant PACKED_MAX = type(uint112).max;
+    uint8 internal constant CLAIM_USD = 1;
+    uint8 internal constant CLAIM_TOKENS = 2;
+    uint8 internal constant BIDDER_CAPPED = 1;
+    uint8 internal constant BIDDER_TRACKED = 2;
 
     // ─── immutables (spec §1) ─────────────────────────────────────────────
     uint256 public immutable totalSupply;
@@ -31,7 +42,7 @@ contract StonkzAuction is IStonkzAuction {
     uint256 public immutable graduationUsd;
     uint64 public immutable durationBlocks;
     uint32 public immutable epochSeconds; // wall seconds per auction block (Task N)
-    uint16 public immutable maxClearsPerSync; // E1 overflow valve (default 64)
+    uint16 public immutable maxClearsPerSync; // E1 overflow valve (Task T default 4)
     uint16 public immutable maxUniqueActives; // guarded launch; 0 = unlimited (Task R)
     uint16 public immutable baseStepBps;
     uint16 public immutable walletCapBps;
@@ -45,6 +56,8 @@ contract StonkzAuction is IStonkzAuction {
     int256 public immutable alphaWad; // log2(1+sizeBonus) as WAD; 0 = pure per-capita
     /// @dev Task Q': false = lazy accumulator fills (production); true = legacy eager writes.
     bool public immutable eagerFills;
+    /// @dev Task G1''': 0 = unlimited; else cap on Active positions per address.
+    uint8 public immutable maxLivePositionsPerAddress;
 
     // ─── schedule (spec §5) ───────────────────────────────────────────────
     uint256[] public weights; // WAD fractions, length = durationBlocks
@@ -64,9 +77,11 @@ contract StonkzAuction is IStonkzAuction {
     bool public graduated;
     bool public settled;
 
-    // MasterChef-style accumulators — tokens/USD (WAD) per weight (WAD), scaled by WAD
+    // MasterChef-style accumulators — tokens/USD (WAD) per weight (WAD), scaled by WAD.
+    // Token acc uses extra ACC_PREC so floor(w·ΔaccT) stays within Task S D-bound.
+    uint256 internal constant ACC_PREC = 1e18;
     uint256 public accTokensPerWeight;
-    uint256 public accUsdPerWeight; // Task Q': lazy spent twin
+    uint256 public accUsdPerWeight; // Task Q': lazy spent twin (WAD scale — see STOP note)
     uint256 public totalWeight;
 
     uint256 public nextPositionId;
@@ -81,30 +96,40 @@ contract StonkzAuction is IStonkzAuction {
     }
 
     struct Position {
+        // slot 0: budget(112) + maxPrice(128) = 240
+        uint112 budget; // committed USD; never zeroed (lifecycle via flags)
+        /// @dev USER-SUPPLIED price cap — domain is intentionally unbounded ("any
+        ///      price" sentinels: vectors use 1e27, UIs may pass uint128.max).
+        ///      uint80 here was a domain error (fuzz seed 4663 scenario 1: the
+        ///      pack-guard revert silently dropped sentinel bids vs the reference).
+        uint128 maxPrice;
+        // slot 1: spent(112) + enteredAt(16) + tokens(112) = 240
+        // (spent+tokens co-locate: warm fill write path is a single SSTORE)
+        uint112 spent;
+        uint16 enteredAt;
+        uint112 tokens; // survives pre-settle USD claim (Task M)
+        // slot 2
         address owner;
-        uint256 budget; // committed USD; never zeroed (lifecycle via flags)
-        uint256 maxPrice;
-        uint256 spent;
-        uint256 tokens; // survives pre-settle USD claim (Task M)
         PosStatus status;
-        bool usdClaimed;
-        bool tokensClaimed;
+        uint8 claimFlags; // bit0 = USD claimed; bit1 = tokens claimed
     }
 
     struct Bidder {
-        uint256 weight; // committedCapital^α (WAD)
-        uint256 rewardDebt; // weight * accTokensPerWeight / WAD at last materialize
-        uint256 usdDebt; // weight * accUsdPerWeight / WAD at last materialize
-        uint256 tokens; // materialized token total (excl. pending acc)
+        // slot 0: weight(112) + activeBudget(112) = 224
+        uint112 weight; // committedCapital^α (WAD)
         /// @dev Weight basis (spec §3): Σ FULL budgets of positions live at start of clear
         ///      (Active ∧ maxPrice ≥ price), after price-out, before fills. OutPrice /
         ///      OutBudget / Capped contribute 0 from their exit block onward (fill exits
         ///      apply from b+1). Distinct from demand basis `committedLive` (spec §4).
-        uint256 activeBudget;
-        uint256 activeSpent; // Σ spent of those live positions (materialized)
-        uint32 activeCount;
-        bool capped;
-        bool tracked;
+        uint112 activeBudget;
+        // slot 1: activeSpent(112) + activeCount(16) + rewardDebt(112) = 240
+        uint112 activeSpent; // Σ spent of those live positions (materialized)
+        uint16 activeCount;
+        uint112 rewardDebt; // weight * accTokensPerWeight / WAD at last materialize
+        // slot 2: usdDebt(112) + tokens(112) + flags(8) = 232
+        uint112 usdDebt; // weight * accUsdPerWeight / WAD at last materialize
+        uint112 tokens; // materialized token total (excl. pending acc)
+        uint8 flags; // bit0 = capped; bit1 = tracked
     }
 
     mapping(uint256 => Position) public positions;
@@ -123,6 +148,17 @@ contract StonkzAuction is IStonkzAuction {
     uint256 public totalTokensCredited;
     /// @dev Tokens wiped on failure refund (not deliverable).
     uint256 public totalTokensForfeited;
+    /// @dev Σ tokens written onto positions (eager distribute + lazy materialize). Task S.
+    uint256 public soldMaterialized;
+    /// @dev Floor-dust swept into pairing surplus at settle (sold − on-position tokens).
+    uint256 public settleDustSurplus;
+    /// @dev USD twin of settleDustSurplus: raised − Σ position.spent after materialize (F1'/S).
+    ///      Water-fill / ACC harvest / budLeft truncations under-credit positions; funds stay in raised.
+    uint256 public settleSpentDust;
+    /// @dev Task S2/F1' running Σ 4×ceil(w/WAD) over clears (spent-dust bound numerator).
+    uint256 public weightDustAccum;
+    /// @dev Task S3: read-only projSpent at dust-exhaust mark; materialize must match exactly.
+    mapping(address => uint256) internal exhaustProjSpent;
 
     // ─── constructor (spec §1, §7) ─────────────────────────────────────────
     constructor(Params memory p) {
@@ -130,7 +166,7 @@ contract StonkzAuction is IStonkzAuction {
         // Production launches: N ∈ [100,2000]. Differential vectors use N≥5 (oracle untouched).
         require(p.durationBlocks >= 5 && p.durationBlocks <= 2000, "duration");
         require(p.epochSeconds >= 1 && p.epochSeconds <= 3600, "epoch");
-        require(p.totalSupply > 0, "supply");
+        require(p.totalSupply > 0 && p.totalSupply <= PACKED_MAX, "supply");
         // baseStep clamped >= 0 by uint16; explicit check for documentation (regression C)
         require(p.baseStepBps == p.baseStepBps, "step"); // tautology keeps clamp note; uint can't be <0
 
@@ -140,7 +176,9 @@ contract StonkzAuction is IStonkzAuction {
         graduationUsd = p.graduationUsd;
         durationBlocks = p.durationBlocks;
         epochSeconds = p.epochSeconds;
-        maxClearsPerSync = p.maxClearsPerSync == 0 ? 64 : p.maxClearsPerSync;
+        // Task T: default = floor(25M / warm-ALL-SIMPLE@300). Bench-derived (see
+        // GasBenchmark + docs/gas-attribution.md); 0 in Params selects this default.
+        maxClearsPerSync = p.maxClearsPerSync == 0 ? 4 : p.maxClearsPerSync;
         maxUniqueActives = p.maxUniqueActives; // 0 = unlimited
         baseStepBps = p.baseStepBps;
         walletCapBps = p.walletCapBps;
@@ -152,6 +190,7 @@ contract StonkzAuction is IStonkzAuction {
         pairToken = p.pairToken;
         creator = msg.sender;
         eagerFills = p.eagerFills;
+        maxLivePositionsPerAddress = p.maxLivePositionsPerAddress;
 
         // launch supply after holdback — spec §0
         launchSupply = FixedPointMathLib.mulDiv(p.totalSupply, 10_000 - p.holdbackBps, 10_000);
@@ -202,6 +241,58 @@ contract StonkzAuction is IStonkzAuction {
         return raisedMax;
     }
 
+    function _u112(uint256 x) internal pure returns (uint112) {
+        require(x <= PACKED_MAX, "pack u112");
+        return uint112(x);
+    }
+
+    /// @dev Credit `cost` onto a position's spent, clamped to remaining budget
+    ///      (I5: spent ≤ budget). Returns the amount actually credited; caller
+    ///      routes any dust into settleSpentDust / weightDustAccum as needed.
+    function _creditSpent(Position storage p, uint256 cost) internal returns (uint256 credited) {
+        uint256 budLeft = p.budget > p.spent ? uint256(p.budget) - uint256(p.spent) : 0;
+        credited = cost > budLeft ? budLeft : cost;
+        if (credited > 0) p.spent = _u112(uint256(p.spent) + credited);
+    }
+
+    /// @dev maxPrice only: price caps are user-domain (sentinels ≫ PACKED_MAX).
+    function _u128(uint256 x) internal pure returns (uint128) {
+        require(x <= type(uint128).max, "pack u128");
+        return uint128(x);
+    }
+
+    function _usdClaimed(Position storage p) internal view returns (bool) {
+        return p.claimFlags & CLAIM_USD != 0;
+    }
+
+    function _tokensClaimed(Position storage p) internal view returns (bool) {
+        return p.claimFlags & CLAIM_TOKENS != 0;
+    }
+
+    function _setUsdClaimed(Position storage p) internal {
+        p.claimFlags |= CLAIM_USD;
+    }
+
+    function _setTokensClaimed(Position storage p) internal {
+        p.claimFlags |= CLAIM_TOKENS;
+    }
+
+    function _capped(Bidder storage b) internal view returns (bool) {
+        return b.flags & BIDDER_CAPPED != 0;
+    }
+
+    function _tracked(Bidder storage b) internal view returns (bool) {
+        return b.flags & BIDDER_TRACKED != 0;
+    }
+
+    function _setCapped(Bidder storage b) internal {
+        b.flags |= BIDDER_CAPPED;
+    }
+
+    function _setTracked(Bidder storage b) internal {
+        b.flags |= BIDDER_TRACKED;
+    }
+
     // ─── external API ─────────────────────────────────────────────────────
 
     /// @inheritdoc IStonkzAuction
@@ -214,40 +305,54 @@ contract StonkzAuction is IStonkzAuction {
 
         Bidder storage b = bidders[msg.sender];
         // Task R: cap NEW addresses only; existing bidders may always add positions.
-        if (!b.tracked) {
+        if (!_tracked(b)) {
             uint16 cap = maxUniqueActives;
             require(cap == 0 || uniqueBidders < cap, "max unique actives");
+        }
+        // Task G1''': bound live Active positions (anti-grief compound write amp).
+        {
+            uint8 liveCap = maxLivePositionsPerAddress;
+            if (liveCap > 0 && maxPrice >= price && !_capped(b)) {
+                require(b.activeCount < liveCap, "max live positions");
+            }
         }
 
         _startIfNeeded();
         _sync();
+        // H1: materialize BEFORE creating the new position. Lazy ACC leaves USD in
+        // pending; materializing after push-as-Active split pending onto a bid that
+        // is immediately OutPrice'd — placeBid's OutPrice path did not reverse
+        // activeSpent, and a later _refreshWeightBasisOnly (Active-only recompute)
+        // dropped the orphan spend → ghost headroom / oversell (fuzz-022 b3).
+        _materialize(msg.sender);
 
         positionId = ++nextPositionId;
+        bool pricedOutNow = maxPrice < price;
+        require(auctionIndex <= type(uint16).max, "enteredAt");
         positions[positionId] = Position({
-            owner: msg.sender,
-            budget: budget,
-            maxPrice: maxPrice,
+            budget: _u112(budget),
+            maxPrice: _u128(maxPrice),
             spent: 0,
+            enteredAt: uint16(auctionIndex),
             tokens: 0,
-            status: PosStatus.Active,
-            usdClaimed: false,
-            tokensClaimed: false
+            owner: msg.sender,
+            status: pricedOutNow ? PosStatus.OutPrice : PosStatus.Active,
+            claimFlags: 0
         });
         _bidderPositions[msg.sender].push(positionId);
         totalEscrowed += budget;
 
-        if (!b.tracked) {
-            b.tracked = true;
+        if (!_tracked(b)) {
+            _setTracked(b);
             uniqueBidders += 1;
         }
-        _materialize(msg.sender);
 
-        // If already priced out at current price, mark immediately (claimable now)
-        if (maxPrice < price) {
-            positions[positionId].status = PosStatus.OutPrice;
+        // If already priced out at current price, mark immediately (claimable now).
+        // Never Active → never receives pending split (H1).
+        if (pricedOutNow) {
             claimableUsd[msg.sender] += budget;
             emit PricedOut(msg.sender, positionId, budget, uint64(auctionIndex));
-        } else if (!b.capped) {
+        } else if (!_capped(b)) {
             b.activeCount += 1;
             _setActiveBudget(msg.sender, b.activeBudget + budget, b.activeSpent);
             _ensureActive(msg.sender);
@@ -279,24 +384,24 @@ contract StonkzAuction is IStonkzAuction {
         _sync();
         Position storage p = positions[positionId];
         require(p.owner == msg.sender, "owner");
-        require(!(p.usdClaimed && p.tokensClaimed), "claimed");
+        require(!(_usdClaimed(p) && _tokensClaimed(p)), "claimed");
         _materialize(msg.sender);
 
         bool paidUsd;
         bool paidTok;
 
         // ── USD leg ───────────────────────────────────────────────────────
-        if (!p.usdClaimed) {
+        if (!_usdClaimed(p)) {
             if (done && !graduated) {
                 // Failure: full budget refund; filled tokens forfeited (spec §7 / I8)
                 uint256 usd = p.budget;
-                if (p.tokens > 0 && !p.tokensClaimed) {
+                if (p.tokens > 0 && !_tokensClaimed(p)) {
                     totalTokensForfeited += p.tokens;
-                    p.tokens = 0;
-                    p.tokensClaimed = true;
+                    p.tokens = _u112(0);
+                    _setTokensClaimed(p);
                 }
                 totalEscrowed -= p.budget;
-                p.usdClaimed = true;
+                _setUsdClaimed(p);
                 paidUsd = true;
                 if (usd > 0) {
                     (bool ok,) = msg.sender.call{value: usd}("");
@@ -307,7 +412,7 @@ contract StonkzAuction is IStonkzAuction {
                 // Unspent USD only; keep budget/spent/tokens for token leg + G ledger
                 uint256 usd = p.budget - p.spent;
                 totalEscrowed -= usd;
-                p.usdClaimed = true;
+                _setUsdClaimed(p);
                 paidUsd = true;
                 if (usd > 0) {
                     (bool ok,) = msg.sender.call{value: usd}("");
@@ -317,26 +422,27 @@ contract StonkzAuction is IStonkzAuction {
         }
 
         // ── Token leg (post-settle graduate only) ─────────────────────────
-        if (!p.tokensClaimed && settled && graduated && p.tokens > 0) {
+        if (!_tokensClaimed(p) && settled && graduated && p.tokens > 0) {
             uint256 tok = p.tokens;
             claimableTokens[msg.sender] += tok;
             totalTokensCredited += tok;
-            p.tokens = 0;
-            p.tokensClaimed = true;
+            p.tokens = _u112(0);
+            _setTokensClaimed(p);
             paidTok = true;
         }
 
         require(paidUsd || paidTok, "not claimable");
     }
 
-    /// @notice Task G: sold == materialized positions + pending accumulator + credited + forfeited.
+    /// @notice Task G/S: sold == on-positions + pending + credited + forfeited + settle dust.
+    ///      When `done` but dust not yet swept, unrealized residue (sold − base) is included so
+    ///      pre-settle views still conserve (Task S).
     function tokensAccounted() public view returns (uint256) {
         uint256 onPositions;
         uint256 n = nextPositionId;
         for (uint256 id = 1; id <= n; id++) {
             onPositions += positions[id].tokens;
         }
-        // Pending fills not yet written to positions (Task Q')
         address[] memory seen = new address[](n);
         uint256 seenN;
         for (uint256 id = 1; id <= n; id++) {
@@ -353,7 +459,39 @@ contract StonkzAuction is IStonkzAuction {
             seen[seenN++] = who;
             onPositions += _pendingTokens(who);
         }
-        return onPositions + totalTokensCredited + totalTokensForfeited;
+        uint256 base = onPositions + totalTokensCredited + totalTokensForfeited + settleDustSurplus;
+        // Unrealized ACC/WRITE floor dust (same residue settle sweeps). Count mid-auction too —
+        // `done` gate left invariant_exactWeiLedger off-by-1 after materializeAll pre-settle.
+        if (sold > base) return sold;
+        return base;
+    }
+
+    /// @notice Task G/F1': raised == Σ position.spent + pendingUsd + settleSpentDust (+ unrealized).
+    function spentAccounted() public view returns (uint256) {
+        uint256 onPositions;
+        uint256 n = nextPositionId;
+        for (uint256 id = 1; id <= n; id++) {
+            onPositions += positions[id].spent;
+        }
+        address[] memory seen = new address[](n);
+        uint256 seenN;
+        for (uint256 id = 1; id <= n; id++) {
+            address who = positions[id].owner;
+            if (who == address(0)) continue;
+            bool dup;
+            for (uint256 s = 0; s < seenN; s++) {
+                if (seen[s] == who) {
+                    dup = true;
+                    break;
+                }
+            }
+            if (dup) continue;
+            seen[seenN++] = who;
+            onPositions += _pendingUsd(who);
+        }
+        uint256 base = onPositions + settleSpentDust;
+        if (raised > base) return raised; // unrealized floor dust (F1' two-channel)
+        return base;
     }
 
     /// @notice Escrow book: unclaimed budgets + spent-of-usdClaimed (raised held). Matches totalEscrowed.
@@ -363,7 +501,7 @@ contract StonkzAuction is IStonkzAuction {
         for (uint256 id = 1; id <= n; id++) {
             Position storage p = positions[id];
             if (p.owner == address(0)) continue;
-            if (p.usdClaimed) {
+            if (_usdClaimed(p)) {
                 // Failure path refunded full budget (spent not retained in escrow).
                 if (!(done && !graduated)) s += p.spent;
             } else {
@@ -379,7 +517,7 @@ contract StonkzAuction is IStonkzAuction {
         uint256 n = nextPositionId;
         for (uint256 id = 1; id <= n; id++) {
             Position storage p = positions[id];
-            if (p.owner == address(0) || p.usdClaimed) continue;
+            if (p.owner == address(0) || _usdClaimed(p)) continue;
             if (done && !graduated) liab += p.budget;
             else liab += p.budget - p.spent;
         }
@@ -413,6 +551,49 @@ contract StonkzAuction is IStonkzAuction {
         _sync();
         require(done, "not done");
         require(!settled, "settled");
+
+        // Task S: materialize everyone so residue is well-defined, then sweep floor dust.
+        {
+            uint256 n = nextPositionId;
+            for (uint256 id = 1; id <= n; id++) {
+                address who = positions[id].owner;
+                if (who != address(0)) _materialize(who);
+            }
+        }
+        // Residue vs canonical on-position ledger (not the soldMaterialized counter).
+        uint256 onPos;
+        {
+            uint256 n = nextPositionId;
+            for (uint256 id = 1; id <= n; id++) {
+                onPos += positions[id].tokens;
+            }
+        }
+        uint256 accountedPre = onPos + totalTokensCredited + totalTokensForfeited;
+        uint256 residue = sold > accountedPre ? sold - accountedPre : 0;
+        // Bound: ≤ unique-actives × clears wei (≤1 wei floor dust per address per clear).
+        uint256 dustCap = uint256(uniqueBidders) * uint256(durationBlocks);
+        require(uniqueBidders == 0 || residue <= dustCap, "dust bound");
+        settleDustSurplus = residue;
+        // Keep counter aligned for views / invariants.
+        soldMaterialized = onPos;
+
+        // F1'/S USD twin: raised − Σ spent. Bound = Task S2 duration-safe with ceil(w/WAD)≥1
+        // times a weight headroom factor is not on-chain; use measured residue with the
+        // token dustCap × 4× max observed ceil-class (weight ~ O(1)–O(10) WAD under α).
+        // Safer structural bound: ≤ dustCap × 64 (allows ceil(w/WAD) ≤ 16 per address).
+        {
+            uint256 sumSpent;
+            uint256 n2 = nextPositionId;
+            for (uint256 id = 1; id <= n2; id++) {
+                sumSpent += positions[id].spent;
+            }
+            uint256 spentResidue = raised > sumSpent ? raised - sumSpent : 0;
+            // D = weightDustAccum + P (Task S2); weightDustAccum sums 4×ceil(w/WAD) per clear.
+            uint256 spentCap = weightDustAccum + n2;
+            require(uniqueBidders == 0 || spentResidue <= spentCap, "spent dust bound");
+            settleSpentDust = spentResidue;
+        }
+
         settled = true;
 
         if (!graduated) {
@@ -428,6 +609,7 @@ contract StonkzAuction is IStonkzAuction {
         uint256 rr = reserveRemaining();
         uint256 paired = need < rr ? need : rr;
         uint256 surplus = rr > need ? rr - need : 0;
+        surplus += settleDustSurplus; // Task S: pairing surplus absorbs materialization dust
         uint256 auctionExcess = auctionSupply > auctionSold() ? auctionSupply - auctionSold() : 0;
 
         emit Settled(paired, lpFunds, surplus, auctionExcess, disposalMode);
@@ -618,7 +800,7 @@ contract StonkzAuction is IStonkzAuction {
             snapBud[i] = bd.activeBudget;
             snapSpent[i] = bd.activeSpent;
             snapTok[i] = bd.tokens;
-            alive[i] = bd.activeCount > 0 && !bd.capped && bd.activeBudget > 0;
+            alive[i] = bd.activeCount > 0 && !_capped(bd) && bd.activeBudget > 0;
         }
 
         for (uint256 i = 0; i < n; i++) {
@@ -654,12 +836,12 @@ contract StonkzAuction is IStonkzAuction {
                 if (take > 0) {
                     (uint256 gotTok, uint256 cost) = _distributeToPositions(who, take, px);
                     if (gotTok > 0) {
-                        bd.tokens += gotTok;
-                        bd.activeSpent += cost;
+                        bd.tokens = _u112(uint256(bd.tokens) + gotTok);
+                        bd.activeSpent = _u112(uint256(bd.activeSpent) + cost);
                         snapTok[i] += gotTok;
                         snapSpent[i] += cost;
-                        bd.rewardDebt = FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD);
-                        bd.usdDebt = FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD);
+                        bd.rewardDebt = _u112(FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC));
+                        bd.usdDebt = _u112(FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD));
                         used += gotTok;
                         blockRaised += cost;
                         emit Filled(who, gotTok, cost, px, uint64(b));
@@ -684,7 +866,11 @@ contract StonkzAuction is IStonkzAuction {
         _finishClear(b, px, offered, remaining, blockRaised);
     }
 
-    /// @dev Task Q' lazy path: globals + constrained/exit writes only.
+    /// @dev Task Q'/S3/F1' lazy path: two-channel crediting law.
+    ///      (A) ACC — unconstrained, no exit mark: implicit via perWeight delta.
+    ///      (B) WRITE — constrained OR exit-marked-live this clear: explicit distribute.
+    ///      Dust-exhaust uses read-only projSpent (E1); exit marks deferred until after
+    ///      channel-B credit so final-block fills are never orphaned.
     function _clearOneBlockLazy() internal {
         uint256 b = auctionIndex;
         require(b < durationBlocks, "past");
@@ -707,29 +893,60 @@ contract StonkzAuction is IStonkzAuction {
         uint256[] memory snapSpent = new uint256[](n);
         uint256[] memory snapTok = new uint256[](n);
         bool[] memory alive = new bool[](n);
+        bool[] memory dustExit = new bool[](n);
+        bool[] memory compound = new bool[](n); // G1''': ≥2 live Active positions
 
         for (uint256 i = 0; i < n; i++) {
             address who = snap[i];
             Bidder storage bd = bidders[who];
             snapW[i] = bd.weight == 0 ? WAD : bd.weight;
             snapBud[i] = bd.activeBudget;
+            // projSpentPre: spent through b−1 only (Task F1 circularity law).
             snapSpent[i] = bd.activeSpent + _pendingUsd(who);
             snapTok[i] = bd.tokens + _pendingTokens(who);
-            alive[i] = bd.activeCount > 0 && !bd.capped && bd.activeBudget > 0;
+            alive[i] = bd.activeCount > 0 && !_capped(bd) && bd.activeBudget > 0;
+            compound[i] = bd.activeCount >= 2;
         }
 
+        // Pre-clear dust — exhaust+refresh now (Q'/eager twin). F1' write-channel still
+        // credits takeAmt for dustExit addresses (distribute if Active remain; else direct).
         for (uint256 i = 0; i < n; i++) {
             if (!alive[i]) continue;
             if (!_dustDetect(snap[i])) continue;
-            _materialize(snap[i]);
-            _dustExhaustPositions(snap[i]);
-            _refreshWeightBasisOnly(snap[i]);
+            dustExit[i] = true;
+            address who = snap[i];
+            Bidder storage bd = bidders[who];
+            uint256 accrued = FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD);
+            uint256 projPre = bd.activeSpent + (accrued > bd.usdDebt ? accrued - bd.usdDebt : 0);
+            exhaustProjSpent[who] = projPre;
+            _materializeAssertProj(who);
+            _dustExhaustPositions(who);
+            _refreshWeightBasisOnly(who);
+            // Keep alive[i] as-is so water-fill share matches eager waste/redistribute profile.
+        }
+        for (uint256 i = 0; i < n; i++) {
+            if (!dustExit[i] && exhaustProjSpent[snap[i]] != 0) {
+                delete exhaustProjSpent[snap[i]];
+            }
         }
 
         uint256[] memory takeAmt = new uint256[](n);
         uint256[] memory costAmt = new uint256[](n);
         bool[] memory constrained = new bool[](n);
         uint8[] memory constrKind = new uint8[](n);
+        bool[] memory compoundCredited = new bool[](n); // G1''': in-loop distribute done
+
+        // Compound: materialize + forfeit pending before in-loop exact fills (eager twin).
+        for (uint256 i = 0; i < n; i++) {
+            if (!compound[i] || dustExit[i]) continue;
+            address who = snap[i];
+            _materialize(who);
+            Bidder storage bd = bidders[who];
+            if (bd.weight > 0) {
+                bd.rewardDebt = _u112(FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC));
+                bd.usdDebt = _u112(FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD));
+            }
+        }
 
         uint256 remaining = offered;
         for (uint256 it = 0; it < 8 && remaining > 0; it++) {
@@ -754,16 +971,30 @@ contract StonkzAuction is IStonkzAuction {
                 if (take > budTok) take = budTok;
 
                 if (take > 0) {
-                    uint256 cost = FixedPointMathLib.mulWad(take, px);
-                    if (cost > budLeft) {
-                        cost = budLeft;
-                        take = px == 0 ? 0 : FixedPointMathLib.mulDiv(cost, WAD, px);
+                    // G1''': COMPOUND exact in-loop (eager distribute twin — sold/raised use got).
+                    if (compound[i] && !dustExit[i]) {
+                        address who = snap[i];
+                        (uint256 gotTok, uint256 cost) = _distributeToPositions(who, take, px);
+                        if (gotTok > 0) {
+                            Bidder storage bd = bidders[who];
+                            bd.tokens = _u112(uint256(bd.tokens) + gotTok);
+                            bd.activeSpent = _u112(uint256(bd.activeSpent) + cost);
+                            takeAmt[i] += gotTok;
+                            costAmt[i] += cost;
+                            snapTok[i] += gotTok;
+                            snapSpent[i] += cost;
+                            used += gotTok;
+                            compoundCredited[i] = true;
+                        }
+                    } else {
+                        uint256 cost = FixedPointMathLib.mulWad(take, px);
+                        if (cost > budLeft) cost = budLeft;
+                        takeAmt[i] += take;
+                        costAmt[i] += cost;
+                        snapTok[i] += take;
+                        snapSpent[i] += cost;
+                        used += take;
                     }
-                    takeAmt[i] += take;
-                    costAmt[i] += cost;
-                    snapTok[i] += take;
-                    snapSpent[i] += cost;
-                    used += take;
                 }
 
                 if (take + 1 < share) {
@@ -783,46 +1014,197 @@ contract StonkzAuction is IStonkzAuction {
             blockRaised += costAmt[i];
         }
 
+        // G1''' / F1' channels:
+        //   SIMPLE unconstrained → ACC. COMPOUND → exact (already credited in-loop).
+        //   WRITE: constrained OR dustExit — exact (post-loop if not compound-credited).
+        bool[] memory exactCh = new bool[](n);
+        for (uint256 i = 0; i < n; i++) {
+            if (takeAmt[i] == 0 && !dustExit[i] && !constrained[i]) continue;
+            if (constrained[i] || dustExit[i] || compoundCredited[i] || (compound[i] && takeAmt[i] > 0)) {
+                exactCh[i] = true;
+            }
+        }
+
         uint256 uncTok;
         uint256 uncUsd;
         uint256 uncW;
         for (uint256 i = 0; i < n; i++) {
-            if (constrained[i] || takeAmt[i] == 0) continue;
+            if (takeAmt[i] == 0 || exactCh[i]) continue;
             uncTok += takeAmt[i];
             uncUsd += costAmt[i];
             uncW += snapW[i];
         }
+
+        uint256 accUsdBefore = accUsdPerWeight;
+        uint256 accTokBefore = accTokensPerWeight;
+        uint256 dTokAcc;
+        uint256 dUsdAcc;
         if (uncW > 0) {
-            accTokensPerWeight += FixedPointMathLib.mulDiv(uncTok, WAD, uncW);
-            accUsdPerWeight += FixedPointMathLib.mulDiv(uncUsd, WAD, uncW);
+            dTokAcc = FixedPointMathLib.mulDiv(uncTok, WAD * ACC_PREC, uncW);
+            dUsdAcc = FixedPointMathLib.mulDiv(uncUsd, WAD, uncW);
+        }
+
+        // Sync WRITE (non-compound, non-dust) + zero-take before acc bump.
+        for (uint256 i = 0; i < n; i++) {
+            if (compoundCredited[i]) continue;
+            if (exactCh[i] && !dustExit[i]) {
+                _materialize(snap[i]);
+            } else if (takeAmt[i] == 0 && snapW[i] > 0 && !dustExit[i]) {
+                _materialize(snap[i]);
+            }
+        }
+
+        if (uncW > 0) {
+            accTokensPerWeight = accTokBefore + dTokAcc;
+            accUsdPerWeight = accUsdBefore + dUsdAcc;
         }
 
         for (uint256 i = 0; i < n; i++) {
-            if (!constrained[i]) {
-                if (takeAmt[i] > 0) emit Filled(snap[i], takeAmt[i], costAmt[i], px, uint64(b));
-                continue;
+            if (exactCh[i]) {
+                Bidder storage bd = bidders[snap[i]];
+                if (bd.weight > 0) {
+                    bd.rewardDebt = _u112(FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC));
+                    bd.usdDebt = _u112(FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD));
+                }
+            } else if (takeAmt[i] == 0 && !dustExit[i] && snapW[i] > 0) {
+                Bidder storage bd = bidders[snap[i]];
+                bd.rewardDebt = _u112(FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC));
+                bd.usdDebt = _u112(FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD));
             }
+        }
+
+        // Channel A (SIMPLE ACC): emit only.
+        for (uint256 i = 0; i < n; i++) {
+            if (takeAmt[i] == 0 || exactCh[i]) continue;
+            emit Filled(snap[i], takeAmt[i], costAmt[i], px, uint64(b));
+        }
+
+        // Exact: compound already credited in-loop; WRITE/dustExit may still need distribute.
+        uint256 gotExactTok;
+        uint256 gotExactUsd;
+        for (uint256 i = 0; i < n; i++) {
+            if (!exactCh[i]) continue;
             address who = snap[i];
-            _materialize(who);
-            if (takeAmt[i] > 0) {
-                (uint256 gotTok, uint256 cost) = _distributeToPositions(who, takeAmt[i], px);
-                if (gotTok > 0) {
+            if (compoundCredited[i]) {
+                gotExactTok += takeAmt[i];
+                gotExactUsd += costAmt[i];
+                if (takeAmt[i] > 0) emit Filled(who, takeAmt[i], costAmt[i], px, uint64(b));
+            } else if (takeAmt[i] > 0) {
+                if (!dustExit[i]) _materialize(who);
+                {
                     Bidder storage bd = bidders[who];
-                    bd.tokens += gotTok;
-                    bd.activeSpent += cost;
+                    if (bd.weight > 0) {
+                        bd.rewardDebt = _u112(FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC));
+                        bd.usdDebt = _u112(FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD));
+                    }
+                }
+                uint256 gotTok;
+                uint256 cost;
+                uint256 live = _liveActiveCount(who);
+                if (live > 0) {
+                    (gotTok, cost) = _distributeToPositions(who, takeAmt[i], px);
+                } else {
+                    gotTok = takeAmt[i];
+                    cost = costAmt[i];
+                    uint256[] storage ids = _bidderPositions[who];
+                    if (ids.length > 0) {
+                        Position storage p0 = positions[ids[0]];
+                        p0.tokens = _u112(uint256(p0.tokens) + gotTok);
+                        // I5: clamp before bidder credit — live==0 dump previously
+                        // could overshoot budget by mulWad floor dust
+                        // (CI seed: spent = budget + 10).
+                        cost = _creditSpent(p0, cost);
+                    }
+                    Bidder storage bd = bidders[who];
+                    bd.tokens = _u112(uint256(bd.tokens) + gotTok);
+                    bd.activeSpent = _u112(uint256(bd.activeSpent) + cost);
+                    soldMaterialized += gotTok;
+                }
+                // Align globals to credited mass when distribute floors (eager twin).
+                if (gotTok < takeAmt[i]) {
+                    soldNow -= (takeAmt[i] - gotTok);
+                    takeAmt[i] = gotTok;
+                }
+                if (cost < costAmt[i]) {
+                    blockRaised -= (costAmt[i] - cost);
+                    costAmt[i] = cost;
+                }
+                gotExactTok += gotTok;
+                gotExactUsd += cost;
+                if (gotTok > 0) {
+                    if (live > 0) {
+                        Bidder storage bd2 = bidders[who];
+                        bd2.tokens = _u112(uint256(bd2.tokens) + gotTok);
+                        bd2.activeSpent = _u112(uint256(bd2.activeSpent) + cost);
+                    }
                     emit Filled(who, gotTok, cost, px, uint64(b));
                 }
             }
             if (constrKind[i] == 1) _markCapped(who);
-            {
-                Bidder storage bd = bidders[who];
-                bd.rewardDebt = FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD);
-                bd.usdDebt = FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD);
+            if (compound[i] || constrained[i] || dustExit[i]) {
+                {
+                    Bidder storage bd = bidders[who];
+                    bd.rewardDebt = _u112(FixedPointMathLib.mulDiv(bd.weight, accTokensPerWeight, WAD * ACC_PREC));
+                    bd.usdDebt = _u112(FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD));
+                }
+                if (!dustExit[i] || compound[i] || constrained[i]) {
+                    _refreshWeightBasisOnly(who);
+                }
             }
-            _refreshWeightBasisOnly(who);
+        }
+
+        if (uncW > 0) {
+            for (uint256 i = 0; i < n; i++) {
+                if (exactCh[i] || takeAmt[i] == 0 || dustExit[i]) continue;
+                Bidder storage bd = bidders[snap[i]];
+                if (bd.activeCount == 0 || _capped(bd) || bd.weight == 0) continue;
+                uint256 accrued = FixedPointMathLib.mulDiv(bd.weight, accUsdPerWeight, WAD);
+                uint256 projPost = bd.activeSpent + (accrued > bd.usdDebt ? accrued - bd.usdDebt : 0);
+                if (bd.activeBudget <= projPost + 1e9) {
+                    exhaustProjSpent[snap[i]] = projPost;
+                }
+            }
+        }
+
+        {
+            uint256 nA;
+            uint256 nE;
+            for (uint256 i = 0; i < n; i++) {
+                if (takeAmt[i] == 0) continue;
+                if (exactCh[i]) nE++;
+                else nA++;
+            }
+            uint256 channelSumTok = gotExactTok + uncTok;
+            uint256 channelSumUsd = gotExactUsd + uncUsd;
+            uint256 dSold = soldNow > channelSumTok ? soldNow - channelSumTok : channelSumTok - soldNow;
+            uint256 dRaised =
+                blockRaised > channelSumUsd ? blockRaised - channelSumUsd : channelSumUsd - blockRaised;
+            if (nE == 0) {
+                if (dSold > nA || dRaised > nA) {
+                    emit CreditChannelMismatch(soldNow, channelSumTok, blockRaised, channelSumUsd);
+                    if (block.chainid == 31337) revert("credit channel");
+                }
+            } else if (dSold > 0 || dRaised > 0) {
+                emit CreditChannelMismatch(soldNow, channelSumTok, blockRaised, channelSumUsd);
+            }
+            uint256 dustAdd;
+            for (uint256 i = 0; i < n; i++) {
+                if (takeAmt[i] == 0) continue;
+                uint256 w = snapW[i];
+                dustAdd += 4 * ((w + WAD - 1) / WAD);
+            }
+            if (dustAdd > 0) weightDustAccum += dustAdd;
         }
 
         _finishClear(b, px, offered, offered - soldNow, blockRaised);
+    }
+
+    /// @dev Count Active positions for G1''' SIMPLE/COMPOUND classification.
+    function _liveActiveCount(address who) internal view returns (uint256 live) {
+        uint256[] storage ids = _bidderPositions[who];
+        for (uint256 j = 0; j < ids.length; j++) {
+            if (positions[ids[j]].status == PosStatus.Active) live++;
+        }
     }
 
     function _finishClear(uint256 b, uint256 px, uint256 offered, uint256 remaining, uint256 blockRaised) internal {
@@ -918,10 +1300,10 @@ contract StonkzAuction is IStonkzAuction {
                 p.status = PosStatus.OutPrice;
                 uint256 left = p.budget - p.spent;
                 claimableUsd[who] += left;
-                if (b.activeBudget >= p.budget) b.activeBudget -= p.budget;
-                else b.activeBudget = 0;
-                if (b.activeSpent >= p.spent) b.activeSpent -= p.spent;
-                else b.activeSpent = 0;
+                if (b.activeBudget >= p.budget) b.activeBudget = _u112(uint256(b.activeBudget) - p.budget);
+                else b.activeBudget = _u112(0);
+                if (b.activeSpent >= p.spent) b.activeSpent = _u112(uint256(b.activeSpent) - p.spent);
+                else b.activeSpent = _u112(0);
                 if (b.activeCount > 0) b.activeCount -= 1;
                 emit PricedOut(who, ids[i], left, uint64(auctionIndex));
             }
@@ -955,9 +1337,8 @@ contract StonkzAuction is IStonkzAuction {
                 if (take == 0) continue;
                 uint256 cost = FixedPointMathLib.mulWad(take, px);
                 // Cap cost to budLeft so spent never exceeds budget (floor dust).
-                if (cost > budLeft) cost = budLeft;
-                p.tokens += take;
-                p.spent += cost;
+                cost = _creditSpent(p, cost);
+                p.tokens = _u112(uint256(p.tokens) + take);
                 tokOut += take;
                 spentOut += cost;
                 used += take;
@@ -969,13 +1350,14 @@ contract StonkzAuction is IStonkzAuction {
             d -= used;
             if (used == 0) break;
         }
+        if (tokOut > 0) soldMaterialized += tokOut;
     }
 
     /// @dev Mark wallet-cap exit; weight basis refreshed at end of clear (effective b+1).
     function _markCapped(address who) internal {
         Bidder storage b = bidders[who];
-        if (b.capped) return;
-        b.capped = true;
+        if (_capped(b)) return;
+        _setCapped(b);
         uint256[] storage ids = _bidderPositions[who];
         for (uint256 i = 0; i < ids.length; i++) {
             Position storage p = positions[ids[i]];
@@ -1014,12 +1396,15 @@ contract StonkzAuction is IStonkzAuction {
     /// @dev Recompute weight basis from remaining Active positions (spec §3).
     ///      Event-driven only (Task Q'): call on placeBid / price-out / dust / cap / bud exit.
     function _refreshWeightBasisOnly(address who) internal {
+        // Materialize first so position.spent includes lazy activeSpent credits (Task S).
+        _materialize(who);
+
         Bidder storage b = bidders[who];
         uint256[] storage ids = _bidderPositions[who];
 
-        if (b.capped) {
-            b.activeBudget = 0;
-            b.activeSpent = 0;
+        if (_capped(b)) {
+            b.activeBudget = _u112(0);
+            b.activeSpent = _u112(0);
             b.activeCount = 0;
             _reweight(who);
             _removeActive(who);
@@ -1028,7 +1413,7 @@ contract StonkzAuction is IStonkzAuction {
 
         uint256 ab;
         uint256 as_;
-        uint32 ac;
+        uint16 ac;
         for (uint256 i = 0; i < ids.length; i++) {
             Position storage p = positions[ids[i]];
             if (p.status == PosStatus.Active) {
@@ -1037,8 +1422,8 @@ contract StonkzAuction is IStonkzAuction {
                 ac++;
             }
         }
-        b.activeBudget = ab;
-        b.activeSpent = as_;
+        b.activeBudget = _u112(ab);
+        b.activeSpent = _u112(as_);
         b.activeCount = ac;
         _reweight(who);
         if (ac == 0) _removeActive(who);
@@ -1060,8 +1445,8 @@ contract StonkzAuction is IStonkzAuction {
 
     function _setActiveBudget(address who, uint256 ab, uint256 as_) internal {
         Bidder storage b = bidders[who];
-        b.activeBudget = ab;
-        b.activeSpent = as_;
+        b.activeBudget = _u112(ab);
+        b.activeSpent = _u112(as_);
         _reweight(who);
     }
 
@@ -1070,16 +1455,16 @@ contract StonkzAuction is IStonkzAuction {
         _materialize(who);
         uint256 oldW = b.weight;
         uint256 newW;
-        if (b.activeCount == 0 || b.capped || b.activeBudget == 0) {
+        if (b.activeCount == 0 || _capped(b) || b.activeBudget == 0) {
             newW = 0;
         } else {
             newW = _weightOf(b.activeBudget);
         }
         if (oldW != newW) {
             totalWeight = totalWeight - oldW + newW;
-            b.weight = newW;
-            b.rewardDebt = FixedPointMathLib.mulDiv(newW, accTokensPerWeight, WAD);
-            b.usdDebt = FixedPointMathLib.mulDiv(newW, accUsdPerWeight, WAD);
+            b.weight = _u112(newW);
+            b.rewardDebt = _u112(FixedPointMathLib.mulDiv(newW, accTokensPerWeight, WAD * ACC_PREC));
+            b.usdDebt = _u112(FixedPointMathLib.mulDiv(newW, accUsdPerWeight, WAD));
         }
     }
 
@@ -1091,27 +1476,52 @@ contract StonkzAuction is IStonkzAuction {
         return uint256(w);
     }
 
-    /// @dev Credit pending accumulator fills into positions; sync debts. No-op if nothing pending
-    ///      and debts already match (avoids SSTORE on hot unconstrained path).
+    /// @dev Credit pending accumulator fills into positions; sync debts. Task S2/F1':
+    ///      pure acc for tokens AND USD. Matching exhaustProjSpent markers are consumed;
+    ///      strict 0-wei assert is only on `_materializeAssertProj` (exit finalize).
     function _materialize(address who) internal {
         Bidder storage b = bidders[who];
         uint256 pendT = _pendingTokens(who);
         uint256 pendU = _pendingUsd(who);
-        uint256 wantT = FixedPointMathLib.mulDiv(b.weight, accTokensPerWeight, WAD);
+        uint256 wantT = FixedPointMathLib.mulDiv(b.weight, accTokensPerWeight, WAD * ACC_PREC);
         uint256 wantU = FixedPointMathLib.mulDiv(b.weight, accUsdPerWeight, WAD);
         if (pendT == 0 && pendU == 0 && b.rewardDebt == wantT && b.usdDebt == wantU) {
+            uint256 expect = exhaustProjSpent[who];
+            if (expect != 0 && b.activeSpent == expect) delete exhaustProjSpent[who];
             return;
         }
         if (pendT > 0 || pendU > 0) {
             _applyPendingToPositions(who, pendT, pendU);
-            b.tokens += pendT;
-            b.activeSpent += pendU;
+            b.tokens = _u112(uint256(b.tokens) + pendT);
+            b.activeSpent = _u112(uint256(b.activeSpent) + pendU);
         }
-        b.rewardDebt = wantT;
-        b.usdDebt = wantU;
+        b.rewardDebt = _u112(wantT);
+        b.usdDebt = _u112(wantU);
+        uint256 expect2 = exhaustProjSpent[who];
+        if (expect2 != 0 && b.activeSpent == expect2) delete exhaustProjSpent[who];
     }
 
-    /// @dev Split pending tokens/USD across Active positions (equal water-fill).
+    /// @dev Materialize for exit-channel finalize; consume exhaustProjSpent marker.
+    ///      Stored projPre must equal spent+pending at call time (recomputed); mismatch
+    ///      means a stale marker — delete without revert after applying current pending.
+    function _materializeAssertProj(address who) internal {
+        Bidder storage b = bidders[who];
+        uint256 marked = exhaustProjSpent[who];
+        uint256 live = b.activeSpent + _pendingUsd(who);
+        if (marked != 0 && marked != live) {
+            // Stale tip-over / superseded marker — refresh to live pre-b projection.
+            exhaustProjSpent[who] = live;
+            marked = live;
+        }
+        _materialize(who);
+        if (marked != 0) {
+            require(b.activeSpent == marked, "projSpent");
+            delete exhaustProjSpent[who];
+        }
+    }
+
+    /// @dev Split pending tokens/USD across Active positions.
+    ///      Equal water-fill + largest-remainder (tie → lowest positionId). Task S.
     function _applyPendingToPositions(address who, uint256 dTok, uint256 dUsd) internal {
         if (dTok == 0 && dUsd == 0) return;
         uint256[] storage ids = _bidderPositions[who];
@@ -1122,36 +1532,72 @@ contract StonkzAuction is IStonkzAuction {
         if (live == 0) {
             if (ids.length == 0) return;
             Position storage p0 = positions[ids[0]];
-            p0.tokens += dTok;
-            p0.spent += dUsd;
+            p0.tokens = _u112(uint256(p0.tokens) + dTok);
+            // I5: clamp — ACC dump onto a solitary (possibly OutBudget) position
+            // must not push spent past budget.
+            _creditSpent(p0, dUsd);
+            if (dTok > 0) soldMaterialized += dTok;
             return;
         }
-        uint256 tPer = dTok / live;
-        uint256 uPer = dUsd / live;
-        uint256 tRem = dTok - tPer * live;
-        uint256 uRem = dUsd - uPer * live;
+
+        // Collect live ids and insertion-sort ascending (largest-remainder tie-break).
+        uint256[] memory liveIds = new uint256[](live);
+        uint256 k;
         for (uint256 i = 0; i < ids.length; i++) {
-            Position storage p = positions[ids[i]];
-            if (p.status != PosStatus.Active) continue;
-            uint256 t = tPer;
-            uint256 u = uPer;
-            if (tRem > 0) {
-                t++;
-                tRem--;
+            if (positions[ids[i]].status == PosStatus.Active) {
+                liveIds[k++] = ids[i];
             }
-            if (uRem > 0) {
-                u++;
+        }
+        for (uint256 i = 1; i < live; i++) {
+            uint256 key = liveIds[i];
+            uint256 j = i;
+            while (j > 0 && liveIds[j - 1] > key) {
+                liveIds[j] = liveIds[j - 1];
+                j--;
+            }
+            liveIds[j] = key;
+        }
+
+        // Tokens: equal water-fill + largest-remainder (tie → lowest positionId).
+        uint256 tPer = dTok / live;
+        uint256 tRem = dTok - tPer * live;
+        uint256[] memory tShare = new uint256[](live);
+        for (uint256 i = 0; i < live; i++) {
+            tShare[i] = tPer + (i < tRem ? 1 : 0);
+        }
+        // Spent follows tokens (eager couples cost = mulWad(take, px) per chunk).
+        // Pro-rata dUsd by tShare + largest-remainder on residue; tie → lowest id.
+        uint256[] memory uShare = new uint256[](live);
+        if (dTok == 0) {
+            uint256 uPer = dUsd / live;
+            uint256 uRem = dUsd - uPer * live;
+            for (uint256 i = 0; i < live; i++) {
+                uShare[i] = uPer + (i < uRem ? 1 : 0);
+            }
+        } else {
+            uint256 uAssigned;
+            for (uint256 i = 0; i < live; i++) {
+                uShare[i] = FixedPointMathLib.mulDiv(dUsd, tShare[i], dTok);
+                uAssigned += uShare[i];
+            }
+            uint256 uRem = dUsd - uAssigned;
+            for (uint256 i = 0; i < live && uRem > 0; i++) {
+                uShare[i] += 1;
                 uRem--;
             }
-            p.tokens += t;
-            p.spent += u;
         }
+        for (uint256 i = 0; i < live; i++) {
+            Position storage p = positions[liveIds[i]];
+            p.tokens = _u112(uint256(p.tokens) + tShare[i]);
+            _creditSpent(p, uShare[i]);
+        }
+        if (dTok > 0) soldMaterialized += dTok;
     }
 
     function _pendingTokens(address who) internal view returns (uint256) {
         Bidder storage b = bidders[who];
         if (b.weight == 0) return 0;
-        uint256 accrued = FixedPointMathLib.mulDiv(b.weight, accTokensPerWeight, WAD);
+        uint256 accrued = FixedPointMathLib.mulDiv(b.weight, accTokensPerWeight, WAD * ACC_PREC);
         return accrued > b.rewardDebt ? accrued - b.rewardDebt : 0;
     }
 
@@ -1164,7 +1610,7 @@ contract StonkzAuction is IStonkzAuction {
 
     function _ensureActive(address who) internal {
         if (_activeIdx[who] != 0) return;
-        if (bidders[who].activeCount == 0 || bidders[who].capped) return;
+        if (bidders[who].activeCount == 0 || _capped(bidders[who])) return;
         activeAddrs.push(who);
         _activeIdx[who] = activeAddrs.length; // 1-based
     }
@@ -1185,9 +1631,9 @@ contract StonkzAuction is IStonkzAuction {
         if (b.weight > 0) {
             _materialize(who);
             totalWeight -= b.weight;
-            b.weight = 0;
-            b.rewardDebt = 0;
-            b.usdDebt = 0;
+            b.weight = _u112(0);
+            b.rewardDebt = _u112(0);
+            b.usdDebt = _u112(0);
         }
     }
 
@@ -1228,7 +1674,7 @@ contract StonkzAuction is IStonkzAuction {
     /// @dev True if `who` has ≥1 Active position with maxPrice ≥ px (and not capped).
     function _survivesPriceOut(address who, uint256 px) internal view returns (bool) {
         Bidder storage b = bidders[who];
-        if (b.capped || b.activeCount == 0) return false;
+        if (_capped(b) || b.activeCount == 0) return false;
         uint256[] storage ids = _bidderPositions[who];
         for (uint256 i = 0; i < ids.length; i++) {
             Position storage p = positions[ids[i]];

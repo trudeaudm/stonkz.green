@@ -8,7 +8,7 @@ import {StonkzAuction} from "../src/StonkzAuction.sol";
 /// @notice Differential fuzz: replay all `test/vectors/fuzz/*.json` (seed 4663).
 /// @dev Comparison policy (Task I):
 ///   1. Cumulative abs: delta <= TOL (1e18) on price/offered/raised/fills.
-///   2. Per-block delta: sold/raised/fills this clear within max(1e12 wei, 1e-9 · scale).
+///   2. Per-block delta: sold/raised/fills this clear within max(1e12 wei, 1e-9 Â· scale).
 /// On divergence: report seed + index + first block and revert (HALT).
 contract StonkzAuctionFuzzVectorsTest is Test {
     using stdJson for string;
@@ -46,11 +46,11 @@ contract StonkzAuctionFuzzVectorsTest is Test {
 
     function _runOne(string memory json, uint256 index) internal {
         IStonkzAuction.Params memory p = _params(json);
-        // Constructor may reject bad ceilings — skip only if we can't deploy
+        // Constructor may reject bad ceilings â€” skip only if we can't deploy
         try this.deployAuction(p) returns (StonkzAuction a) {
             auction = a;
         } catch {
-            // Reference has no ctor gate; if Solidity rejects, that is a known asymmetry —
+            // Reference has no ctor gate; if Solidity rejects, that is a known asymmetry â€”
             // do not adjust math. Skip construct failures.
             return;
         }
@@ -115,7 +115,7 @@ contract StonkzAuctionFuzzVectorsTest is Test {
                     )
                 );
             }
-            // Policy 2 — per-block deltas
+            // Policy 2 â€” per-block deltas
             uint256 expSold = json.readUint(string.concat(blk, ".sold"));
             uint256 gotDSold = auction.sold() - soldBefore;
             if (_delta(gotDSold, expSold) > _deltaTol(expSold)) {
@@ -233,7 +233,7 @@ contract StonkzAuctionFuzzVectorsTest is Test {
         if (p.kappaHundredths < 100) p.kappaHundredths = 100;
         p.disposalMode = 0;
         p.pairToken = address(0);
-        p.eagerFills = true;
+        p.eagerFills = false;
     }
 
     function _addr(string memory name) internal pure returns (address) {

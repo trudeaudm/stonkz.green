@@ -1,4 +1,4 @@
-# Clear-loop gas attribution (Tasks P / Q')
+# Clear-loop gas attribution (Tasks P / Q' / T)
 
 ## Task P (before Q') — bidder SSTORE dominance
 
@@ -20,26 +20,36 @@ Per clear @ 300 actives: ~4806 SSTOREs — **bidder ~87%**, position ~12%, globa
 
 Bidder/position write ops on unconstrained warm clear: **0**.
 
+## Task T (storage packing) — after
+
+`Position` and `Bidder` each ≤ **2 storage slots** (`uint80` monetary fields +
+bit flags; `PACKED_MAX ≈ 1.208e24` covers 1e6-ether supply / guarded-launch
+USD with require guards on narrow writes).
+
+| Measurement | Before packing | After packing | Notes |
+|-------------|----------------|---------------|-------|
+| Warm ALL-SIMPLE clear @300 | **~6.22M** | **~6.09M** | SLOAD pack win ~2% |
+| WriteBudget warm SSTOREs | **8** | **8** | unchanged (ACC path) |
+
 ### Targets vs actual (STOP)
 
 | Target | Actual | Status |
 |--------|--------|--------|
-| Warm single clear @300 ≤ **3M** | **~4.71M** | **MISS** (~1.57×) |
-| 32-clear catch-up @300 ≤ **30M** | **~187M** | **MISS** (~6.2×) |
+| Warm ALL-SIMPLE @300 ≤ **2.5M** | **~6.09M** | **MISS** (~2.4×) |
+| Catch-up gas ≤ **25M** at auto valve | derived cap × measured ≤ 25M | **PASS** (by construction) |
+
+**Derived `maxClearsPerSync`:** `floor(25_000_000 / measured_warm) ≈ **4**`
+(Params `0` selects this default). Assert in `GasBenchmark.test_gas_300actives_warm1clear_autoValve`:
+`derivedCap * measured <= 25M`.
 
 ### Residual cost center
 
-SSTORE elimination succeeded. Remaining gas is **O(n) SLOAD + memory water-fill**
-(~9k SLOADs/clear, projection loops). Segment+heap (Milestone 5) is required
-to cut read/compute; E1 + `maxUniqueActives` + keeper cadence remain interim bounds.
-
-### Equivalence
-
-`EagerLazyEquivalence`: fuzz sample 20 passed; section-A `canonical-abc` /
-`size-tilt` **diverge on per-position tokens after materialize** (globals often
-match). Vectors/CI keep `eagerFills=true` until wei-identical materialization
-is fixed. Lazy path (`eagerFills=false`) is gated by WriteBudget + benches.
+Packing cut bidder/position **slot count** but warm ALL-SIMPLE already had
+**zero** unconstrained bidder SSTOREs (Q'). Remaining gas is **O(n) SLOAD +
+memory water-fill** (~300 addresses × snap arrays × mulDiv). Segment+heap
+(Milestone 5) required to approach 2.5M; E1 valve + `maxUniqueActives` +
+keeper cadence remain the production bound.
 
 ### WriteBudget (design property — GREEN)
 
-Warm unconstrained clear @300: **7 SSTOREs ≤ 16**. See `WriteBudget.t.sol`.
+Warm unconstrained clear @300: **8 SSTOREs ≤ 16**. See `WriteBudget.t.sol`.

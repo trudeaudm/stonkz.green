@@ -6,12 +6,12 @@ import {IStonkzAuction} from "../src/IStonkzAuction.sol";
 import {StonkzAuction} from "../src/StonkzAuction.sol";
 import {LadderWeights} from "../src/LadderWeights.sol";
 
-/// @notice Differential + invariant + regression suite (docs/mechanism-spec.md §9).
-/// @dev Vectors from `node reference/gen-vectors.js` — all amounts are 1e18 WAD.
+/// @notice Differential + invariant + regression suite (docs/mechanism-spec.md Ã‚Â§9).
+/// @dev Vectors from `node reference/gen-vectors.js` Ã¢â‚¬â€ all amounts are 1e18 WAD.
 ///
 /// Comparison policy (Task I):
 ///   1. Cumulative abs: assertApproxEqAbs(..., TOL=1e18) on price/offered/raised/fills.
-///   2. Per-block delta: sold/raised/fills this clear within max(1e12 wei, 1e-9 · scale).
+///   2. Per-block delta: sold/raised/fills this clear within max(1e12 wei, 1e-9 Ã‚Â· scale).
 contract StonkzAuctionTest is Test {
     using stdJson for string;
 
@@ -28,9 +28,9 @@ contract StonkzAuctionTest is Test {
     address internal constant ADDR_C = address(0xC33);
     address internal constant ADDR_D = address(0xD44);
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
     // A. VECTOR TESTS
-    // ═══════════════════════════════════════════════════════════════════════
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
     function testVector_canonicalAbc() public {
         _runVector("canonical-abc");
@@ -56,7 +56,7 @@ contract StonkzAuctionTest is Test {
         string memory json = _load("kappa-split");
         auction = new StonkzAuction(_params(json));
         uint256 pctBps = (auction.auctionSupply() * 10_000) / auction.launchSupply();
-        // 61.90476% → 6190 bps
+        // 61.90476% Ã¢â€ â€™ 6190 bps
         assertApproxEqAbs(pctBps, 6190, 5, "kappa 61.9%");
     }
 
@@ -66,9 +66,9 @@ contract StonkzAuctionTest is Test {
         assertFalse(auction.graduated());
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // B. INVARIANTS (spec §9)
-    // ═══════════════════════════════════════════════════════════════════════
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+    // B. INVARIANTS (spec Ã‚Â§9)
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
     function testInvariant_I10_weights() public pure {
         for (uint256 N = 10; N <= 200; N += 40) {
@@ -93,45 +93,53 @@ contract StonkzAuctionTest is Test {
 
     function testInvariant_I4_perCapita() public {
         auction = new StonkzAuction(_toy(0));
-        _bid(ADDR_A, 1000 ether, type(uint256).max);
-        _bid(ADDR_B, 2000 ether, type(uint256).max);
+        _bid(ADDR_A, 1000 ether, type(uint80).max);
+        _bid(ADDR_B, 2000 ether, type(uint80).max);
         _step();
         assertApproxEqAbs(auction.bidderTokens(ADDR_A), auction.bidderTokens(ADDR_B), 1e9, "eq");
     }
 
     function testInvariant_I4_sizeTilt() public {
         auction = new StonkzAuction(_toy(1000));
-        _bid(ADDR_A, 1000 ether, type(uint256).max);
-        _bid(ADDR_B, 2000 ether, type(uint256).max);
+        _bid(ADDR_A, 1000 ether, type(uint80).max);
+        _bid(ADDR_B, 2000 ether, type(uint80).max);
         _step();
         uint256 ratio = (auction.bidderTokens(ADDR_B) * WAD) / auction.bidderTokens(ADDR_A);
         assertApproxEqAbs(ratio, 11 * WAD / 10, WAD / 1e5, "tilt");
     }
 
-    /// @notice Task G: tokensAccounted == sold and spent sum == raised (exact wei).
+    /// @notice Task G/F1': tokensAccounted == sold; spentAccounted == raised (exact wei).
     function testInvariant_exactWeiLedger() public {
         _runVector("canonical-abc");
+        auction.materializeAll();
+        if (auction.done()) auction.settle();
         (uint256 sumTok, uint256 sumSpent) = _sumPositionLedger();
-        assertEq(sumTok + auction.totalTokensCredited() + auction.totalTokensForfeited(), auction.sold(), "accounted");
-        assertEq(sumSpent, auction.raised(), "sum spent == raised");
+        assertEq(sumTok + auction.totalTokensCredited() + auction.totalTokensForfeited() + auction.settleDustSurplus(), auction.sold(), "accounted");
+        assertEq(sumSpent + auction.settleSpentDust(), auction.raised(), "sum spent + dust == raised");
         assertEq(auction.tokensAccounted(), auction.sold(), "tokensAccounted");
+        assertEq(auction.spentAccounted(), auction.raised(), "spentAccounted");
         assertEq(auction.totalEscrowed(), auction.escrowBook(), "escrow");
     }
 
     function testInvariant_exactWeiLedger_sizeTilt() public {
         _runVector("size-tilt");
+        auction.materializeAll();
+        if (auction.done()) auction.settle();
         assertEq(auction.tokensAccounted(), auction.sold(), "tokensAccounted");
         (, uint256 sumSpent) = _sumPositionLedger();
-        assertEq(sumSpent, auction.raised(), "sum spent == raised");
+        // F1'/S2: raised âˆ’ Î£spent â‰¤ weightDustAccum + P (swept into settleSpentDust).
+        assertEq(sumSpent + auction.settleSpentDust(), auction.raised(), "sum spent + dust == raised");
+        assertEq(auction.spentAccounted(), auction.raised(), "spentAccounted");
+        assertLe(auction.settleSpentDust(), auction.weightDustAccum() + auction.nextPositionId(), "spent dust le D");
         assertEq(auction.totalEscrowed(), auction.escrowBook(), "escrow");
     }
 
     function testInvariant_I7_oneShare() public {
         auction = new StonkzAuction(_toy(0));
-        _bid(ADDR_A, 1000 ether, type(uint256).max);
-        _bid(ADDR_A, 1000 ether, type(uint256).max);
-        _bid(ADDR_A, 1000 ether, type(uint256).max);
-        _bid(ADDR_B, 3000 ether, type(uint256).max);
+        _bid(ADDR_A, 1000 ether, type(uint80).max);
+        _bid(ADDR_A, 1000 ether, type(uint80).max);
+        _bid(ADDR_A, 1000 ether, type(uint80).max);
+        _bid(ADDR_B, 3000 ether, type(uint80).max);
         _step();
         assertApproxEqAbs(auction.bidderTokens(ADDR_A), auction.bidderTokens(ADDR_B), 1e9, "share");
     }
@@ -141,8 +149,8 @@ contract StonkzAuctionTest is Test {
         p.walletCapBps = 100; // 1%
         auction = new StonkzAuction(p);
         uint256 cap = auction.walletCapTokens();
-        _bid(ADDR_A, 1_000_000 ether, type(uint256).max);
-        _bid(ADDR_B, 1_000_000 ether, type(uint256).max);
+        _bid(ADDR_A, 1_000_000 ether, type(uint80).max);
+        _bid(ADDR_B, 1_000_000 ether, type(uint80).max);
         for (uint256 i = 0; i < 10; i++) _step();
         assertLe(auction.bidderTokens(ADDR_A), cap + 1e9);
         assertLe(auction.bidderTokens(ADDR_B), cap + 1e9);
@@ -153,7 +161,7 @@ contract StonkzAuctionTest is Test {
         p.graduationUsd = 2000 ether; // above $100 budgets, within raise ceiling
         p.lpShareBps = 8000;
         auction = new StonkzAuction(p);
-        _bid(ADDR_A, 50 ether, type(uint256).max);
+        _bid(ADDR_A, 50 ether, type(uint80).max);
         for (uint256 i = 0; i < 10; i++) _step();
         assertTrue(auction.done() && !auction.graduated());
         uint256 balBeforeClaim = ADDR_A.balance;
@@ -173,12 +181,12 @@ contract StonkzAuctionTest is Test {
 
     function testInvariant_I5_committedBudgets() public {
         auction = new StonkzAuction(_toy(0));
-        _bid(ADDR_A, 100 ether, type(uint256).max);
-        (, uint256 budget,, uint256 spent,,,,) = auction.positions(1);
+        _bid(ADDR_A, 100 ether, type(uint80).max);
+        (uint256 budget,, uint256 spent,,,,,) = auction.positions(1);
         assertEq(budget, 100 ether);
         assertEq(spent, 0);
         _step();
-        (, budget,, spent,,,,) = auction.positions(1);
+        (budget,, spent,,,,,) = auction.positions(1);
         assertEq(budget, 100 ether);
         assertLe(spent, budget);
     }
@@ -195,8 +203,8 @@ contract StonkzAuctionTest is Test {
         p.holdbackBps = 1000;
         p.graduationUsd = 100 ether;
         auction = new StonkzAuction(p);
-        _bid(ADDR_A, 3000 ether, type(uint256).max);
-        _bid(ADDR_B, 3000 ether, type(uint256).max);
+        _bid(ADDR_A, 3000 ether, type(uint80).max);
+        _bid(ADDR_B, 3000 ether, type(uint80).max);
         for (uint256 i = 0; i < 12; i++) _step();
         if (!auction.done()) {
             vm.warp(block.timestamp + 20);
@@ -220,9 +228,9 @@ contract StonkzAuctionTest is Test {
         assertLe(auction.reserveRemaining(), auction.reserveInitial());
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
     // C. REGRESSIONS
-    // ═══════════════════════════════════════════════════════════════════════
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
     function testRegression_stallDeathSpiralImpossible() public {
         _runVector("ghost-town-squish");
@@ -244,10 +252,41 @@ contract StonkzAuctionTest is Test {
         p.baseStepBps = 0;
         auction = new StonkzAuction(p);
         uint256 p0 = auction.price();
-        _bid(ADDR_A, 5000 ether, type(uint256).max);
-        _bid(ADDR_B, 5000 ether, type(uint256).max);
+        _bid(ADDR_A, 5000 ether, type(uint80).max);
+        _bid(ADDR_B, 5000 ether, type(uint80).max);
         _step();
         assertGe(auction.price(), p0);
+    }
+
+    /// @dev Task T regression (fuzz seed 4663 scenario 1, block 4): packing
+    ///      Position.maxPrice (and budgets) to uint80 made the pack-guard revert
+    ///      on the reference's "any price" / "all in" sentinels (1e27 wei) —
+    ///      bids silently dropped under try/catch harnesses, skewing every
+    ///      weight basis. Quantity packs are uint112 (covers vanity supplies +
+    ///      budget sentinels); maxPrice is uint128 (user-domain, unbounded).
+    function testRegression_maxPriceSentinelAccepted() public {
+        auction = new StonkzAuction(_toy(0));
+        uint256 sentinel = 1e9 ether; // 1e27 — the vector generator's "no cap"
+        _bid(ADDR_A, 100 ether, sentinel);
+        (, uint256 maxP,,,,,,) = auction.positions(1);
+        assertEq(maxP, sentinel, "sentinel stored exactly");
+        _bid(ADDR_B, sentinel, type(uint128).max); // budget + price at domain edges
+        (uint256 budB,,,,,,,) = auction.positions(2);
+        assertEq(budB, sentinel, "budget sentinel stored");
+        _step();
+        assertGt(auction.bidderTokens(ADDR_A), 0, "sentinel bid fills");
+        assertGt(auction.bidderTokens(ADDR_B), 0, "boundary bid fills");
+        // Above the stored maxPrice domain the revert must be LOUD, never a silent clamp.
+        vm.deal(ADDR_C, 200 ether);
+        vm.prank(ADDR_C);
+        vm.expectRevert(bytes("pack u128"));
+        auction.placeBid{value: 100 ether + BID_FEE}(100 ether, uint256(type(uint128).max) + 1);
+        // Same for budget above uint112.
+        uint256 overBudget = uint256(type(uint112).max) + 1;
+        vm.deal(ADDR_D, overBudget + BID_FEE + 1 ether);
+        vm.prank(ADDR_D);
+        vm.expectRevert(bytes("pack u112"));
+        auction.placeBid{value: overBudget + BID_FEE}(overBudget, type(uint128).max);
     }
 
     function testRegression_settlementOpensAtPrint() public {
@@ -255,8 +294,8 @@ contract StonkzAuctionTest is Test {
         p.lpShareBps = 8000;
         p.graduationUsd = 100 ether;
         auction = new StonkzAuction(p);
-        _bid(ADDR_A, 5000 ether, type(uint256).max);
-        _bid(ADDR_B, 5000 ether, type(uint256).max);
+        _bid(ADDR_A, 5000 ether, type(uint80).max);
+        _bid(ADDR_B, 5000 ether, type(uint80).max);
         for (uint256 i = 0; i < 10; i++) _step();
         if (!auction.graduated()) return;
         auction.settle();
@@ -270,9 +309,9 @@ contract StonkzAuctionTest is Test {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
     // Helpers
-    // ═══════════════════════════════════════════════════════════════════════
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
     function _toy(uint16 sizeBonusBps) internal pure returns (IStonkzAuction.Params memory p) {
         p = IStonkzAuction.Params({
@@ -291,7 +330,8 @@ contract StonkzAuctionTest is Test {
             kappaHundredths: 130,
             disposalMode: 0,
             pairToken: address(0),
-            eagerFills: true
+            maxLivePositionsPerAddress: 0,
+            eagerFills: false
         });
     }
 
@@ -304,7 +344,7 @@ contract StonkzAuctionTest is Test {
         p.floorMcapUsd = json.readUint(".params.floorMcap");
         p.graduationUsd = json.readUint(".params.threshold");
         p.durationBlocks = uint64(json.readUint(".params.blocks"));
-        p.epochSeconds = 1; // 1s/epoch — vm.warp(+1) == one auction block
+        p.epochSeconds = 1; // 1s/epoch Ã¢â‚¬â€ vm.warp(+1) == one auction block
         p.maxClearsPerSync = 0;
         p.maxUniqueActives = 0;
         p.baseStepBps = uint16(json.readUint(".params.baseStepBps"));
@@ -315,7 +355,7 @@ contract StonkzAuctionTest is Test {
         p.kappaHundredths = uint16(json.readUint(".params.kappaHundredths"));
         p.disposalMode = 0;
         p.pairToken = address(0);
-        p.eagerFills = true;
+        p.eagerFills = false;
     }
 
     function _bid(address who, uint256 budget, uint256 maxPrice) internal {
@@ -331,7 +371,7 @@ contract StonkzAuctionTest is Test {
         auction.poke();
     }
 
-    /// @dev Per-block delta tolerance: max(1e12 wei, 1e-9 · scale).
+    /// @dev Per-block delta tolerance: max(1e12 wei, 1e-9 Ã‚Â· scale).
     function _deltaTol(uint256 scale) internal pure returns (uint256) {
         uint256 rel = scale / 1e9;
         return rel > DELTA_ABS_FLOOR ? rel : DELTA_ABS_FLOOR;
@@ -415,16 +455,16 @@ contract StonkzAuctionTest is Test {
         uint256 fC = auction.bidderTokens(ADDR_C);
         uint256 fD = auction.bidderTokens(ADDR_D);
 
-        // Policy 1 — cumulative abs 1e18
+        // Policy 1 Ã¢â‚¬â€ cumulative abs 1e18
         assertApproxEqAbs(gotPrice, expPrice, TOL, "price");
         assertApproxEqAbs(gotOffer, expOffered, TOL, "offered");
 
         _step();
 
         assertApproxEqAbs(auction.raised(), expRaised, TOL, "raised");
-        // Policy 2 — per-block delta max(1e12, 1e-9·scale)
+        // Policy 2 Ã¢â‚¬â€ per-block delta max(1e12, 1e-9Ã‚Â·scale)
         uint256 dRaised = auction.raised() - raisedBefore;
-        // Vector `sold` is per-clear qty; raised cum − prior approx via exp
+        // Vector `sold` is per-clear qty; raised cum Ã¢Ë†â€™ prior approx via exp
         uint256 prevRaised = i == 0 ? 0 : json.readUint(string.concat(".blocks[", vm.toString(i - 1), "].raised"));
         uint256 expDRaised = expRaised > prevRaised ? expRaised - prevRaised : 0;
         assertApproxEqAbs(dRaised, expDRaised, _deltaTol(expDRaised), "dRaised");
@@ -451,7 +491,7 @@ contract StonkzAuctionTest is Test {
     function _sumPositionLedger() internal view returns (uint256 sumTok, uint256 sumSpent) {
         uint256 n = auction.nextPositionId();
         for (uint256 id = 1; id <= n; id++) {
-            (, , , uint256 spent, uint256 tokens,,,) = auction.positions(id);
+            (, , uint256 spent, , uint256 tokens,,,) = auction.positions(id);
             sumTok += tokens;
             sumSpent += spent;
         }

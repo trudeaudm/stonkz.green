@@ -186,3 +186,9 @@ You're building this yourself with AI pair-programming. Realistic and increasing
 - ⬜ Auction defaults per tier (duration, floors), fee percentages
 - ⬜ Verify CCA contract deployment on Robinhood Chain
 - ⬜ US geofencing policy
+
+### Anti-griefing (Task G1''')
+Per-bid flat fee (spec §2) plus optional `maxLivePositionsPerAddress` (ctor;
+0 = unlimited; guarded launch may set ~8) bound adversarial compound write
+amplification: each extra live position on an address forces exact-track
+per-clear SSTOREs (`WriteBudget` documents `C_PER_COMPOUND_POS`).

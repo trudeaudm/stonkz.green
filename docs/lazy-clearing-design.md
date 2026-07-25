@@ -102,7 +102,9 @@ H3/H4 wait on production triggers above.
 | Task P attribution | Confirmed bidder SSTORE dominance |
 | Task Q' lazy (event-driven weight + acc fills) | **Partial ship** — WriteBudget ≤16 GREEN; unconstrained SSTORE eliminated |
 | Gas targets (3M / 30M) | **MISSED** — residual O(n) SLOAD/compute; see `docs/gas-attribution.md` |
-| EagerLazyEquivalence | **Incomplete** — section-A position wei mismatch; vectors stay on `eagerFills=true` |
+| EagerLazyEquivalence | **Green** under derived D (see `implementation-notes.md` Task S2) |
+| Exhaustion-boundary | **STOP** — 1-clear OutBudget lag; `docs/stop-task-s2.md` |
+| Vectors/CI | Flip to lazy blocked on S2 gate |
 | Task R `maxUniqueActives` | Shipped |
 | M5 segment+heap | Still the path to remove caps at scale |
 

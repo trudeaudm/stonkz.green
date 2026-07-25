@@ -12,6 +12,10 @@ with your money."
 3. docs/launch-plan.md           — business context, decisions log, security ladder
 
 ## Hard rules
+- STOP forensics must be pushed before any ruling request. Every STOP report
+  (`docs/stop-task-*.md` and the commits that produced it) is pushed to the
+  working branch before asking the human to rule. Un-pushed forensics do not
+  exist — do not present a STOP as complete until `git push` has succeeded.
 - NEVER change mechanism math without asking. The spec was designed and
   simulator-validated over many sessions; formulas (κ̂ split, guard headroom,
   weight pacing, gate, size tilt α) are decisions, not suggestions.
