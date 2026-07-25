@@ -11,7 +11,7 @@ function cfg(){
  const num=(id,d)=>{const n=Number(document.getElementById(id).value);return Number.isFinite(n)?n:d};
  return{
  N:Math.max(5,num('c-n',5)|0),
- lpShare:Math.min(100,Math.max(0,num('c-lp',80)))/100,
+ lpShare:Math.min(100,Math.max(0,num('c-lp',100)))/100,
  kappa:Math.min(5,Math.max(1,num('c-k',1.3))),
  holdbackPct:Math.min(90,Math.max(0,num('c-hb',0))),
  excessMode:(()=>{const v=document.getElementById('c-x').value;return (v!==undefined&&v!==null&&v!=='')?v:'lp'})(),
@@ -227,7 +227,7 @@ function finish(why){
    log('⚗ realized κ = '+(P/avg).toFixed(2)+' (design κ̂ = '+S.kappa+') — print '+fmt(P)+' vs avg sale '+fmt(avg)+'. κ > κ̂ → surplus; κ < κ̂ → shortfall (single-sided fallback).');}
   if(surplus>0){const avg=S.sold>0?S.raised/S.sold:P;
    log('⚗ pairing surplus ('+fmtT(surplus)+') — the APPRECIATION DIVIDEND: avg sale price '+fmt(avg)+' vs print '+fmt(P)+' ('+(P/avg).toFixed(1)+'× climb). dollars ÷ print pairs fewer tokens than were sold; the hotter the climb, the bigger the surplus. follows the disposal choice.');}
-  log('⚗ initial LP: $'+fundsLP.toFixed(2)+' ('+(S.lpShare*100).toFixed(0)+'% of raise) paired with '+fmtT(paired)+' tokens spanning the print — the RATIO is what makes the pool open at '+fmt(P)+' (deposit everything full-range instead and the pool would open at '+fmt(fundsLP/Math.max(1,paired+excess))+', '+(100*(1-(fundsLP/Math.max(1,paired+excess))/P)).toFixed(0)+'% below the print). creator receives $'+toCreator.toFixed(2)+'.');
+  log('⚗ initial LP: $'+fundsLP.toFixed(2)+' ('+(S.lpShare*100).toFixed(0)+'% of raise) paired with '+fmtT(paired)+' tokens spanning the print — the RATIO is what makes the pool open at '+fmt(P)+' (deposit everything full-range instead and the pool would open at '+fmt(fundsLP/Math.max(1,paired+excess))+', '+(100*(1-(fundsLP/Math.max(1,paired+excess))/P)).toFixed(0)+'% below the print). treasuryReserve $'+toCreator.toFixed(2)+'.');
   if(excess>0){
    if(S.excessMode==='holders'){
     log('🎁 leftover tokens ('+fmtT(excess)+') airdropped pro-rata to holders:');
@@ -355,7 +355,7 @@ function scnGhost(){resetSim();S=newSim();S.flatBase=S.auctionSupply*S.w[0];
 
 function updSplit(){
  const num=(id,d)=>{const n=Number(document.getElementById(id).value);return Number.isFinite(n)?n:d};
- const lp=Math.min(100,Math.max(0,num('c-lp',80)))/100;
+ const lp=Math.min(100,Math.max(0,num('c-lp',100)))/100;
  const k=Math.min(5,Math.max(1,num('c-k',1.3)));
  const a=100*k/(k+lp);
  const sp=document.getElementById('splitshow');

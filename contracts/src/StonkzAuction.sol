@@ -4,6 +4,8 @@ pragma solidity ^0.8.26;
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
 import {IStonkzAuction} from "./IStonkzAuction.sol";
 import {LadderWeights} from "./LadderWeights.sol";
+import {CreatorReserveLib} from "./CreatorReserveLib.sol";
+import {StonkzLiquidityStrategy} from "./StonkzLiquidityStrategy.sol";
 
 /// @title StonkzAuction — Ladder Auction (spec §§1–7)
 /// @notice Per-capita fills with size tilt, demand-gated price, three-phase release,
@@ -48,6 +50,7 @@ contract StonkzAuction is IStonkzAuction {
     uint16 public immutable walletCapBps;
     uint16 public immutable sizeBonusBps;
     uint16 public immutable lpShareBps;
+    /// @dev creatorReserve bps of total supply (spec §0); vector name holdbackBps retained.
     uint16 public immutable holdbackBps;
     uint16 public immutable kappaHundredths; // 130 = 1.3
     uint8 public immutable disposalMode;
@@ -58,6 +61,12 @@ contract StonkzAuction is IStonkzAuction {
     bool public immutable eagerFills;
     /// @dev Task G1''': 0 = unlimited; else cap on Active positions per address.
     uint8 public immutable maxLivePositionsPerAddress;
+    /// @dev M3 creatorReserve delivery (spec §8.4).
+    uint8 public immutable creatorDeliveryMode;
+    uint64 public immutable creatorVestDuration;
+    bytes32 public immutable creatorDeclaredUse;
+    bytes32 public immutable treasuryDeclaredUse;
+    address public immutable liquidityStrategy;
 
     // ─── schedule (spec §5) ───────────────────────────────────────────────
     uint256[] public weights; // WAD fractions, length = durationBlocks
@@ -75,7 +84,16 @@ contract StonkzAuction is IStonkzAuction {
     bool public competition; // one-way ratchet — spec §5 phase A→B
     bool public done;
     bool public graduated;
+    /// @dev Legacy getter: true once a terminal state is set via settle() (Settled or Failed).
+    ///      RanAway does not flip this — claim path uses done && !graduated.
     bool public settled;
+    /// @notice Single mutually-exclusive terminal flag (spec §8.0).
+    Terminal public terminal;
+
+    // Creator / treasury reserves (spec §8.4)
+    CreatorReserveLib.State public creatorReserveState;
+    uint256 public treasuryReserveAmount;
+    bool public treasuryDelivered;
 
     // MasterChef-style accumulators — tokens/USD (WAD) per weight (WAD), scaled by WAD.
     // Token acc uses extra ACC_PREC so floor(w·ΔaccT) stays within Task S D-bound.
@@ -191,9 +209,33 @@ contract StonkzAuction is IStonkzAuction {
         creator = msg.sender;
         eagerFills = p.eagerFills;
         maxLivePositionsPerAddress = p.maxLivePositionsPerAddress;
+        creatorDeliveryMode = p.creatorDeliveryMode;
+        creatorVestDuration = p.creatorVestDuration;
+        creatorDeclaredUse = p.creatorDeclaredUse;
+        treasuryDeclaredUse = p.treasuryDeclaredUse;
+        liquidityStrategy = p.liquidityStrategy;
 
-        // launch supply after holdback — spec §0
+        // launch supply after holdback — spec §0 (holdbackBps = creatorReserve)
         launchSupply = FixedPointMathLib.mulDiv(p.totalSupply, 10_000 - p.holdbackBps, 10_000);
+
+        // File creatorReserve (spec §8.4 / §8.5)
+        {
+            uint256 cr = p.totalSupply - launchSupply;
+            creatorReserveState.mode = p.creatorDeliveryMode == 1
+                ? CreatorReserveLib.DeliveryMode.Vest
+                : CreatorReserveLib.DeliveryMode.Instant;
+            creatorReserveState.vestDuration = p.creatorVestDuration;
+            creatorReserveState.total = cr;
+            creatorReserveState.filed = true;
+            emit CreatorReserveFiled(cr, p.creatorDeliveryMode, p.creatorVestDuration, p.creatorDeclaredUse);
+            if (p.lpShareBps < 10_000) {
+                emit TreasuryReserveFiled(0, p.treasuryDeclaredUse); // amount known at settle
+            }
+        }
+
+        if (p.liquidityStrategy != address(0)) {
+            StonkzLiquidityStrategy(p.liquidityStrategy).setAuction(address(this));
+        }
 
         // auction:reserve = κ̂ : LP-share — NEVER an input (spec §1, §7)
         uint256 kappaW = (uint256(kappaHundredths) * WAD) / 100;
@@ -537,19 +579,22 @@ contract StonkzAuction is IStonkzAuction {
     /// @inheritdoc IStonkzAuction
     function runAway() external {
         require(msg.sender == creator, "creator");
+        require(terminal == Terminal.None, "terminal");
         require(!settled, "settled");
         _sync();
-        // Pre-settlement cancel: mark failed so everyone can claim full budgets
+        // Pre-settlement cancel — RanAway is mutually exclusive with Failed/Settled (spec §8.0)
         done = true;
         graduated = false;
+        terminal = Terminal.RanAway;
         emit CreatorRanAway(creator, 0);
-        emit Failed(raised, graduationUsd);
+        emit TerminalSet(Terminal.RanAway);
     }
 
     /// @inheritdoc IStonkzAuction
-    function settle() external {
+    function settle() external payable {
         _sync();
         require(done, "not done");
+        require(terminal == Terminal.None, "terminal");
         require(!settled, "settled");
 
         // Task S: materialize everyone so residue is well-defined, then sweep floor dust.
@@ -577,10 +622,7 @@ contract StonkzAuction is IStonkzAuction {
         // Keep counter aligned for views / invariants.
         soldMaterialized = onPos;
 
-        // F1'/S USD twin: raised − Σ spent. Bound = Task S2 duration-safe with ceil(w/WAD)≥1
-        // times a weight headroom factor is not on-chain; use measured residue with the
-        // token dustCap × 4× max observed ceil-class (weight ~ O(1)–O(10) WAD under α).
-        // Safer structural bound: ≤ dustCap × 64 (allows ceil(w/WAD) ≤ 16 per address).
+        // F1'/S USD twin: raised − Σ spent.
         {
             uint256 sumSpent;
             uint256 n2 = nextPositionId;
@@ -588,7 +630,6 @@ contract StonkzAuction is IStonkzAuction {
                 sumSpent += positions[id].spent;
             }
             uint256 spentResidue = raised > sumSpent ? raised - sumSpent : 0;
-            // D = weightDustAccum + P (Task S2); weightDustAccum sums 4×ceil(w/WAD) per clear.
             uint256 spentCap = weightDustAccum + n2;
             require(uniqueBidders == 0 || spentResidue <= spentCap, "spent dust bound");
             settleSpentDust = spentResidue;
@@ -597,9 +638,14 @@ contract StonkzAuction is IStonkzAuction {
         settled = true;
 
         if (!graduated) {
+            terminal = Terminal.Failed;
             emit Failed(raised, graduationUsd);
+            emit TerminalSet(Terminal.Failed);
             return;
         }
+
+        terminal = Terminal.Settled;
+        emit TerminalSet(Terminal.Settled);
 
         // Settlement accounting (spec §8) — pool deploy is LiquidityStrategy's job;
         // here we lock conservation buckets for invariant I1 / I9.
@@ -612,11 +658,66 @@ contract StonkzAuction is IStonkzAuction {
         surplus += settleDustSurplus; // Task S: pairing surplus absorbs materialization dust
         uint256 auctionExcess = auctionSupply > auctionSold() ? auctionSupply - auctionSold() : 0;
 
+        // treasuryReserve = (1 − LP-share) × raised — delivers at settle (spec §8.1 / §8.4)
+        // Accounting + event; ETH pull deferred to strategy/manager so escrow refunds stay solvent.
+        uint256 treasury = raised - lpFunds;
+        treasuryReserveAmount = treasury;
+        if (treasury > 0 && !treasuryDelivered) {
+            treasuryDelivered = true;
+            emit TreasuryReserveDelivered(creator, treasury);
+        }
+
+        // Unlock creatorReserve clock (spec §8.4 Instant timelock / Vest start)
+        creatorReserveState.unlockedAt = uint64(block.timestamp)
+            + (
+                creatorReserveState.mode == CreatorReserveLib.DeliveryMode.Instant
+                    ? uint64(CreatorReserveLib.INSTANT_TIMELOCK)
+                    : 0
+            );
+        emit CreatorReserveUnlocked(creatorReserveState.unlockedAt);
+
+        // Optional strategy hook — accounting-only when address(0) (existing tests)
+        if (liquidityStrategy != address(0)) {
+            uint256 cr = totalSupply - launchSupply;
+            uint256 reserveForLp = rr + settleDustSurplus;
+            StonkzLiquidityStrategy(liquidityStrategy).settle{value: msg.value}(
+                sold,
+                lpFunds,
+                P,
+                reserveForLp,
+                auctionExcess,
+                cr,
+                disposalMode,
+                address(0), // userToken — manager wires real token later
+                creator
+            );
+        }
+
         emit Settled(paired, lpFunds, surplus, auctionExcess, disposalMode);
 
         uint256 avg = sold > 0 ? FixedPointMathLib.mulDiv(raised, WAD, sold) : P;
         uint256 realizedKappaBps = avg == 0 ? 0 : FixedPointMathLib.mulDiv(P, 10_000, avg);
         emit Graduated(raised, P, realizedKappaBps);
+    }
+
+    /// @inheritdoc IStonkzAuction
+    function claimCreatorReserve() external returns (uint256 amount) {
+        require(msg.sender == creator, "creator");
+        require(terminal == Terminal.Settled, "not settled");
+        amount = CreatorReserveLib.vestedAvailable(creatorReserveState, uint64(block.timestamp));
+        require(amount > 0, "none");
+        creatorReserveState.claimed += amount;
+        emit CreatorReserveClaimed(creator, amount);
+    }
+
+    /// @notice Alias view: creatorReserve == holdback (spec §0 rename).
+    function creatorReserveBps() external view returns (uint16) {
+        return holdbackBps;
+    }
+
+    /// @notice Raise-side holdback of funds (spec §8.1).
+    function treasuryReserveBps() external view returns (uint16) {
+        return uint16(10_000 - lpShareBps);
     }
 
     // ─── views (for differential tests) ───────────────────────────────────

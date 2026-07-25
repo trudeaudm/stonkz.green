@@ -60,16 +60,16 @@ svg{display:block;width:100%;background:#fff;border:2px solid;border-color:var(-
   <div class="hint">floor price = mcap ÷ supply. supply is cosmetic — 1M vs 1B changes token counts, not the economics. everything runs in % of supply and $.</div>
   <span class="lab">BASE price step when block sells out (+%) — scales +10% per 1/10 of graduation capital committed</span><div class="inset"><input id="c-g" type="number" value="0.2" step="any" min="0"></div>
   <div class="hint">⚠ keep this SMALL vs tranche growth. big steps make block costs compound until every budget dies and the ladder freezes. (on real 100ms blocks this would be basis points.)</div>
-  <span class="lab">creator holdback (% of TOTAL supply — staking emissions etc.; the rest is the launch supply)</span><div class="inset"><input id="c-hb" type="number" step="any" value="0" min="0" max="90"></div>
+  <span class="lab">creatorReserve (% of TOTAL supply — operating capital: emissions / rewards / protocol-owned LP; the rest is the launch supply)</span><div class="inset"><input id="c-hb" type="number" step="any" value="0" min="0" max="90"></div>
   <span class="lab">κ̂ — design print/avg-price ratio (from the back-loaded schedule; measure it in runs)</span><div class="inset"><input id="c-k" type="number" step="any" value="1.3" min="1" max="5" oninput="updSplit()"></div>
-  <span class="lab">of raised capital, % into LP (creator receives the rest)</span><div class="inset"><input id="c-lp" type="number" step="any" value="80" min="0" max="100" oninput="updSplit()"></div>
+  <span class="lab">of raised capital, % into LP (opt-down remainder = treasuryReserve; default 100%)</span><div class="inset"><input id="c-lp" type="number" step="any" value="100" min="0" max="100" oninput="updSplit()"></div>
   <span class="lab">leftover tokens (pairing surplus + auction excess) go to…</span><div class="inset"><select id="c-x">
    <option value="lp">thicker LP (extra pool depth)</option>
    <option value="holders">holders — pro-rata airdrop at settle</option>
    <option value="creator">creator wallet (frens see this choice)</option>
    <option value="burn">burn 🔥</option>
   </select></div>
-  <div class="hint">split is hierarchical: total supply → launch (100 − holdback) → sold (this %) + LP reserve (rest). guarantee: sell% ≤ 100 ÷ (1 + LP share) — independent of holdback. sim warns if violated.</div>
+  <div class="hint">split is hierarchical: total supply → launch (100 − creatorReserve) → sold (this %) + LP reserve (rest). guarantee: sell% ≤ 100 ÷ (1 + LP share) — independent of creatorReserve. sim warns if violated. reserves are tools, not fees.</div>
   <span class="lab">size bonus (+% fill per 2× capital · 0 = pure per-capita)</span><div class="inset"><input id="c-sb" type="number" step="any" value="10" min="0" max="100"></div>
   <span class="lab">wallet cap (% of supply)</span><div class="inset"><input id="c-w" type="number" step="any" value="10"></div>
   <span class="lab">graduation threshold ($ raised)</span><div class="inset"><input id="c-t" type="number" value="5000"></div>
@@ -138,7 +138,7 @@ let S=null, timer=null, paused=false;
 
 function cfg(){return{
  N:Math.max(5,+document.getElementById('c-n').value|0),
- lpShare:Math.min(100,Math.max(0,+document.getElementById('c-lp').value||80))/100,
+ lpShare:Math.min(100,Math.max(0,+document.getElementById('c-lp').value||100))/100,
  kappa:Math.min(5,Math.max(1,+document.getElementById('c-k').value||1.3)),
  holdbackPct:Math.min(90,Math.max(0,+document.getElementById('c-hb').value||0)),
  excessMode:document.getElementById('c-x').value||'lp',
@@ -354,7 +354,7 @@ function finish(why){
    log('⚗ realized κ = '+(P/avg).toFixed(2)+' (design κ̂ = '+S.kappa+') — print '+fmt(P)+' vs avg sale '+fmt(avg)+'. κ > κ̂ → surplus; κ < κ̂ → shortfall (single-sided fallback).');}
   if(surplus>0){const avg=S.sold>0?S.raised/S.sold:P;
    log('⚗ pairing surplus ('+fmtT(surplus)+') — the APPRECIATION DIVIDEND: avg sale price '+fmt(avg)+' vs print '+fmt(P)+' ('+(P/avg).toFixed(1)+'× climb). dollars ÷ print pairs fewer tokens than were sold; the hotter the climb, the bigger the surplus. follows the disposal choice.');}
-  log('⚗ initial LP: $'+fundsLP.toFixed(2)+' ('+(S.lpShare*100).toFixed(0)+'% of raise) paired with '+fmtT(paired)+' tokens spanning the print — the RATIO is what makes the pool open at '+fmt(P)+' (deposit everything full-range instead and the pool would open at '+fmt(fundsLP/Math.max(1,paired+excess))+', '+(100*(1-(fundsLP/Math.max(1,paired+excess))/P)).toFixed(0)+'% below the print). creator receives $'+toCreator.toFixed(2)+'.');
+  log('⚗ initial LP: $'+fundsLP.toFixed(2)+' ('+(S.lpShare*100).toFixed(0)+'% of raise) paired with '+fmtT(paired)+' tokens spanning the print — the RATIO is what makes the pool open at '+fmt(P)+' (deposit everything full-range instead and the pool would open at '+fmt(fundsLP/Math.max(1,paired+excess))+', '+(100*(1-(fundsLP/Math.max(1,paired+excess))/P)).toFixed(0)+'% below the print). treasuryReserve $'+toCreator.toFixed(2)+'.');
   if(excess>0){
    if(S.excessMode==='holders'){
     log('🎁 leftover tokens ('+fmtT(excess)+') airdropped pro-rata to holders:');
@@ -480,7 +480,7 @@ function scnGhost(){resetSim();S=newSim();S.flatBase=S.auctionSupply*S.w[0];
  bidAt(15,'A',300,1);bidAt(15,'B',300,1);bidAt(22,'C',400,1);
  draw()}
 
-function updSplit(){const lp=Math.min(100,Math.max(0,+document.getElementById('c-lp').value||80))/100;
+function updSplit(){const lp=Math.min(100,Math.max(0,+document.getElementById('c-lp').value||100))/100;
  const k=Math.min(5,Math.max(1,+document.getElementById('c-k').value||1.3));
  const a=100*k/(k+lp);
  const sp=document.getElementById('splitshow');

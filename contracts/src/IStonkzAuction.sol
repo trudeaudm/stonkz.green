@@ -22,32 +22,58 @@ interface IStonkzAuction {
     event BellRungEarly(address indexed creator, uint64 blockNum);
     event CreatorRanAway(address indexed creator, uint256 bondForfeited);
 
+    /// @notice Terminal state machine — Settled / Failed / RanAway mutually exclusive (spec §8.0).
+    enum Terminal {
+        None,
+        Settled,
+        Failed,
+        RanAway
+    }
+
+    event TerminalSet(Terminal indexed state);
+    event CreatorReserveFiled(uint256 amount, uint8 deliveryMode, uint64 vestDuration, bytes32 declaredUse);
+    event TreasuryReserveFiled(uint256 amount, bytes32 declaredUse);
+    event CreatorReserveUnlocked(uint64 unlockedAt);
+    event CreatorReserveClaimed(address indexed to, uint256 amount);
+    event TreasuryReserveDelivered(address indexed to, uint256 amount);
+
+    /// @notice creatorReserve delivery mode (spec §8.4): 0 = INSTANT, 1 = VEST
+
     struct Params {
         uint256 totalSupply;
-        uint256 floorMcapUsd;        // $2k–$100k, 1e18
-        uint256 graduationUsd;       // must pass raise-ceiling validation
-        uint64  durationBlocks;      // N auction blocks; production 100..2000; tests/vectors ≥5
-        uint32  epochSeconds;        // wall seconds per auction block; 1..3600
-        uint16  maxClearsPerSync;    // E1 valve; 0 ⇒ Task T default (floor(25M/warm@300) = 4)
-        uint16  maxUniqueActives;    // guarded-launch unique-address cap; 0 = unlimited
-        uint16  baseStepBps;         // demand-scaled at runtime, clamp >= 0
-        uint16  walletCapBps;        // of total supply
-        uint16  sizeBonusBps;        // per 2x capital; 0 = pure per-capita
-        uint16  lpShareBps;          // of raise -> LP; creator gets the rest
-        uint16  holdbackBps;         // of total supply
-        uint16  kappaHundredths;     // design print/avg ratio, e.g. 130
-        uint8   disposalMode;        // 0 thickerLP, 1 holders, 2 creator, 3 burn
-        address pairToken;           // USDG or WETH
+        uint256 floorMcapUsd; // $2k–$100k, 1e18
+        uint256 graduationUsd; // must pass raise-ceiling validation
+        uint64 durationBlocks; // N auction blocks; production 100..2000; tests/vectors ≥5
+        uint32 epochSeconds; // wall seconds per auction block; 1..3600
+        uint16 maxClearsPerSync; // E1 valve; 0 ⇒ Task T default (floor(25M/warm@300) = 4)
+        uint16 maxUniqueActives; // guarded-launch unique-address cap; 0 = unlimited
+        uint16 baseStepBps; // demand-scaled at runtime, clamp >= 0
+        uint16 walletCapBps; // of total supply
+        uint16 sizeBonusBps; // per 2x capital; 0 = pure per-capita
+        uint16 lpShareBps; // of raise -> LP; remainder is treasuryReserve (spec §8.1)
+        /// @dev Token-side holdback = creatorReserve (spec §0/§8.4). Name kept for vector compat.
+        uint16 holdbackBps;
+        uint16 kappaHundredths; // design print/avg ratio, e.g. 130
+        uint8 disposalMode; // 0 thickerLP, 1 holders, 2 creator, 3 burn
+        address pairToken; // USDG or WETH
         /// @dev Task G1''': max Active positions per address; 0 = unlimited (default).
-        ///      Guarded launch may set ~8 to bound compound write amplification.
-        uint8   maxLivePositionsPerAddress;
-        bool    eagerFills;          // true = legacy per-address writes (equiv harness); false = Q' lazy
+        uint8 maxLivePositionsPerAddress;
+        bool eagerFills; // true = legacy per-address writes (equiv harness); false = Q' lazy
+        /// @dev M3: creatorReserve delivery — INSTANT | VEST (spec §8.4). 0 = Instant.
+        uint8 creatorDeliveryMode;
+        uint64 creatorVestDuration; // seconds; required if VEST
+        bytes32 creatorDeclaredUse; // optional transparency (spec §8.5)
+        bytes32 treasuryDeclaredUse;
+        /// @dev Optional LiquidityStrategy; address(0) = accounting-only settle (legacy tests).
+        address liquidityStrategy;
     }
 
     function placeBid(uint256 budget, uint256 maxPrice) external payable returns (uint256 positionId);
-    function claim(uint256 positionId) external;            // tokens + unspent, per state
-    function poke() external;                                // advance blocks lazily (O(1) accounting)
-    function ringBellEarly() external;                       // creator; only if graduated
-    function runAway() external;                             // creator; pre-settlement cancel + bonded refunds
-    function settle() external;                              // permissionless after end
+    function claim(uint256 positionId) external; // tokens + unspent, per state
+    function poke() external; // advance blocks lazily (O(1) accounting)
+    function ringBellEarly() external; // creator; only if graduated
+    function runAway() external; // creator; pre-settlement cancel + bonded refunds
+    function settle() external payable; // permissionless after end
+    function claimCreatorReserve() external returns (uint256 amount);
+    function terminal() external view returns (Terminal);
 }

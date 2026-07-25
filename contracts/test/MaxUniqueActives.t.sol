@@ -29,7 +29,12 @@ contract MaxUniqueActivesTest is Test {
                 disposalMode: 0,
                 pairToken: address(0),
             maxLivePositionsPerAddress: 0,
-            eagerFills: false
+            eagerFills: false,
+            creatorDeliveryMode: 0,
+            creatorVestDuration: 0,
+            creatorDeclaredUse: bytes32(0),
+            treasuryDeclaredUse: bytes32(0),
+            liquidityStrategy: address(0)
             })
         );
 
@@ -69,7 +74,12 @@ contract MaxUniqueActivesTest is Test {
                 disposalMode: 0,
                 pairToken: address(0),
             maxLivePositionsPerAddress: 0,
-            eagerFills: false
+            eagerFills: false,
+            creatorDeliveryMode: 0,
+            creatorVestDuration: 0,
+            creatorDeclaredUse: bytes32(0),
+            treasuryDeclaredUse: bytes32(0),
+            liquidityStrategy: address(0)
             })
         );
         for (uint256 i = 1; i <= 5; i++) {

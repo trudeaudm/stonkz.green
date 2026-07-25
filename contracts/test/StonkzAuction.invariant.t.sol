@@ -89,7 +89,12 @@ contract StonkzAuctionInvariantTest is Test {
             disposalMode: 0,
             pairToken: address(0),
             maxLivePositionsPerAddress: 0,
-            eagerFills: false
+            eagerFills: false,
+            creatorDeliveryMode: 0,
+            creatorVestDuration: 0,
+            creatorDeclaredUse: bytes32(0),
+            treasuryDeclaredUse: bytes32(0),
+            liquidityStrategy: address(0)
         });
         auction = new StonkzAuction(p);
         handler = new StonkzAuctionHandler(auction);

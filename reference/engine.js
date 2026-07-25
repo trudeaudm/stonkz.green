@@ -29,8 +29,8 @@ function createEngine(params = {}) {
     baseStepPct: numParam(params, 'baseStepPct', 0.2),
     walletCapPct: numParam(params, 'walletCapPct', 10),
     threshold: numParam(params, 'threshold', 5000),
-    lpSharePct: numParam(params, 'lpSharePct', 80),
-    holdbackPct: numParam(params, 'holdbackPct', 0),
+    lpSharePct: numParam(params, 'lpSharePct', 100),
+    holdbackPct: numParam(params, 'holdbackPct', 0), // creatorReserve % (token-side); name kept for vector compat
     excessMode: strParam(params, 'excessMode', 'lp'),
     sizeBonusPct: numParam(params, 'sizeBonusPct', 10),
     kappa: numParam(params, 'kappa', 1.3),
