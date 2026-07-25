@@ -224,14 +224,19 @@ Filing accepts an immutable short string per reserve (`declaredUse`, may be
 empty). Emitted in the filing event, rendered in recon and on the token page.
 **Not validated or enforced** — pure transparency surface.
 
-### 8.6 FeeLocker
+### 8.6 FeeLocker + primary-pool hook fees (M4 supersedes main-pool routing)
 
-Immutable custody for every position we create.
+Immutable custody for every position we create. **Side-pool compounding is
+unchanged.** Primary-pool *ongoing* fee routing is superseded by M4:
 
-| Pool | Pair-currency fees | User-token fees |
-|---|---|---|
-| Main | → BuybackAccumulator | → burn |
-| Side | compound back into the same position via permissionless crank (thickens over time) | (same — compounds) |
+| Pool | Ongoing fees |
+|---|---|
+| Main (primary) | **StonkzFeeHook** (see `docs/fees-and-governance.md` §1): per-swap fee-take + best-effort conversion of the token-denominated half to pair currency in the same tx via the same pool; split **80% feeReceiver / 20% protocolTreasury**. Receivers never hold token fees. Conversion failure → accrue + permissionless crank; **user trade never reverts from hook fee logic.** |
+| Side | Fees compound back into the same position via permissionless crank (thickens over time) |
+
+Settle-time 5% pair-currency carve → BuybackAccumulator (§8.1 / §8.3) remains.
+FeeLocker **v2** integrates hook accounting for new launches; M3 v1 lockers on
+already-launched tokens are left immutable (no migration).
 
 ### 8.7 Pool lifecycle (both pools)
 
@@ -245,6 +250,21 @@ Immutable custody for every position we create.
   step is the defense (see suite C1).
 
 Deployed contracts are immutable. No upgradeability.
+
+### 8.8 Direct-to-DEX (see `docs/fees-and-governance.md` §2)
+
+`$4k` / `$8k` start-mcap tiers; 95% listing supply → single-sided
+`[startTick, MAX_TICK]` into FeeLocker + hook; 5% → STONKZ4663 side pool;
+creatorReserve / declaredUse / INSTANT|VEST identical to auction. Rug-impossible
+by construction; emergent tier volatility is a feature.
+
+### 8.9 Checkpointed token + CTO (see `docs/fees-and-governance.md` §3–§4)
+
+Launch tokens are ERC20Votes-style (past-block snapshots). Per-token CTO:
+≥1% initiate, 24h vote, ≥0.1% to cast, power = min(snapshot, now) with paged
+re-clamp, pass at 80% of frozen eligible denominator, early-fail when reject
+makes passage impossible, finalize transfers feeReceiver + page admin only;
+7-day cooldown on fail; voluntary feeReceiver transfer blocked while vote active.
 
 ## 9. Invariants (Foundry suite — differential-test all against reference/engine.js)
 
@@ -291,6 +311,8 @@ must, before any testnet deploy:
 4. Re-validate C3's conversion path against a real STONKZ4663 pool
 
 The C1/C2 harness is dual-backend from day one. M3.5 may run in parallel with
-Milestone 4. Separate deployment-ladder preconditions (factory token custody at
-construction; production filings revert on `liquidityStrategy == address(0)`)
-also block testnet — see `docs/launch-plan.md` §8 and `docs/settlement.md`.
+Milestone 4. M4's hook suite (fees-and-governance C1) is likewise provisional on
+mock and **must re-run unmodified against real v4-core in M3.5**. Separate
+deployment-ladder preconditions (factory token custody at construction;
+production filings revert on `liquidityStrategy == address(0)`) also block
+testnet — see `docs/launch-plan.md` §8 and `docs/settlement.md`.

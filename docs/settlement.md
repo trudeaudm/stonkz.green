@@ -103,6 +103,13 @@ Promoted from M3 STOP open items #3/#4. **Testnet deploy is blocked until both a
 
 See `docs/launch-plan.md` §8 deployment ladder + decisions log.
 
+## M4 pointer — primary-pool fees superseded
+
+Ongoing primary-pool fee routing is **hook-based** (80/20 feeReceiver /
+protocolTreasury) as of Milestone 4 — see `docs/fees-and-governance.md`.
+Settle-time 5% carve → BuybackAccumulator and side-pool compounding are
+unchanged. FeeLocker v2 for new launches; M3 v1 lockers immutable per-token.
+
 ## B6 vector report
 
 **No section-A vectors regenerated.** All canonical / fuzz scenarios already set

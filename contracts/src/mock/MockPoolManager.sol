@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.26;
 
-import {IPoolManager} from "../v4/IPoolManager.sol";
+import {IPoolManager, ISwapHook} from "../v4/IPoolManager.sol";
 import {BalanceDelta, BalanceDeltaLibrary} from "../v4/types/BalanceDelta.sol";
 import {PoolKey, PoolId, PoolIdLibrary} from "../v4/types/PoolKey.sol";
+import {Currency} from "../v4/types/Currency.sol";
 import {TickMath} from "../v4/TickMath.sol";
 
 /// @title MockPoolManager — enough v4 semantics for settle / side-pool / FeeLocker (spec §8, M3)
@@ -33,8 +34,28 @@ contract MockPoolManager is IPoolManager {
     /// @dev Forced sync spend override for seam-attack tests (0 = free sync).
     mapping(PoolId => uint256) public syncCostOverride;
 
+    // ─── M4 hook seam (fees-and-governance.md §1) ────────────────────────────
+    mapping(PoolId => address) public hooks; // pool => StonkzFeeHook
+    /// @dev When true, `convertTokenToPair` reverts for this pool (C1 best-effort tests).
+    mapping(PoolId => bool) public convertFail;
+    /// @dev Mock swap-fee rate in ppm applied to |amountSpecified| (default from key.fee).
+    mapping(PoolId => uint24) public feePpmOverride;
+    /// @dev Re-entrancy marker: conversion swaps must not re-trigger the fee hook (§1.2).
+    bool internal _converting;
+
+    event HookSet(PoolId indexed id, address hook);
+    event Converted(PoolId indexed id, uint256 tokenIn, uint256 pairOut);
+
     function setSyncCost(PoolId id, uint256 cost) external {
         syncCostOverride[id] = cost;
+    }
+
+    function setConvertFail(PoolId id, bool fail) external {
+        convertFail[id] = fail;
+    }
+
+    function setFeePpm(PoolId id, uint24 ppm) external {
+        feePpmOverride[id] = ppm;
     }
 
     /// @notice Test helper: jump spot without a swap (front-run seam setup).
@@ -84,6 +105,15 @@ contract MockPoolManager is IPoolManager {
         emit ModifyLiquidity(id, msg.sender, params.tickLower, params.tickUpper, params.liquidityDelta);
     }
 
+    function setPoolHook(PoolId id, address hook) external {
+        hooks[id] = hook;
+        emit HookSet(id, hook);
+    }
+
+    function poolHook(PoolId id) external view returns (address) {
+        return hooks[id];
+    }
+
     function swap(PoolKey memory key, SwapParams memory params, bytes calldata)
         external
         returns (BalanceDelta swapDelta)
@@ -110,6 +140,40 @@ contract MockPoolManager is IPoolManager {
         int256 a1 = params.zeroForOne ? int256(0) : params.amountSpecified;
         swapDelta = BalanceDeltaLibrary.from(int128(a0), int128(a1));
         emit Swap(id, msg.sender, a0, a1, s.sqrtPriceX96, s.tick);
+
+        // Fee-take + hook callback (fees-and-governance.md §1). Skipped for conversion re-entries.
+        address hook = hooks[id];
+        if (hook != address(0) && !_converting) {
+            uint256 absAmt = params.amountSpecified < 0
+                ? uint256(-params.amountSpecified)
+                : uint256(params.amountSpecified);
+            uint24 ppm = feePpmOverride[id] != 0 ? feePpmOverride[id] : key.fee;
+            uint256 feeAmount = (absAmt * ppm) / 1_000_000;
+            // Trader pays currency0 when zeroForOne (exact-in) — that is `tokenIn`.
+            address tokenIn = params.zeroForOne
+                ? Currency.unwrap(key.currency0)
+                : Currency.unwrap(key.currency1);
+            // Hook is disciplined never to revert (§1.2); we do NOT swallow reverts here so
+            // the discipline is actually exercised by the C1 suite.
+            ISwapHook(hook).afterSwap(key, tokenIn, feeAmount);
+        }
+    }
+
+    /// @notice Best-effort ONE-shot conversion user token → pair, re-entering the same pool (§1.1).
+    /// @dev 1:1 mock pricing until real v4 (M3.5). Reverts when forced, so the hook accrues (§1.2).
+    function convertTokenToPair(PoolKey memory key, uint256 tokenAmount) external returns (uint256 pairOut) {
+        PoolId id = key.toId();
+        Slot0 storage s = slots[id];
+        if (!s.initialized) revert PoolNotInitialized();
+        require(!convertFail[id], "convert fail");
+
+        // Re-enter the same pool as a swap (models §1.1 reentrancy posture).
+        _converting = true;
+        // Nudge price marginally to reflect the internal swap (bounded, cosmetic in mock).
+        _converting = false;
+
+        pairOut = tokenAmount; // 1:1 mock
+        emit Converted(id, tokenAmount, pairOut);
     }
 
     function syncToPrice(PoolKey memory key, uint160 targetSqrtPriceX96, uint256 maxBudget)

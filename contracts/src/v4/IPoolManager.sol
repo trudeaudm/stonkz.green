@@ -4,6 +4,14 @@ pragma solidity ^0.8.26;
 import {BalanceDelta} from "./types/BalanceDelta.sol";
 import {PoolKey, PoolId} from "./types/PoolKey.sol";
 
+/// @title ISwapHook — v4-style hook callback invoked by the PoolManager after a swap.
+/// @dev StonkzFeeHook implements this (fees-and-governance.md §1). `feeAmount` is denominated
+///      in `tokenIn` (the currency the trader paid). The hook MUST NOT revert — a trade can
+///      never fail because of hook fee logic (§1.2).
+interface ISwapHook {
+    function afterSwap(PoolKey calldata key, address tokenIn, uint256 feeAmount) external;
+}
+
 /// @title IPoolManager — minimal Uniswap v4 surface for STONKZ settlement (spec §8)
 /// @dev Interface-first: MockPoolManager implements this for M3; M3.5 wraps real v4-core.
 interface IPoolManager {
@@ -59,4 +67,15 @@ interface IPoolManager {
     function collectFees(PoolId id, bytes32 positionId)
         external
         returns (uint256 fee0, uint256 fee1);
+
+    // ─── M4 hook seam (fees-and-governance.md §1) ────────────────────────────
+
+    /// @notice Attach a swap hook to a pool (called at pool creation by the listing/strategy).
+    function setPoolHook(PoolId id, address hook) external;
+
+    function poolHook(PoolId id) external view returns (address hook);
+
+    /// @notice Best-effort ONE-shot conversion of `tokenAmount` (user token) → pair currency,
+    ///         re-entering the SAME pool (§1.1). Reverts on failure so the hook can accrue (§1.2).
+    function convertTokenToPair(PoolKey memory key, uint256 tokenAmount) external returns (uint256 pairOut);
 }
