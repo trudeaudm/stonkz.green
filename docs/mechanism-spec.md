@@ -261,10 +261,12 @@ by construction; emergent tier volatility is a feature.
 ### 8.9 Checkpointed token + CTO (see `docs/fees-and-governance.md` §3–§4)
 
 Launch tokens are ERC20Votes-style (past-block snapshots). Per-token CTO:
-≥1% initiate, 24h vote, ≥0.1% to cast, power = min(snapshot, now) with paged
-re-clamp, pass at 80% of frozen eligible denominator, early-fail when reject
-makes passage impossible, finalize transfers feeReceiver + page admin only;
-7-day cooldown on fail; voluntary feeReceiver transfer blocked while vote active.
+≥1% initiate with explicit **candidate** (default=initiator; immutable per vote),
+24h vote, ≥0.1% to cast, power = min(snapshot, now) with paged re-clamp, pass at
+80% of frozen eligible denominator, early-fail when reject makes passage
+impossible, finalize transfers feeReceiver + page admin to **candidate** only;
+failed initiator+candidate bound by 7-day per-address cooldown; token spacing
+24h between vote windows; voluntary feeReceiver transfer blocked while vote active.
 
 ## 9. Invariants (Foundry suite — differential-test all against reference/engine.js)
 

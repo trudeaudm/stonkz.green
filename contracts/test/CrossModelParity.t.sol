@@ -150,7 +150,7 @@ contract CrossModelParity is Test {
 
     function _ctoPassFlow(address token, address initiator, address whale) internal {
         vm.prank(initiator);
-        gov.initiate(token);
+        gov.initiate(token, address(0));
         // Advance well past the initiation snapshot so getPastVotes reads a strictly-past block.
         vm.roll(gov.snapshotBlockOf(token) + 10);
         vm.prank(whale);

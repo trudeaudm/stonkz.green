@@ -1,6 +1,6 @@
 # STOP — Milestone 4 (Fees / Direct / CTO)
 
-**Branch:** `milestone-4`  
+**Branch:** `cto-ruling-amendments` (from `main` @ `4328c1d`)  
 **Date:** 2026-07-25  
 **Protocol:** push-before-ruling. Complete only after push + remote CI green.
 
@@ -19,7 +19,8 @@
 |---|---|
 | `3d53fa6` | docs(m4-a): fees-and-governance — hook fees, direct listing, CTO |
 | `c815c12` | feat(m4): direct-to-DEX + hook fee architecture + CTO governance |
-| *(this)* | docs(m4): STOP + initiator-as-CTO-winner clarification |
+| `2b5c3a9` | docs(m4): STOP (pre-ruling; initiator-as-winner — superseded) |
+| *(this)* | CTO ruling amendments: explicit candidate + restructured cooldown |
 
 ## Local gate
 
@@ -38,11 +39,12 @@ Primary doc: [`docs/fees-and-governance.md`](fees-and-governance.md)
 - Checkpointed token; CTO with protective rationale verbatim
 - FeeLocker v2 for new launches; side-pool compounding unchanged
 
-## Ruling ask (one ambiguity resolved in code — confirm)
+## Ruling ask (RESOLVED)
 
-On CTO **pass**, feeReceiver + page-admin transfer to the **initiator**
-(candidate who opened the vote). Spec said "winner" without defining it;
-documented in fees-and-governance §4.4. Confirm or rule otherwise.
+On CTO **pass**, feeReceiver + page-admin transfer to the **candidate**
+(explicit beneficiary at initiation; default = initiator). Confirmed with
+amendments 2026-07-25: candidate immutable per vote; 7d cooldown binds
+failed initiator+candidate addresses; token spacing is 24h (squatter rationale).
 
 ## Provisional / parallel
 
@@ -52,6 +54,6 @@ documented in fees-and-governance §4.4. Confirm or rule otherwise.
 
 ## Ask of the human
 
-1. Confirm fees-and-governance framing (hook discipline, 80/20, CTO rules).
-2. Confirm initiator-as-winner on CTO pass (§4.4).
-3. On remote CI green: approve merge. M4 done; M3.5 and/or next milestone next.
+1. ~~Confirm fees-and-governance framing~~ — confirmed.
+2. ~~CTO pass beneficiary + cooldown~~ — confirmed with amendments (§4.1 / §4.4 / §4.5).
+3. On remote CI green: approve merge of `cto-ruling-amendments`. M4 closed; M3.5 and/or next milestone next.
