@@ -20,6 +20,6 @@ interface ICTOGovernor {
 interface IFeeReceiverRegistry {
     function feeReceiver(address token) external view returns (address);
     function pageAdmin(address token) external view returns (address);
-    /// @notice CTO-only: on a passed vote, move feeReceiver + pageAdmin to the winner.
+    /// @notice CTO-only: on a passed vote, move feeReceiver + pageAdmin to the candidate.
     function governorTransfer(address token, address newReceiver, address newAdmin) external;
 }

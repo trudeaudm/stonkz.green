@@ -6,9 +6,11 @@ import {IVotesToken, IFeeReceiverRegistry} from "./interfaces/IStonkzGovernance.
 /// @title CTOGovernor — per-token community takeover (fees-and-governance.md §4, spec §8.9)
 /// @notice Per-token state machine. Power = min(balance@snapshot, balanceNow), paged
 ///         re-clamp of ALL prior voters, pass at 80% of a FROZEN eligible denominator,
-///         early-fail when reject > 20%, 7-day cooldown on fail. Abstention is a veto by
-///         design (§4.6). No admin, no upgradeability; every knob is a construction/registrar
-///         wiring step or a hardcoded bound.
+///         early-fail when reject > 20%. Candidate is explicit + immutable per vote;
+///         on pass, feeReceiver + page-admin transfer to the candidate. Failed
+///         initiator + candidate: 7-day per-address cooldown; token: 24h spacing
+///         between vote windows (hostile-squatter rationale §4.5). Abstention is a
+///         veto by design (§4.6). No admin, no upgradeability.
 contract CTOGovernor {
     // ─── hardcoded bounds (no admin) ─────────────────────────────────────────
     uint16 internal constant INITIATE_BPS = 100; // ≥1% at-large to initiate (§4.1)
@@ -16,7 +18,8 @@ contract CTOGovernor {
     uint16 internal constant PASS_BPS = 8000; // support ≥80% frozen denom (§4.3)
     uint16 internal constant FAIL_BPS = 2000; // reject >20% ⇒ early-fail (§4.3)
     uint64 internal constant VOTE_WINDOW = 24 hours; // §4.2
-    uint64 internal constant COOLDOWN = 7 days; // §4.5
+    uint64 internal constant ADDRESS_COOLDOWN = 7 days; // failed initiator+candidate (§4.5)
+    uint64 internal constant TOKEN_SPACING = 24 hours; // between vote windows (§4.5)
     uint256 internal constant CLAMP_PAGE = 50; // per-tx re-clamp work cap (§4.2)
     uint256 internal constant MAX_VOTERS = 1000; // bounded voter set (§4.2)
 
@@ -29,12 +32,12 @@ contract CTOGovernor {
 
     struct Proposal {
         Status status;
-        address candidate; // initiator = proposed new feeReceiver + pageAdmin
+        address initiator; // address that opened the vote
+        address candidate; // immutable beneficiary (§4.1 / §4.4)
         uint256 snapshotBlock; // frozen at initiate (§4.1)
         uint256 eligibleDenom; // frozen: total − LP − burned − parked (creatorReserve INCLUDED)
         uint64 voteStart;
         uint64 voteEnd;
-        uint64 cooldownUntil; // set on fail (§4.5)
         uint256 adjustedSupport;
         uint256 adjustedReject;
         uint256 clampCursor; // paging cursor over `voters`
@@ -63,26 +66,48 @@ contract CTOGovernor {
     mapping(address => Voter[]) internal _voters; // token => voters
     mapping(address => mapping(address => uint256)) public voterIndexPlus1; // token => voter => idx+1
     mapping(address => TokenReg) public tokenRegs; // token => denominator inputs
+    /// @dev Failed initiator / candidate cannot reappear in either role until this time (§4.5).
+    mapping(address => uint64) public addressCooldownUntil;
+    /// @dev Earliest timestamp a new vote window may open on this token (§4.5).
+    mapping(address => uint64) public tokenNextWindow;
 
     // ─── events (§4.7) ───────────────────────────────────────────────────────
     event TokenRegistered(address indexed token, address indexed registrar);
     event DenominatorUpdated(address indexed token, uint256 lpHeld, uint256 burned, uint256 parked);
     event CTOInitiated(
-        address indexed token, address indexed candidate, uint256 snapshotBlock, uint256 eligibleDenom, uint64 voteEnd
+        address indexed token,
+        address indexed initiator,
+        address indexed candidate,
+        uint256 snapshotBlock,
+        uint256 eligibleDenom,
+        uint64 voteEnd
     );
     event VoteCast(address indexed token, address indexed voter, bool support, uint256 power);
-    event PageReclamped(address indexed token, uint256 fromCursor, uint256 count, uint256 adjustedSupport, uint256 adjustedReject);
+    event PageReclamped(
+        address indexed token, uint256 fromCursor, uint256 count, uint256 adjustedSupport, uint256 adjustedReject
+    );
     event CTOEarlyFailed(address indexed token, uint256 adjustedReject, uint256 threshold);
-    event CTOPassed(address indexed token, address indexed winner, uint256 adjustedSupport, uint256 eligibleDenom);
-    event CTOFailed(address indexed token, uint256 adjustedSupport, uint256 eligibleDenom, uint64 cooldownUntil);
+    event CTOPassed(address indexed token, address indexed candidate, uint256 adjustedSupport, uint256 eligibleDenom);
+    event CTOFailed(
+        address indexed token,
+        address indexed initiator,
+        address indexed candidate,
+        uint256 adjustedSupport,
+        uint256 eligibleDenom,
+        uint64 addressCooldownUntil,
+        uint64 tokenNextWindow
+    );
     event CTOFinalized(address indexed token, Status status);
+    event AddressCooldownSet(address indexed who, uint64 until);
+    event TokenSpacingSet(address indexed token, uint64 nextWindow);
 
     error RegistryAlreadySet();
     error NotRegistrySetter();
     error TokenAlreadyRegistered();
     error NotRegistrar();
     error CTOAlreadyActive();
-    error CooldownActive(uint64 until);
+    error AddressCooldownActive(address who, uint64 until);
+    error TokenSpacingActive(uint64 until);
     error BelowInitiateThreshold();
     error NotActive();
     error VotingClosed();
@@ -140,34 +165,47 @@ contract CTOGovernor {
 
     // ─── lifecycle ───────────────────────────────────────────────────────────
 
-    /// @notice Initiate a CTO. Caller must hold ≥1% at-large; initiator becomes the candidate.
-    function initiate(address token) external {
+    /// @notice Initiate a CTO. Caller must hold ≥1% at-large.
+    /// @param candidate Beneficiary of feeReceiver + page-admin on pass.
+    ///        `address(0)` defaults to `msg.sender` (initiator). Immutable for this vote.
+    function initiate(address token, address candidate) external {
+        if (candidate == address(0)) candidate = msg.sender;
+
         Proposal storage p = proposals[token];
         if (p.status == Status.Active) revert CTOAlreadyActive();
-        if (p.status == Status.Failed && block.timestamp < p.cooldownUntil) {
-            revert CooldownActive(p.cooldownUntil);
+
+        // Token spacing: 24h between vote windows (§4.5).
+        if (block.timestamp < tokenNextWindow[token]) {
+            revert TokenSpacingActive(tokenNextWindow[token]);
+        }
+        // Per-address 7d cooldown binds failed initiator AND failed candidate in either role.
+        if (block.timestamp < addressCooldownUntil[msg.sender]) {
+            revert AddressCooldownActive(msg.sender, addressCooldownUntil[msg.sender]);
+        }
+        if (block.timestamp < addressCooldownUntil[candidate]) {
+            revert AddressCooldownActive(candidate, addressCooldownUntil[candidate]);
         }
 
         uint256 atLarge = atLargeSupply(token);
         uint256 need = (atLarge * INITIATE_BPS) / 10_000;
         if (IVotesToken(token).balanceOf(msg.sender) < need || need == 0) revert BelowInitiateThreshold();
 
-        // Reset any prior voter set (new proposal).
-        delete _voters[token];
+        // Reset any prior voter set + index map (new proposal).
+        _clearVoters(token);
 
         p.status = Status.Active;
-        p.candidate = msg.sender;
+        p.initiator = msg.sender;
+        p.candidate = candidate;
         p.snapshotBlock = block.number;
         p.eligibleDenom = atLarge;
         p.voteStart = uint64(block.timestamp);
         p.voteEnd = uint64(block.timestamp) + VOTE_WINDOW;
-        p.cooldownUntil = 0;
         p.adjustedSupport = 0;
         p.adjustedReject = 0;
         p.clampCursor = 0;
         p.finalized = false;
 
-        emit CTOInitiated(token, msg.sender, p.snapshotBlock, p.eligibleDenom, p.voteEnd);
+        emit CTOInitiated(token, msg.sender, candidate, p.snapshotBlock, p.eligibleDenom, p.voteEnd);
     }
 
     /// @notice Cast a support/reject vote. Power = min(balance@snapshot, balanceNow), ≥0.1% to cast.
@@ -237,6 +275,14 @@ contract CTOGovernor {
         return proposals[token].status;
     }
 
+    function candidateOf(address token) external view returns (address) {
+        return proposals[token].candidate;
+    }
+
+    function initiatorOf(address token) external view returns (address) {
+        return proposals[token].initiator;
+    }
+
     function voterCount(address token) external view returns (uint256) {
         return _voters[token].length;
     }
@@ -266,28 +312,51 @@ contract CTOGovernor {
         return proposals[token].clampCursor;
     }
 
-    function inCooldown(address token) external view returns (bool) {
-        Proposal storage p = proposals[token];
-        return p.status == Status.Failed && block.timestamp < p.cooldownUntil;
+    function inAddressCooldown(address who) external view returns (bool) {
+        return block.timestamp < addressCooldownUntil[who];
+    }
+
+    function inTokenSpacing(address token) external view returns (bool) {
+        return block.timestamp < tokenNextWindow[token];
     }
 
     // ─── internal ──────────────────────────────────────────────────────────
 
     function _finish(address token, Proposal storage p, bool passed) internal {
         p.finalized = true;
+        // Token spacing always applies after a vote window closes (§4.5).
+        uint64 nextWin = uint64(block.timestamp) + TOKEN_SPACING;
+        tokenNextWindow[token] = nextWin;
+        emit TokenSpacingSet(token, nextWin);
+
         if (passed) {
             p.status = Status.Passed;
-            // Transfer feeReceiver + page admin ONLY (§4.4). Nothing else moves.
+            // Transfer feeReceiver + page admin to CANDIDATE ONLY (§4.4).
             if (address(registry) != address(0)) {
                 registry.governorTransfer(token, p.candidate, p.candidate);
             }
             emit CTOPassed(token, p.candidate, p.adjustedSupport, p.eligibleDenom);
         } else {
             p.status = Status.Failed;
-            p.cooldownUntil = uint64(block.timestamp) + COOLDOWN;
-            emit CTOFailed(token, p.adjustedSupport, p.eligibleDenom, p.cooldownUntil);
+            uint64 until = uint64(block.timestamp) + ADDRESS_COOLDOWN;
+            addressCooldownUntil[p.initiator] = until;
+            addressCooldownUntil[p.candidate] = until;
+            emit AddressCooldownSet(p.initiator, until);
+            emit AddressCooldownSet(p.candidate, until);
+            emit CTOFailed(
+                token, p.initiator, p.candidate, p.adjustedSupport, p.eligibleDenom, until, nextWin
+            );
         }
         emit CTOFinalized(token, p.status);
+    }
+
+    function _clearVoters(address token) internal {
+        Voter[] storage vs = _voters[token];
+        uint256 n = vs.length;
+        for (uint256 i = 0; i < n; ++i) {
+            delete voterIndexPlus1[token][vs[i].voter];
+        }
+        delete _voters[token];
     }
 
     /// @dev Re-clamp CLAMP_PAGE voters starting at the wrapping cursor.

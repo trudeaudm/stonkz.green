@@ -57,7 +57,7 @@ Wei-exact. Side-pool fees continue to **compound into the same position**
 |---|---|
 | Voluntary | Current holder may transfer anytime |
 | Blocked | While a CTO vote is **active**, until `finalize` |
-| CTO | On successful finalize, feeReceiver (+ token-page admin) transfers to winner |
+| CTO | On successful finalize, feeReceiver (+ token-page admin) transfers to the **candidate** recorded at initiation |
 
 ### 1.5 FeeLocker v2
 
@@ -130,6 +130,11 @@ Wired into both IPO and Direct factories at mint.
 
 - Any address holding **≥ 1% of at-large supply**, via the token page;
   eligibility enforced on-chain.
+- Takes an explicit **candidate** (beneficiary) address: default = initiator;
+  may be any address (e.g. a community multisig). The vote is defined as
+  **"transfer feeReceiver + page-admin to \<candidate\>"**. Candidate is
+  **immutable per vote**, emitted in the initiation event, rendered on the
+  token page and all voting surfaces.
 - Records the **initiation snapshot block**.
 - **Eligible denominator** =  
   `total − LP-held − burned − protocol-parked`  
@@ -154,13 +159,20 @@ Wired into both IPO and Direct factories at mint.
 ### 4.4 Finalize
 
 - Permissionless after window or early-fail; one final re-clamp.
-- On success: transfers **feeReceiver + token-page admin** to the **CTO
-  initiator** (the address that opened the vote — the candidate).  
+- On success: transfers **feeReceiver + token-page admin** to the **candidate**
+  (immutable beneficiary recorded at initiation — not necessarily the
+  initiator).  
   **Nothing else** transfers (reserves, vesting, LP untouched).
 
-### 4.5 Cooldown
+### 4.5 Cooldown (restructured)
 
-Failed CTO → **7-day per-token** re-initiation cooldown.
+- **Per-address 7-day cooldown** binds the **failed initiator** and the
+  **failed candidate** (either role re-appearing as initiator *or* candidate
+  within 7 days reverts initiation).
+- **Per-token spacing:** only **24 hours** between vote windows.
+- **Rationale on record:** a per-token 7-day cooldown let a hostile 1%
+  squatter serially lock out genuine community efforts; per-address cooldown
+  prices retries at a fresh 1% of supply each.
 
 ### 4.6 Protective rationale (verbatim)
 
@@ -170,9 +182,9 @@ covers cooperative handoffs.
 
 ### 4.7 Events
 
-Every transition emits (initiate / vote / re-clamp page / early-fail / pass /
-finalize / cooldown / voluntary-transfer-blocked). Token page renders the full
-lifecycle.
+Every transition emits (initiate with initiator+candidate / vote / re-clamp
+page / early-fail / pass / finalize / address-cooldown / token-spacing /
+voluntary-transfer-blocked). Token page renders the full lifecycle.
 
 ---
 

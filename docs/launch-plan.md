@@ -218,7 +218,7 @@ M3.5 may run in parallel with Milestone 4; M4 does not lift D1–D3.
 - ✅ Fees + Direct + CTO (M4 — see `docs/fees-and-governance.md`):
   - Primary-pool fees: hook-based per-swap conversion (Doppler/Bankr parity); best-effort; 80% feeReceiver / 20% protocolTreasury; feeReceiver transferable (blocked during active CTO)
   - Direct listing: $4k/$8k start mcap; 95% `[startTick, MAX_TICK]` + 5% side pool; rug-impossible by construction; emergent tier volatility
-  - Checkpointed launch token (ERC20Votes-style); per-token CTO (≥1% initiate, 24h, 80% of frozen eligible, early-fail, 7d cooldown)
+  - Checkpointed launch token (ERC20Votes-style); per-token CTO (≥1% initiate with explicit candidate, 24h, 80% of frozen eligible, early-fail; 7d per-address cooldown on failed initiator+candidate; 24h token spacing)
   - FeeLocker v2 for new launches; M4 hook C1 provisional on mock → M3.5 real-v4 re-run
 - ✅ Brand: STONKZ (stonks was taken). Domains: stonkz.meme (primary — a launchpad at .meme sells itself) + stonkz.green (redirect, "the line is green"); protocol token $STONKZ4663
 - ✅ Build: solo, with Claude + Cursor, on Uniswap's CCA contracts
