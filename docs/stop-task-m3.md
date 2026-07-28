@@ -32,7 +32,7 @@ Also on main via the precondition merge: `5003ec5` uint112/uint128 pack domain; 
 - Foundry unit/vector: green
 - 200-vector fuzz seed 4663: **PASS**
 - Invariant campaign: **11/11**
-- M3 C1–C6 suites: **20/20** (C1/C2 provisional; C3 partially provisional)
+- M3 C1–C6 suites: **19/19** (was recorded as 20; corrected pre-m5-housekeeping — C1/C2 provisional; C3 partially provisional)
 
 ## B6 vector report
 

@@ -7,3 +7,9 @@ contracts/lib/
 .env.*
 *.log
 .DS_Store
+/stonkz-site/
+
+# working docs — deliberately untracked, see docs/00-START-HERE.md
+docs/00-START-HERE.md
+docs/0[1-5]-*.md
+docs/stonkz-*.html

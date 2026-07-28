@@ -106,13 +106,14 @@ H3/H4 wait on production triggers above.
 | Exhaustion-boundary | **STOP** — 1-clear OutBudget lag; `docs/stop-task-s2.md` |
 | Vectors/CI | Flip to lazy blocked on S2 gate |
 | Task R `maxUniqueActives` | Shipped |
-| M5 segment+heap | Still the path to remove caps at scale |
+| SCALE-TRACK segment+heap | Still the path to remove caps at scale (gated on measured gas; M5 = Ladder v1.5) |
 
-### Milestone-5 design note (cap removal at scale)
+### SCALE-TRACK design note (cap removal at scale)
 
 **Segment + heap engine** (not implemented now): closed-form geometric spend under
 constant weight between constraints; exit-threshold priority queue so clears
 touch storage only at constraint events (cap, budget/dust, price-out). That is
 the path to remove `maxUniqueActives` at scale once equivalence-proven. Until
-then: E1 valve + poke-at-least-once-per-epoch + unique-active cap.
+then: E1 valve + poke-at-least-once-per-epoch + unique-active cap. Owner ruling:
+this gas work is **SCALE-TRACK**, not milestone-sequence "M5" (M5 = Ladder v1.5).
 
