@@ -1,9 +1,13 @@
-# STONKZ 📈 — stonkz.meme
+# STONKZ 📈 — stonkz.green
 
-The trenches deserve a launchpad that can't run away with the money.
-Token launchpad on Robinhood Chain: custom **Stonkz Ladder Auction**
-(per-capita fills with a size tilt, demand-gated price, three-phase release,
-graduation-or-refund), settling into Uniswap v4 with κ̂-derived LP pairing.
+The fair-launch ladder auction. Token launchpad on Robinhood Chain: custom
+**Stonkz Ladder Auction** (per-capita fills with a size tilt, demand-gated
+price, three-phase release, graduation-or-refund), settling into Uniswap v4
+with κ̂-derived LP pairing. Positioning is **technology leadership** — a clean
+launchpad experience; security (differential testing, invariants, immutable
+contracts, audit ladder) is engineering-standards evidence, not the brand.
+
+**Domains:** stonkz.green (primary) · stonkz.meme (alias)
 
 ## Layout
 ```

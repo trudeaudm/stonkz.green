@@ -244,3 +244,4 @@ per-clear SSTOREs (`WriteBudget` documents `C_PER_COMPOUND_POS`).
 | M3r | `b04b61d` | M3 review findings → deployment ladder D2/D3; M3.5 scope |
 | M4 | `4328c1d` | hook fees, direct listing, checkpointed token, CTOGovernor |
 | M4a | `94ad73c` | CTO ruling amendments: explicit candidate + per-address cooldown |
+| PRE-M5 | `5621196` | housekeeping PR #6 — working-docs gitignore, forge pin, scan truth-pass, SCALE-TRACK |

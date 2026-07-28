@@ -1,10 +1,14 @@
 # STONKZ — project rules
 
-You are building STONKZ (stonkz.meme): a token launchpad on Robinhood Chain
+You are building STONKZ (stonkz.green): a token launchpad on Robinhood Chain
 (Arbitrum-based L2, ~100ms blocks, ERC-4337, Uniswap v4 settlement venue).
-Solo founder + you. Trust is the product: the competitor (Noxa) took $12M in
-fees and went dark; our positioning is "the launchpad that can't run away
-with your money."
+Solo founder + you. Positioning is technology leadership — "the fair-launch
+ladder auction," clean launchpad experience. Security (differential testing,
+invariants, immutability, audit ladder) is engineering-standards evidence,
+not identity. Competitor context: Noxa took ~$12M in fees and went dark;
+that is market backdrop, not our brand.
+
+Domains: stonkz.green (primary), stonkz.meme (alias).
 
 ## Read order (before writing any code)
 1. docs/mechanism-spec.md        — THE mechanism. Formulas are final.
@@ -39,4 +43,4 @@ with your money."
 - Frontend voice: memeworld/win95, deliberate misspellings ("likwidity",
   "is not financal advice becuase we cannot spell financal") — see
   reference/memeworld-mockup.html. Never correct the misspellings.
-- Ticker: $STONKZ4663. Domain: stonkz.meme (stonkz.green redirects).
+- Ticker: $STONKZ4663. Domains: stonkz.green (primary), stonkz.meme (alias).
