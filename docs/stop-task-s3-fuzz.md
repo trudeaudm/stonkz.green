@@ -347,11 +347,11 @@ Task T unblocked.
 
 | Item | Status |
 |------|--------|
-| `Position` / `Bidder` ≤ 2 slots (`uint80` + flags) | Done |
+| `Position` / `Bidder` = **3 slots** (`uint112` quantities + `uint128 maxPrice`; amended ruling — code is source of truth; prior "2 slots / uint80" claim was wrong) | Done |
 | Warm ALL-SIMPLE @300 ≤ **2.5M** | **MISS** — **~6.09M** (~2.4×) |
 | `maxClearsPerSync` default = floor(25M/measured) = **4** | Done |
 | Assert `cap × measured ≤ 25M` | Green (`24344376 ≤ 25M`) |
 | WriteBudget warm SSTOREs | **8** ≤ 16 Green |
 | 200-vector + invariants under lazy | Green |
 
-Residual: O(n) SLOAD + memory water-fill (packing saved ~2% on warm clear). Segment+heap (M5) needed for 2.5M. See `docs/gas-attribution.md`.
+Residual: O(n) SLOAD + memory water-fill (packing saved ~2% on warm clear). Segment+heap (**SCALE-TRACK**, gated on measured gas; M5 = Ladder v1.5 per owner ruling) needed for 2.5M. See `docs/gas-attribution.md`.

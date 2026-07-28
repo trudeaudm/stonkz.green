@@ -233,3 +233,14 @@ Per-bid flat fee (spec §2) plus optional `maxLivePositionsPerAddress` (ctor;
 0 = unlimited; guarded launch may set ~8) bound adversarial compound write
 amplification: each extra live position on an address forces exact-track
 per-clear SSTOREs (`WriteBudget` documents `C_PER_COMPOUND_POS`).
+
+### Milestone ledger (merge SHAs)
+
+| Milestone | Merge SHA | Notes |
+|-----------|-----------|-------|
+| M1 | `1b34952` | spec + reference oracle + StonkzAuction + differential suite |
+| M2.5 | `d7ec5bc` | lazy accounting (Q′/S3/F1′/G1‴/H1), Task T packing, E1 valve, I5 clamp |
+| M3 | `21eaf1b` | settlement: strategy, BuybackAccumulator, FeeLocker, terminal states |
+| M3r | `b04b61d` | M3 review findings → deployment ladder D2/D3; M3.5 scope |
+| M4 | `4328c1d` | hook fees, direct listing, checkpointed token, CTOGovernor |
+| M4a | `94ad73c` | CTO ruling amendments: explicit candidate + per-address cooldown |

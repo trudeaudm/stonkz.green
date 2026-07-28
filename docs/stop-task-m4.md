@@ -2,6 +2,7 @@
 
 **Branch:** `cto-ruling-amendments` (from `main` @ `4328c1d`)  
 **Date:** 2026-07-25  
+**Status:** **MERGED** @ `94ad73c` (PR #5). Closed.
 **Protocol:** push-before-ruling. Complete only after push + remote CI green.
 
 ## Precondition
@@ -28,7 +29,7 @@
 - Unit/vector bucket: **102 passed**
 - 200-vector fuzz seed 4663: **PASS**
 - Invariant campaign: **11/11**
-- M4 C1–C4 suites: **27/27** (C1 provisional on mock)
+- M4 C1–C4 suites: **31/31** (was 27 at STOP; +4 C3 amendment tests at merge — C1 provisional on mock)
 
 ## Spec surface for review
 
@@ -56,4 +57,4 @@ failed initiator+candidate addresses; token spacing is 24h (squatter rationale).
 
 1. ~~Confirm fees-and-governance framing~~ — confirmed.
 2. ~~CTO pass beneficiary + cooldown~~ — confirmed with amendments (§4.1 / §4.4 / §4.5).
-3. On remote CI green: approve merge of `cto-ruling-amendments`. M4 closed; M3.5 and/or next milestone next.
+3. ~~On remote CI green: approve merge of `cto-ruling-amendments`~~ — **MERGED** @ `94ad73c`. M4 closed; M3.5 and/or next milestone next.

@@ -15,7 +15,8 @@ reference/
   engine.test.js         ← 19 locked behaviors:  node reference/engine.test.js
   ladder-simulator.html  ← interactive mechanism lab (open in a browser)
   memeworld-mockup.html  ← full frontend mockup w/ simulated engine
-contracts/               ← Foundry skeleton (spec-annotated, TODO bodies)
+contracts/               ← Foundry: auction/settlement/direct/CTO IMPLEMENTED;
+                           StonkzAuctionManager remains a skeleton (TODO body)
 web/                     ← frontend (to be ported from the mockup)
 ```
 
@@ -23,7 +24,14 @@ web/                     ← frontend (to be ported from the mockup)
 ```bash
 node reference/engine.test.js          # the oracle must be green
 cd contracts && forge install foundry-rs/forge-std && forge build
+forge test                             # gas_limit pinned in foundry.toml
 ```
+
+## Dev requirements
+- **Node 20** (CI uses `actions/setup-node` with `node-version: "20"`)
+- **Foundry** — CI pins `foundry-rs/foundry-toolchain` to **v1.7.1**. Local
+  installs may skew (e.g. 1.6.0-rc1); known — prefer CI as the source of truth
+  when versions disagree.
 
 ## Build order (from the plan)
 1. Port the reference model → Foundry test vectors (gen-vectors.js) 
