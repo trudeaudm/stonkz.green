@@ -1,3 +1,8 @@
+> **STALE — SUPERSEDED (2026-08-03).** The protocol-token plan in this document —
+> its working name, supply figure, genesis framing, and fee routing — has been superseded
+> in full and does not describe current intent. It is retained as a historical record of
+> early planning only. Do not quote figures from this file.
+
 # STONKZ — Token Launchpad on Robinhood Chain
 
 *Working plan, v0.1 — July 2026*

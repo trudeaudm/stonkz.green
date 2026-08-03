@@ -1,3 +1,10 @@
+> **STALE — SUPERSEDED IN PART (2026-08-03).** The fee section of this document
+> (best-effort conversion, 80/20 split, LP-fee-tier revenue capture) and the protocol-token
+> naming used throughout have been superseded and do not describe the current design.
+> Mechanism sections other than fees remain the M3-era record. The authoritative
+> specification is internal and will be published before mainnet. Do not build or audit
+> fee logic against this file.
+
 # StonkzAuction — Mechanism Specification v1.1
 
 > The source of truth for the Solidity implementation. Every rule here was designed

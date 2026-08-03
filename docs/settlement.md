@@ -1,3 +1,9 @@
+> **STALE — SUPERSEDED IN PART (2026-08-03).** Ongoing-fee routing in this document
+> (the 80/20 hook split and BuybackAccumulator as the main-fee destination) has been
+> superseded and does not describe the current architecture. Settlement-carve mechanics
+> remain directionally valid. The authoritative specification is internal and will be
+> published before mainnet.
+
 # Settlement — Milestone 3 flow (spec §8)
 
 > Source of truth for settlement is `docs/mechanism-spec.md` §8 (v1.1).

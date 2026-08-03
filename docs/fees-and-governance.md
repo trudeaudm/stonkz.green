@@ -1,3 +1,10 @@
+> **STALE — SUPERSEDED IN PART (2026-08-03).** The fee-capture design in this document
+> (best-effort conversion, crankConvert, the 80/20 split, and the protocol-take framing)
+> has been superseded and does not describe the current architecture. Settlement-carve
+> and side-pool compounding sections remain directionally valid. The authoritative fee
+> specification is internal and will be published before mainnet. Do not build or audit
+> against this file.
+
 # Fees, Direct Listing & CTO Governance — Milestone 4
 
 > Companion to `docs/mechanism-spec.md`. Auction-engine math (§2–§7) is untouched.
