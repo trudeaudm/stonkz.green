@@ -14,8 +14,8 @@ import {StonkzFeeHook} from "./StonkzFeeHook.sol";
 /// @title StonkzLiquidityStrategy — post-auction settlement into Uniswap v4 (spec §8)
 /// @notice Price-setting main pool + surplus + 95/5 carve + side pool + FeeLocker custody.
 /// @dev Dual-backend: constructor-injected IPoolManager (mock now, real v4 in M3.5).
-///      FEECHAIN Phase 2: `_mainPoolKey` / `_sidePoolKey` (docs/06). Hook register on settle
-///      is provisional; FeeLocker main→BuybackAccumulator retirement is Phase 4.
+///      FEECHAIN: `_mainPoolKey` / `_sidePoolKey` (Phase 2); hook register on settle; FeeLocker
+///      main→BuybackAccumulator route retired (Phase 4). Accumulator kept for carve + side park.
 contract StonkzLiquidityStrategy {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
@@ -202,7 +202,7 @@ contract StonkzLiquidityStrategy {
             }
         }
 
-        // Attach fee hook (docs/06 / Phase 2 naked-pool guard). Full FeeLocker retirement = Phase 4.
+        // Attach fee hook (docs/06). Main fees: StonkzFeeHook accrue-and-flush (FeeLocker crank retired).
         if (!hook.registered(userToken_)) {
             hook.registerPool(userToken_, pairToken, creator_, mainPoolKey);
         }

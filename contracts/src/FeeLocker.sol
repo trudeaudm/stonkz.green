@@ -7,8 +7,11 @@ import {Currency, CurrencyLibrary} from "./v4/types/Currency.sol";
 import {BuybackAccumulator} from "./BuybackAccumulator.sol";
 
 /// @title FeeLocker — immutable custody for positions we create (spec §8.6)
-/// @notice Main: pair fees → BuybackAccumulator; user-token fees → burn.
-///         Side: fees compound back into same position via permissionless crank.
+/// @notice Main-pool fee crank RETIRED (FEECHAIN Phase 4 / docs/06). Ongoing main fees are
+///         handled by StonkzFeeHook accrue-and-flush. Side: fees compound back into the same
+///         position via permissionless crank — UNCHANGED.
+/// @dev Constructor still takes BuybackAccumulator for ABI/deploy compatibility with launched
+///      wiring; it is no longer invoked by any automatic fee path.
 contract FeeLocker {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
@@ -29,6 +32,7 @@ contract FeeLocker {
     }
 
     IPoolManager public immutable poolManager;
+    /// @dev Retained for deploy ABI compatibility; unused by fee cranks after Phase 4.
     BuybackAccumulator public immutable accumulator;
     address public immutable burnSink;
 
@@ -36,8 +40,9 @@ contract FeeLocker {
     mapping(uint256 => LockedPosition) public locks;
 
     event PositionLocked(uint256 indexed lockId, PoolId indexed poolId, PoolKind kind, bytes32 positionId);
-    event MainFeesRouted(uint256 indexed lockId, uint256 pairFees, uint256 userFeesBurned);
     event SideFeesCompounded(uint256 indexed lockId, uint256 fee0, uint256 fee1);
+
+    error MainFeeCrankRetired();
 
     constructor(IPoolManager poolManager_, BuybackAccumulator accumulator_, address burnSink_) {
         poolManager = poolManager_;
@@ -68,34 +73,13 @@ contract FeeLocker {
         emit PositionLocked(lockId, key.toId(), kind, positionId);
     }
 
-    /// @notice Permissionless: collect + route main-pool fees (spec §8.6).
-    function crankMainFees(uint256 lockId) external payable {
-        LockedPosition storage lp = locks[lockId];
-        require(lp.active && lp.kind == PoolKind.Main, "main");
-        PoolId id = lp.key.toId();
-        (uint256 fee0, uint256 fee1) = poolManager.collectFees(id, lp.positionId);
-
-        uint256 pairFees = lp.currency0IsPair ? fee0 : fee1;
-        uint256 userFees = lp.currency0IsPair ? fee1 : fee0;
-
-        if (pairFees > 0) {
-            // Native path: forward value; mock may have zero actual ETH — still emit route.
-            if (msg.value > 0) {
-                accumulator.receiveFees{value: msg.value}();
-            } else if (address(this).balance >= pairFees) {
-                accumulator.receiveFees{value: pairFees}();
-            } else {
-                // Accounting-only when mock has no token transfer: credit via direct call with 0
-                // and record event with amounts.
-                emit MainFeesRouted(lockId, pairFees, userFees);
-                return;
-            }
-        }
-        // userFees → burn (accounting emit; no ERC20 required for M3 mock path)
-        emit MainFeesRouted(lockId, pairFees, userFees);
+    /// @notice RETIRED (FEECHAIN Phase 4). Main fees via StonkzFeeHook; no pair→BuybackAccumulator route.
+    function crankMainFees(uint256) external pure returns (uint256, uint256) {
+        revert MainFeeCrankRetired();
     }
 
     /// @notice Permissionless: collect side-pool fees and compound into same position (spec §8.6).
+    /// @dev UNCHANGED — side-pool compounding is out of Phase 4 scope.
     function crankSideCompound(uint256 lockId) external {
         LockedPosition storage lp = locks[lockId];
         require(lp.active && lp.kind == PoolKind.Side, "side");
