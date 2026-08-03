@@ -11,5 +11,5 @@ contracts/lib/
 
 # working docs — deliberately untracked, see docs/00-START-HERE.md
 docs/00-START-HERE.md
-docs/0[1-5]-*.md
+docs/0[1-9]-*.md
 docs/stonkz-*.html
