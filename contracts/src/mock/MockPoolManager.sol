@@ -37,8 +37,13 @@ contract MockPoolManager is IPoolManager {
     // ─── M4/M3.5 hook seam ───────────────────────────────────────────────────
     mapping(PoolId => address) public hooks; // pool => StonkzFeeHook
     /// @dev Mock swap-fee rate in ppm applied to |amountSpecified| (default from key.fee).
-    ///      Phase 1 replaces this with explicit hook-rate modeling when key.fee == 0.
+    ///      Used only when key.fee != 0 (LP-fee path / legacy tests).
     mapping(PoolId => uint24) public feePpmOverride;
+    /// @dev Explicit hook fee in bps when key.fee == 0 (docs/06 main pools). Default 100.
+    ///      Vacuity guard: fee=0 must NOT imply feeAmount=0 when a hook is attached.
+    mapping(PoolId => uint16) public hookFeeBps;
+    mapping(PoolId => bool) public hookFeeBpsConfigured;
+    uint16 public defaultHookFeeBps = 100; // Gate 1: factory default 100 bps (1%)
 
     event HookSet(PoolId indexed id, address hook);
 
@@ -48,6 +53,12 @@ contract MockPoolManager is IPoolManager {
 
     function setFeePpm(PoolId id, uint24 ppm) external {
         feePpmOverride[id] = ppm;
+    }
+
+    /// @notice Set per-pool hook fee in bps (Phase 1 / docs/06). Bounds enforced in Phase 3 factory.
+    function setHookFeeBps(PoolId id, uint16 bps) external {
+        hookFeeBps[id] = bps;
+        hookFeeBpsConfigured[id] = true;
     }
 
     /// @notice Test helper: jump spot without a swap (front-run seam setup).
@@ -99,6 +110,10 @@ contract MockPoolManager is IPoolManager {
 
     function setPoolHook(PoolId id, address hook) external {
         hooks[id] = hook;
+        if (hook != address(0) && !hookFeeBpsConfigured[id]) {
+            hookFeeBps[id] = defaultHookFeeBps;
+            hookFeeBpsConfigured[id] = true;
+        }
         emit HookSet(id, hook);
     }
 
@@ -133,15 +148,21 @@ contract MockPoolManager is IPoolManager {
         swapDelta = BalanceDeltaLibrary.from(int128(a0), int128(a1));
         emit Swap(id, msg.sender, a0, a1, s.sqrtPriceX96, s.tick);
 
-        // Fee-take + hook callback. Phase 0: conversion path deleted; mock still derives
-        // feeAmount from key.fee (Phase 1 must replace with explicit hook-rate path).
+        // Fee-take + hook callback (FEECHAIN Phase 1):
+        //   key.fee == 0 (main) → feeAmount from explicit hookFeeBps (not key.fee).
+        //   key.fee != 0 (side / legacy) → feeAmount from key.fee ppm (or override).
         address hook = hooks[id];
         if (hook != address(0)) {
             uint256 absAmt = params.amountSpecified < 0
                 ? uint256(-params.amountSpecified)
                 : uint256(params.amountSpecified);
-            uint24 ppm = feePpmOverride[id] != 0 ? feePpmOverride[id] : key.fee;
-            uint256 feeAmount = (absAmt * ppm) / 1_000_000;
+            uint256 feeAmount;
+            if (key.fee == 0) {
+                feeAmount = (absAmt * uint256(hookFeeBps[id])) / 10_000;
+            } else {
+                uint24 ppm = feePpmOverride[id] != 0 ? feePpmOverride[id] : key.fee;
+                feeAmount = (absAmt * ppm) / 1_000_000;
+            }
             address tokenIn = params.zeroForOne
                 ? Currency.unwrap(key.currency0)
                 : Currency.unwrap(key.currency1);
