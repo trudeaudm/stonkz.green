@@ -71,7 +71,7 @@ contract CrossModelParity is Test {
         k = PoolKey({
             currency0: Currency.wrap(c0),
             currency1: Currency.wrap(c1),
-            fee: 0,
+            fee: 0, // pips = 0%
             tickSpacing: 60,
             hooks: address(hook)
         });
@@ -89,8 +89,8 @@ contract CrossModelParity is Test {
 
     // ─── fee parity ──────────────────────────────────────────────────────────
 
-    /// @notice Same pair-currency swap → same 80/20 split on a direct pool and a manual pool.
-    /// @dev FEECHAIN Phase 2: main LP fee 0, hook 100 bps → 10 ether on 1000 ether notional.
+    /// @notice Same pair-currency swap → same protocolFeeBps split on a direct pool and a manual pool.
+    /// @dev FEECHAIN Phase 3: main LP fee 0 pips, hook 100 bps = 1%; protocolFeeBps 2500 bps = 25% of fee.
     function test_C4_feeSplitParity_directAndManual() public {
         StonkzDirectListing l = _directToken();
         address tokA = address(l.token());
@@ -102,14 +102,13 @@ contract CrossModelParity is Test {
         _swapPayingToken(keyA, PAIR, amountIn);
         _swapPayingToken(keyB, PAIR, amountIn);
 
-        uint256 feeGross = (amountIn * 100) / 10_000; // 100 bps hook fee
-        uint256 expectReceiver = (feeGross * 8000) / 10_000;
-        uint256 expectTreasury = feeGross - expectReceiver;
-        // Identical, wei-exact, for both launch models.
-        assertEq(hook.receiverPairProceeds(tokA), expectReceiver, "direct 80%");
-        assertEq(hook.receiverPairProceeds(address(tokB)), expectReceiver, "manual 80%");
-        assertEq(hook.tokenPairProceeds(tokA), expectTreasury, "direct 20%");
-        assertEq(hook.tokenPairProceeds(address(tokB)), expectTreasury, "manual 20%");
+        uint256 feeGross = (amountIn * 100) / 10_000; // 100 bps = 1%
+        uint256 expectTreasury = (feeGross * 2500) / 10_000; // 2500 bps = 25% of fee
+        uint256 expectReceiver = feeGross - expectTreasury;
+        assertEq(hook.receiverPairProceeds(tokA), expectReceiver, "direct receiver");
+        assertEq(hook.receiverPairProceeds(address(tokB)), expectReceiver, "manual receiver");
+        assertEq(hook.tokenPairProceeds(tokA), expectTreasury, "direct protocol");
+        assertEq(hook.tokenPairProceeds(address(tokB)), expectTreasury, "manual protocol");
         assertEq(hook.receiverPairProceeds(tokA), hook.receiverPairProceeds(address(tokB)), "parity");
     }
 

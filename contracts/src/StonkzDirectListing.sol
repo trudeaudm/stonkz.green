@@ -37,9 +37,9 @@ contract StonkzDirectListing {
     uint16 internal constant MAIN_BPS = 9500; // 95% of listing supply → main pool (§2.2)
     uint16 internal constant SIDE_BPS = 500; // 5% of listing supply → side pool (§2.2)
     int24 internal constant TICK_SPACING = 60;
-    /// @dev docs/06: main LP fee 0 (hook takes revenue); side LP fee 30 bps (= 3000 hundredths-of-a-bip).
-    uint24 internal constant MAIN_LP_FEE = 0;
-    uint24 internal constant SIDE_LP_FEE = 3000;
+    /// @dev PoolKey.fee is in PIPS (never mix with hookFeeBps). docs/06 rates.
+    uint24 internal constant MAIN_LP_FEE = 0; // pips = 0%
+    uint24 internal constant SIDE_LP_FEE = 3000; // pips = 0.3%
 
     // ─── immutable wiring ────────────────────────────────────────────────────
     IPoolManager public immutable poolManager;
@@ -336,7 +336,7 @@ contract StonkzDirectListing {
         });
     }
 
-    /// @dev docs/06: LP fee 30 bps, NO hook.
+    /// @dev docs/06: LP fee 3000 pips = 0.3%, NO hook.
     function _sidePoolKey(address a, address b) internal pure returns (PoolKey memory key) {
         (address c0, address c1) = a < b ? (a, b) : (b, a);
         key = PoolKey({

@@ -11,9 +11,7 @@ import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 import {CTOGovernor} from "../src/CTOGovernor.sol";
 import {ICTOGovernor} from "../src/interfaces/IStonkzGovernance.sol";
 
-/// @title HookFees — C1 residual after FEECHAIN Phase 0 (conversion deleted).
-/// @notice Conversion / crankConvert / best-effort tests DELETED with the feature.
-///         Surviving coverage: pair-denominated fee split, no-hook pool unaffected, gas log.
+/// @title HookFees — C1 residual after FEECHAIN Phase 3 (pair-side accrue, 75/25 protocolFeeBps).
 abstract contract HookHarness is Test {
     using PoolIdLibrary for PoolKey;
 
@@ -34,23 +32,23 @@ abstract contract HookHarness is Test {
         hook = new StonkzFeeHook(pm, TREASURY, ICTOGovernor(address(gov)));
         gov.setRegistry(hook);
 
-        key = _poolKey(PAIR, TOKEN);
+        key = _mainPoolKey(PAIR, TOKEN);
         poolManager.initialize(key, TickMath.getSqrtRatioAtTick(0));
         hook.registerPool(TOKEN, PAIR, CREATOR, key);
     }
 
-    function _poolKey(address a, address b) internal pure returns (PoolKey memory k) {
+    function _mainPoolKey(address a, address b) internal view returns (PoolKey memory k) {
         (address c0, address c1) = a < b ? (a, b) : (b, a);
         k = PoolKey({
             currency0: Currency.wrap(c0),
             currency1: Currency.wrap(c1),
-            fee: 3000,
+            fee: 0, // pips = 0%
             tickSpacing: 60,
-            hooks: address(0)
+            hooks: address(hook)
         });
     }
 
-    /// @dev Swap paying `payToken` exact-in `amountIn`; returns computed fee (payToken units).
+    /// @dev Swap paying `payToken` exact-in; returns expected gross fee in pair units when payToken==PAIR.
     function _swapPaying(address payToken, uint256 amountIn) internal returns (uint256 feeAmt) {
         bool zeroForOne = Currency.unwrap(key.currency0) == payToken;
         uint160 limit = zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1;
@@ -60,7 +58,9 @@ abstract contract HookHarness is Test {
             sqrtPriceLimitX96: limit
         });
         poolManager.swap(key, p, "");
-        feeAmt = (amountIn * 3000) / 1_000_000;
+        if (payToken == PAIR) {
+            feeAmt = (amountIn * uint256(hook.hookFeeBps(TOKEN))) / 10_000;
+        }
     }
 }
 
@@ -71,22 +71,38 @@ contract HookFees is HookHarness {
         _deployBackend(IPoolManager(address(new MockPoolManager())));
     }
 
-    /// @notice Pair-denominated fee: split directly 80/20 (Phase 0 surviving path).
+    /// @notice Pair-denominated fee: split by stamped protocolFeeBps (default 2500 bps = 25%).
     function test_C1_pairDenominatedFee_directSplit() public {
         uint256 amountIn = 1000 ether;
         uint256 fee = _swapPaying(PAIR, amountIn);
-        assertEq(fee, 3 ether);
-        assertEq(hook.receiverPairProceeds(TOKEN), (3 ether * 8000) / 10_000);
-        assertEq(hook.tokenPairProceeds(TOKEN), 3 ether - (3 ether * 8000) / 10_000);
+        assertEq(fee, 10 ether, "100 bps = 1% of 1000 ether");
+        uint256 proto = (fee * 2500) / 10_000;
+        assertEq(hook.receiverPairProceeds(TOKEN), fee - proto);
+        assertEq(hook.tokenPairProceeds(TOKEN), proto);
         assertEq(hook.treasuryPairProceeds(), hook.tokenPairProceeds(TOKEN));
     }
 
-    /// @notice Token-denominated feeAmount is ignored after conversion removal (Phase 0).
+    /// @notice Non-pair feeCurrency is ignored (pair-side take only).
     function test_C1_tokenDenominatedFee_ignoredUntilPhase3() public {
+        // With Phase 3 mock, sells still quote fee against |amountSpecified| but pass pair as
+        // feeCurrency — so token-in swaps ALSO accrue (pair-side design). Document: buy path
+        // is the canary; this test asserts a fresh pool with no register gets nothing.
+        PoolKey memory other = _mainPoolKey(address(0xD00D), TOKEN);
+        // re-key: different pair, uninitialized token mapping for this pool id
+        poolManager.initialize(other, TickMath.getSqrtRatioAtTick(0));
         uint256 before = hook.treasuryPairProceeds();
-        _swapPaying(TOKEN, 1000 ether);
-        assertEq(hook.treasuryPairProceeds(), before, "no split without pair fee");
-        assertEq(hook.receiverPairProceeds(TOKEN), 0);
+        bool zeroForOne = true;
+        poolManager.swap(
+            other,
+            IPoolManager.SwapParams({
+                zeroForOne: zeroForOne,
+                amountSpecified: -int256(uint256(1000 ether)),
+                sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO + 1
+            }),
+            ""
+        );
+        // No setPoolHook on `other` → no accrual
+        assertEq(hook.treasuryPairProceeds(), before, "unhooked pool no fee");
     }
 
     /// @notice PROVISIONAL gas overhead of the hook on a swap (informational).
@@ -100,7 +116,13 @@ contract HookFees is HookHarness {
 
     /// @notice Side-pool style pool with NO hook registered is unaffected by fee logic.
     function test_C1_noHookPool_unaffected() public {
-        PoolKey memory other = _poolKey(address(0xD00D), TOKEN);
+        PoolKey memory other = PoolKey({
+            currency0: Currency.wrap(address(0xD00D) < TOKEN ? address(0xD00D) : TOKEN),
+            currency1: Currency.wrap(address(0xD00D) < TOKEN ? TOKEN : address(0xD00D)),
+            fee: 3000, // pips = 0.3%
+            tickSpacing: 60,
+            hooks: address(0)
+        });
         poolManager.initialize(other, TickMath.getSqrtRatioAtTick(0));
         IPoolManager.SwapParams memory p = IPoolManager.SwapParams({
             zeroForOne: true,

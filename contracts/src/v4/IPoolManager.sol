@@ -4,12 +4,12 @@ pragma solidity ^0.8.26;
 import {BalanceDelta} from "./types/BalanceDelta.sol";
 import {PoolKey, PoolId} from "./types/PoolKey.sol";
 
-/// @title ISwapHook — v4-style hook callback invoked by the PoolManager after a swap.
-/// @dev StonkzFeeHook implements this (docs/06 / M3.5). `feeAmount` is denominated
-///      in `tokenIn`. Phase 3 replaces this seam with BeforeSwapDelta. The hook MUST NOT
-///      revert — a trade can never fail because of hook fee logic.
+/// @title ISwapHook — provisional fee seam (mock / pre-real-BeforeSwapDelta).
+/// @dev StonkzFeeHook (docs/06): `feeCurrency` is the pair currency; `feeAmount` is the
+///      pair-side take. Production target is BeforeSwapDelta; mock invokes this after
+///      computing fee from stamped hookFeeBps. The hook MUST NOT revert the trade.
 interface ISwapHook {
-    function afterSwap(PoolKey calldata key, address tokenIn, uint256 feeAmount) external;
+    function afterSwap(PoolKey calldata key, address feeCurrency, uint256 feeAmount) external;
 }
 
 /// @title IPoolManager — minimal Uniswap v4 surface for STONKZ settlement (spec §8)

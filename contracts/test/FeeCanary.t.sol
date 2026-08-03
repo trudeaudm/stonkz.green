@@ -36,14 +36,14 @@ contract FeeCanary is Test {
         hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
         gov.setRegistry(hook);
 
-        // docs/06 main pool: LP fee 0, hook attached, hook fee 100 bps
+        // docs/06 main pool: LP fee 0 pips, hook attached, hook fee 100 bps = 1%
         (address c0, address c1) = PAIR < TOKEN ? (PAIR, TOKEN) : (TOKEN, PAIR);
         key = PoolKey({
             currency0: Currency.wrap(c0),
             currency1: Currency.wrap(c1),
-            fee: 0,
+            fee: 0, // pips = 0%
             tickSpacing: 60,
-            hooks: address(0)
+            hooks: address(hook)
         });
         pm.initialize(key, TickMath.getSqrtRatioAtTick(0));
 
@@ -68,9 +68,9 @@ contract FeeCanary is Test {
             ""
         );
 
-        // 100 bps of 1000 ether = 10 ether gross; treasury share 20% = 2 ether
+        // 100 bps = 1% of 1000 ether → 10 ether gross; protocolFeeBps 2500 bps = 25% → 2.5 ether
         assertGt(hook.treasuryPairProceeds(), 0, "vacuity: fee take bypassed on fee=0 pool");
-        assertEq(hook.treasuryPairProceeds(), 2 ether, "expected 20% of 100bps");
-        assertEq(hook.receiverPairProceeds(TOKEN), 8 ether, "expected 80% of 100bps");
+        assertEq(hook.treasuryPairProceeds(), 2.5 ether, "expected 25% of 100 bps = 1% fee");
+        assertEq(hook.receiverPairProceeds(TOKEN), 7.5 ether, "expected 75% of fee");
     }
 }

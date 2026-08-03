@@ -62,7 +62,7 @@ contract PoolSeamAttacks is PoolBackendHarness {
         uint160 wrong = TickMath.getSqrtRatioAtTick(-10000);
         uint160 target = TickMath.getSqrtRatioAtTick(0);
         poolManager.initialize(key, wrong);
-        MockPoolManager(address(poolManager)).forcePrice(key.toId(), wrong);
+        MockPoolManager(payable(address(poolManager))).forcePrice(key.toId(), wrong);
 
         uint256 spent = poolManager.syncToPrice(key, target, 10 ether);
         (uint160 sqrtPrice,,,) = poolManager.getSlot0(key.toId());
@@ -80,7 +80,7 @@ contract PoolSeamAttacks is PoolBackendHarness {
         });
         uint160 target = TickMath.getSqrtRatioAtTick(0);
         poolManager.initialize(key, target);
-        MockPoolManager(address(poolManager)).setSyncCost(key.toId(), 100 ether);
+        MockPoolManager(payable(address(poolManager))).setSyncCost(key.toId(), 100 ether);
 
         vm.expectRevert(abi.encodeWithSelector(IPoolManager.SyncBudgetExceeded.selector, 100 ether, 1 ether));
         poolManager.syncToPrice(key, target, 1 ether);

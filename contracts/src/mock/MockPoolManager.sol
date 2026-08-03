@@ -36,16 +36,15 @@ contract MockPoolManager is IPoolManager {
 
     // ─── M4/M3.5 hook seam ───────────────────────────────────────────────────
     mapping(PoolId => address) public hooks; // pool => StonkzFeeHook
-    /// @dev Mock swap-fee rate in ppm applied to |amountSpecified| (default from key.fee).
-    ///      Used only when key.fee != 0 (LP-fee path / legacy tests).
+    /// @dev Override LP fee in pips when key.fee != 0 (side / legacy). Unit: pips.
     mapping(PoolId => uint24) public feePpmOverride;
-    /// @dev Explicit hook fee in bps when key.fee == 0 (docs/06 main pools). Default 100.
-    ///      Vacuity guard: fee=0 must NOT imply feeAmount=0 when a hook is attached.
-    mapping(PoolId => uint16) public hookFeeBps;
-    mapping(PoolId => bool) public hookFeeBpsConfigured;
-    uint16 public defaultHookFeeBps = 100; // Gate 1: factory default 100 bps (1%)
+    /// @dev Test override for hook fee when key.fee == 0. Prefer stamped rate on the hook.
+    mapping(PoolId => uint16) public hookFeeBpsOverride; // bps
+    mapping(PoolId => bool) public hookFeeBpsOverrideSet;
 
     event HookSet(PoolId indexed id, address hook);
+
+    receive() external payable {}
 
     function setSyncCost(PoolId id, uint256 cost) external {
         syncCostOverride[id] = cost;
@@ -55,10 +54,10 @@ contract MockPoolManager is IPoolManager {
         feePpmOverride[id] = ppm;
     }
 
-    /// @notice Set per-pool hook fee in bps (Phase 1 / docs/06). Bounds enforced in Phase 3 factory.
+    /// @notice Test override: hook fee in bps for fee=0 pools (normally read from StonkzFeeHook).
     function setHookFeeBps(PoolId id, uint16 bps) external {
-        hookFeeBps[id] = bps;
-        hookFeeBpsConfigured[id] = true;
+        hookFeeBpsOverride[id] = bps;
+        hookFeeBpsOverrideSet[id] = true;
     }
 
     /// @notice Test helper: jump spot without a swap (front-run seam setup).
@@ -110,10 +109,6 @@ contract MockPoolManager is IPoolManager {
 
     function setPoolHook(PoolId id, address hook) external {
         hooks[id] = hook;
-        if (hook != address(0) && !hookFeeBpsConfigured[id]) {
-            hookFeeBps[id] = defaultHookFeeBps;
-            hookFeeBpsConfigured[id] = true;
-        }
         emit HookSet(id, hook);
     }
 
@@ -148,25 +143,44 @@ contract MockPoolManager is IPoolManager {
         swapDelta = BalanceDeltaLibrary.from(int128(a0), int128(a1));
         emit Swap(id, msg.sender, a0, a1, s.sqrtPriceX96, s.tick);
 
-        // Fee-take + hook callback (FEECHAIN Phase 1):
-        //   key.fee == 0 (main) → feeAmount from explicit hookFeeBps (not key.fee).
-        //   key.fee != 0 (side / legacy) → feeAmount from key.fee ppm (or override).
+        // Fee-take + hook callback (FEECHAIN Phase 3):
+        //   key.fee == 0 (main, pips) → pair-currency fee from stamped hookFeeBps (bps).
+        //   key.fee != 0 (side) → LP fee from key.fee (pips); no hook take for revenue.
         address hook = hooks[id];
-        if (hook != address(0)) {
+        if (hook != address(0) && key.fee == 0) {
             uint256 absAmt = params.amountSpecified < 0
                 ? uint256(-params.amountSpecified)
                 : uint256(params.amountSpecified);
-            uint256 feeAmount;
-            if (key.fee == 0) {
-                feeAmount = (absAmt * uint256(hookFeeBps[id])) / 10_000;
-            } else {
-                uint24 ppm = feePpmOverride[id] != 0 ? feePpmOverride[id] : key.fee;
-                feeAmount = (absAmt * ppm) / 1_000_000;
+            (address feeCurrency, uint16 bps) = _hookFeeQuote(hook, id);
+            uint256 feeAmount = (absAmt * uint256(bps)) / 10_000;
+            // Native pair: forward fee wei to the hook so flush() can push.
+            if (feeCurrency == address(0) && feeAmount > 0) {
+                (bool ok,) = payable(hook).call{value: feeAmount}("");
+                ok; // best-effort; accounting still accrues
             }
-            address tokenIn = params.zeroForOne
-                ? Currency.unwrap(key.currency0)
-                : Currency.unwrap(key.currency1);
-            ISwapHook(hook).afterSwap(key, tokenIn, feeAmount);
+            ISwapHook(hook).afterSwap(key, feeCurrency, feeAmount);
+        }
+    }
+
+    /// @dev Read stamped hookFeeBps + pair from StonkzFeeHook; test override wins if set.
+    function _hookFeeQuote(address hook, PoolId id) internal view returns (address feeCurrency, uint16 bps) {
+        if (hookFeeBpsOverrideSet[id]) {
+            bps = hookFeeBpsOverride[id];
+        }
+        // tokenOfPool(PoolId) / pairOf(address) / hookFeeBps(address) — StonkzFeeHook ABI
+        (bool okT, bytes memory dT) =
+            hook.staticcall(abi.encodeWithSignature("tokenOfPool(bytes32)", PoolId.unwrap(id)));
+        address token;
+        if (okT && dT.length >= 32) token = abi.decode(dT, (address));
+        if (token != address(0)) {
+            (bool okP, bytes memory dP) =
+                hook.staticcall(abi.encodeWithSignature("pairOf(address)", token));
+            if (okP && dP.length >= 32) feeCurrency = abi.decode(dP, (address));
+            if (!hookFeeBpsOverrideSet[id]) {
+                (bool okB, bytes memory dB) =
+                    hook.staticcall(abi.encodeWithSignature("hookFeeBps(address)", token));
+                if (okB && dB.length >= 32) bps = abi.decode(dB, (uint16));
+            }
         }
     }
 

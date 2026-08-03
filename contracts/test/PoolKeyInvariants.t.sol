@@ -64,7 +64,7 @@ contract PoolKeyInvariants is Test {
     }
 
     function _assertSideNaked(IPoolManager mgr, PoolKey memory key) internal view {
-        assertEq(key.fee, 3000, "side LP fee must be 30 bps (3000)");
+        assertEq(key.fee, 3000, "side LP fee must be 3000 pips = 0.3%");
         assertEq(key.hooks, address(0), "side key.hooks must be zero");
         assertEq(mgr.poolHook(key.toId()), address(0), "side must never have poolManager hook");
     }
