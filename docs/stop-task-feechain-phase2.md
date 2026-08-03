@@ -6,7 +6,7 @@
 ### `StonkzDirectListing` / `StonkzLiquidityStrategy`
 - Removed shared `_poolKey` / `POOL_FEE`.
 - `_mainPoolKey(a,b)` → `fee: 0`, `hooks: address(hook)` (docs/06).
-- `_sidePoolKey(a,b)` → `fee: 3000` (30 bps), `hooks: address(0)`.
+- `_sidePoolKey(a,b)` → `fee: 3000` pips = 0.3%, `hooks: address(0)`.
 - Constants: `MAIN_LP_FEE = 0`, `SIDE_LP_FEE = 3000`.
 
 ### Auction path (provisional wire for naked-pool guard)

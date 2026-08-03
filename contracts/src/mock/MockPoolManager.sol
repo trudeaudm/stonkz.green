@@ -156,7 +156,7 @@ contract MockPoolManager is IPoolManager {
             // Native pair: forward fee wei to the hook so flush() can push.
             if (feeCurrency == address(0) && feeAmount > 0) {
                 (bool ok,) = payable(hook).call{value: feeAmount}("");
-                ok; // best-effort; accounting still accrues
+                ok; // ignore send failure; accounting still accrues
             }
             ISwapHook(hook).afterSwap(key, feeCurrency, feeAmount);
         }
