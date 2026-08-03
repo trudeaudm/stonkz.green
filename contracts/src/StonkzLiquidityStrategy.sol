@@ -9,10 +9,13 @@ import {TickMath} from "./v4/TickMath.sol";
 import {LiquidityAmounts} from "./v4/LiquidityAmounts.sol";
 import {BuybackAccumulator} from "./BuybackAccumulator.sol";
 import {FeeLocker} from "./FeeLocker.sol";
+import {StonkzFeeHook} from "./StonkzFeeHook.sol";
 
 /// @title StonkzLiquidityStrategy — post-auction settlement into Uniswap v4 (spec §8)
 /// @notice Price-setting main pool + surplus + 95/5 carve + side pool + FeeLocker custody.
 /// @dev Dual-backend: constructor-injected IPoolManager (mock now, real v4 in M3.5).
+///      FEECHAIN Phase 2: `_mainPoolKey` / `_sidePoolKey` (docs/06). Hook register on settle
+///      is provisional; FeeLocker main→BuybackAccumulator retirement is Phase 4.
 contract StonkzLiquidityStrategy {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
@@ -23,12 +26,15 @@ contract StonkzLiquidityStrategy {
     uint16 internal constant CARVE_BPS = 500; // F_carve = 5% × F
     uint16 internal constant SIDE_TOKEN_BPS = 500; // 5% of LP-designated tokens — spec §8.2a
     int24 internal constant TICK_SPACING = 60;
-    uint24 internal constant POOL_FEE = 3000;
+    /// @dev docs/06: main LP fee 0 (hook takes revenue); side LP fee 30 bps (= 3000 hundredths-of-a-bip).
+    uint24 internal constant MAIN_LP_FEE = 0;
+    uint24 internal constant SIDE_LP_FEE = 3000;
     uint256 internal constant DEFAULT_SYNC_BUDGET = 50 ether;
 
     IPoolManager public immutable poolManager;
     BuybackAccumulator public immutable accumulator;
     FeeLocker public immutable feeLocker;
+    StonkzFeeHook public immutable hook;
     address public immutable stonkz4663; // address(0) until genesis
     address public immutable pairToken;
 
@@ -85,12 +91,15 @@ contract StonkzLiquidityStrategy {
         IPoolManager poolManager_,
         BuybackAccumulator accumulator_,
         FeeLocker feeLocker_,
+        StonkzFeeHook hook_,
         address pairToken_,
         address stonkz4663_
     ) {
+        require(address(hook_) != address(0), "hook");
         poolManager = poolManager_;
         accumulator = accumulator_;
         feeLocker = feeLocker_;
+        hook = hook_;
         pairToken = pairToken_;
         stonkz4663 = stonkz4663_;
         syncBudget = DEFAULT_SYNC_BUDGET;
@@ -172,7 +181,7 @@ contract StonkzLiquidityStrategy {
         uint256 pairingSurplus = mainReserve > mainPaired ? mainReserve - mainPaired : 0;
 
         // Sync spot to print with bounded budget — spec §8.7
-        mainPoolKey = _poolKey(pairToken, userToken_);
+        mainPoolKey = _mainPoolKey(pairToken, userToken_);
         uint160 targetSqrt = _sqrtPriceFromPriceWad(P, pairToken < userToken_);
         try poolManager.syncToPrice(mainPoolKey, targetSqrt, syncBudget) returns (uint256 spent) {
             spent; // silence
@@ -191,6 +200,11 @@ contract StonkzLiquidityStrategy {
             if (!poolManager.isInitialized(mainPoolKey.toId())) {
                 poolManager.initialize(mainPoolKey, targetSqrt);
             }
+        }
+
+        // Attach fee hook (docs/06 / Phase 2 naked-pool guard). Full FeeLocker retirement = Phase 4.
+        if (!hook.registered(userToken_)) {
+            hook.registerPool(userToken_, pairToken, creator_, mainPoolKey);
         }
 
         // Add price-setting liquidity spanning the print
@@ -299,7 +313,7 @@ contract StonkzLiquidityStrategy {
 
         sideTickLower = bottom;
         sideTickUpper = top;
-        sidePoolKey = _poolKey(stonkz4663, userToken);
+        sidePoolKey = _sidePoolKey(stonkz4663, userToken);
 
         // Dump-immunity: initialize at bottom (range above spot) with ZERO stonkz — only userToken
         uint160 initSqrt = TickMath.getSqrtRatioAtTick(bottom - TICK_SPACING);
@@ -343,12 +357,25 @@ contract StonkzLiquidityStrategy {
         emit SurplusDisposed(mode, amount);
     }
 
-    function _poolKey(address a, address b) internal pure returns (PoolKey memory key) {
+    /// @dev docs/06: fee 0, hook attached. Shared `_poolKey` removed in FEECHAIN Phase 2.
+    function _mainPoolKey(address a, address b) internal view returns (PoolKey memory key) {
         (address c0, address c1) = a < b ? (a, b) : (b, a);
         key = PoolKey({
             currency0: Currency.wrap(c0),
             currency1: Currency.wrap(c1),
-            fee: POOL_FEE,
+            fee: MAIN_LP_FEE,
+            tickSpacing: TICK_SPACING,
+            hooks: address(hook)
+        });
+    }
+
+    /// @dev docs/06: LP fee 30 bps, NO hook.
+    function _sidePoolKey(address a, address b) internal pure returns (PoolKey memory key) {
+        (address c0, address c1) = a < b ? (a, b) : (b, a);
+        key = PoolKey({
+            currency0: Currency.wrap(c0),
+            currency1: Currency.wrap(c1),
+            fee: SIDE_LP_FEE,
             tickSpacing: TICK_SPACING,
             hooks: address(0)
         });
