@@ -88,7 +88,8 @@ contract CrossModelParity is Test {
 
     // ─── fee parity ──────────────────────────────────────────────────────────
 
-    /// @notice Same swap → same 80/20 split on a direct pool and a manual pool.
+    /// @notice Same pair-currency swap → same 80/20 split on a direct pool and a manual pool.
+    /// @dev FEECHAIN Phase 0: pay PAIR (conversion path deleted). Token-in fees no-op until Phase 3.
     function test_C4_feeSplitParity_directAndManual() public {
         StonkzDirectListing l = _directToken();
         address tokA = address(l.token());
@@ -97,8 +98,8 @@ contract CrossModelParity is Test {
         (StonkzLaunchToken tokB, PoolKey memory keyB) = _manualToken(1_000_000 ether, CREATOR);
 
         uint256 amountIn = 1000 ether;
-        _swapPayingToken(keyA, tokA, amountIn);
-        _swapPayingToken(keyB, address(tokB), amountIn);
+        _swapPayingToken(keyA, PAIR, amountIn);
+        _swapPayingToken(keyB, PAIR, amountIn);
 
         uint256 expectReceiver = (3 ether * 8000) / 10_000;
         uint256 expectTreasury = 3 ether - expectReceiver;

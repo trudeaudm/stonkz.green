@@ -11,10 +11,9 @@ import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 import {CTOGovernor} from "../src/CTOGovernor.sol";
 import {ICTOGovernor} from "../src/interfaces/IStonkzGovernance.sol";
 
-/// @title HookFees — C1 (fees-and-governance.md §1). PROVISIONAL on mock v4.
-/// @notice Dual-backend harness: same bodies re-run unmodified vs real v4-core in M3.5 (§7).
-///         Covers: fee-take + best-effort conversion; force-fail → trade still succeeds + accrue
-///         + crank; 80/20 split; receiver NEVER receives token-denominated fees; gas logged.
+/// @title HookFees — C1 residual after FEECHAIN Phase 0 (conversion deleted).
+/// @notice Conversion / crankConvert / best-effort tests DELETED with the feature.
+///         Surviving coverage: pair-denominated fee split, no-hook pool unaffected, gas log.
 abstract contract HookHarness is Test {
     using PoolIdLibrary for PoolKey;
 
@@ -72,93 +71,29 @@ contract HookFees is HookHarness {
         _deployBackend(IPoolManager(address(new MockPoolManager())));
     }
 
-    /// @notice Token-denominated fee: converted 1:1 then split 80/20; receiver gets PAIR only.
-    function test_C1_feeTakeConvertSplit_8020() public {
-        uint256 amountIn = 1000 ether;
-        uint256 fee = _swapPaying(TOKEN, amountIn); // 3e18
-        assertEq(fee, 3 ether);
-
-        // Fully converted (fee < CONVERT_CAP), nothing accrued.
-        assertEq(hook.accruedTokenFees(TOKEN), 0, "no accrual");
-        // 80/20 split, wei-exact.
-        assertEq(hook.receiverPairProceeds(TOKEN), (3 ether * 8000) / 10_000, "80% receiver");
-        assertEq(hook.tokenPairProceeds(TOKEN), 3 ether - (3 ether * 8000) / 10_000, "20% treasury");
-        assertEq(hook.treasuryPairProceeds(), hook.tokenPairProceeds(TOKEN), "treasury agg");
-    }
-
-    /// @notice BEST-EFFORT: forced conversion failure → trade STILL succeeds, fee accrues,
-    ///         receiver gets ZERO token fees; a later crank converts + splits.
-    function test_C1_bestEffort_forceFail_tradeSucceeds_accrue_thenCrank() public {
-        MockPoolManager(address(poolManager)).setConvertFail(key.toId(), true);
-
-        uint256 amountIn = 1000 ether;
-        // Trade must NOT revert even though fee conversion fails.
-        uint256 fee = _swapPaying(TOKEN, amountIn);
-        assertEq(fee, 3 ether);
-
-        // Accrued whole fee; NO pair proceeds credited yet.
-        assertEq(hook.accruedTokenFees(TOKEN), 3 ether, "accrued");
-        assertEq(hook.receiverPairProceeds(TOKEN), 0, "receiver got nothing yet");
-        assertEq(hook.treasuryPairProceeds(), 0, "treasury nothing yet");
-
-        // Crank fails while conversion still forced to fail.
-        vm.expectRevert(StonkzFeeHook.ConversionReverted.selector);
-        hook.crankConvert(TOKEN);
-
-        // Un-force; crank converts accrued and splits 80/20.
-        MockPoolManager(address(poolManager)).setConvertFail(key.toId(), false);
-        (uint256 tokenIn, uint256 pairOut) = hook.crankConvert(TOKEN);
-        assertEq(tokenIn, 3 ether);
-        assertEq(pairOut, 3 ether);
-        assertEq(hook.accruedTokenFees(TOKEN), 0, "drained");
-        assertEq(hook.receiverPairProceeds(TOKEN), (3 ether * 8000) / 10_000, "80% receiver after crank");
-    }
-
-    /// @notice Receiver NEVER holds token-denominated fees — only ever pair proceeds (§0).
-    function test_C1_receiverNeverGetsTokenFees() public {
-        MockPoolManager(address(poolManager)).setConvertFail(key.toId(), true);
-        _swapPaying(TOKEN, 500 ether);
-        // While unconvertible, everything sits as token accrual — receiver credited nothing.
-        assertGt(hook.accruedTokenFees(TOKEN), 0);
-        assertEq(hook.receiverPairProceeds(TOKEN), 0);
-        // There is no storage crediting token fees to the receiver by construction.
-    }
-
-    /// @notice Pair-denominated fee: split directly, no conversion path touched.
+    /// @notice Pair-denominated fee: split directly 80/20 (Phase 0 surviving path).
     function test_C1_pairDenominatedFee_directSplit() public {
         uint256 amountIn = 1000 ether;
         uint256 fee = _swapPaying(PAIR, amountIn);
         assertEq(fee, 3 ether);
-        assertEq(hook.accruedTokenFees(TOKEN), 0, "no token accrual for pair fee");
         assertEq(hook.receiverPairProceeds(TOKEN), (3 ether * 8000) / 10_000);
+        assertEq(hook.tokenPairProceeds(TOKEN), 3 ether - (3 ether * 8000) / 10_000);
+        assertEq(hook.treasuryPairProceeds(), hook.tokenPairProceeds(TOKEN));
     }
 
-    /// @notice Crank cooldown is a hardcoded bound (no admin).
-    function test_C1_crankCooldown() public {
-        MockPoolManager(address(poolManager)).setConvertFail(key.toId(), true);
-        _swapPaying(TOKEN, 4000 ether); // fee 12e18 > CONVERT_CAP? no, cap 100e18 → single accrual
-        MockPoolManager(address(poolManager)).setConvertFail(key.toId(), false);
-
-        // Accrue more so two cranks are warranted.
-        MockPoolManager(address(poolManager)).setConvertFail(key.toId(), true);
-        _swapPaying(TOKEN, 4000 ether);
-        MockPoolManager(address(poolManager)).setConvertFail(key.toId(), false);
-
-        hook.crankConvert(TOKEN); // consumes cooldown
-        vm.expectRevert();
-        hook.crankConvert(TOKEN);
-        vm.warp(block.timestamp + hook.CRANK_COOLDOWN());
-        // no accrual left → NothingToCrank
-        vm.expectRevert(StonkzFeeHook.NothingToCrank.selector);
-        hook.crankConvert(TOKEN);
+    /// @notice Token-denominated feeAmount is ignored after conversion removal (Phase 0).
+    function test_C1_tokenDenominatedFee_ignoredUntilPhase3() public {
+        uint256 before = hook.treasuryPairProceeds();
+        _swapPaying(TOKEN, 1000 ether);
+        assertEq(hook.treasuryPairProceeds(), before, "no split without pair fee");
+        assertEq(hook.receiverPairProceeds(TOKEN), 0);
     }
 
-    /// @notice PROVISIONAL gas overhead of the hook on a swap (informational; re-measure vs real v4).
+    /// @notice PROVISIONAL gas overhead of the hook on a swap (informational).
     function test_C1_gasOverhead_provisional() public {
         uint256 g0 = gasleft();
-        _swapPaying(TOKEN, 1000 ether);
+        _swapPaying(PAIR, 1000 ether);
         uint256 used = g0 - gasleft();
-        // Informational only — mock pricing/accounting is not representative of real v4-core.
         console2.log("PROVISIONAL hook swap gas (mock):", used);
         assertGt(used, 0);
     }
@@ -167,7 +102,6 @@ contract HookFees is HookHarness {
     function test_C1_noHookPool_unaffected() public {
         PoolKey memory other = _poolKey(address(0xD00D), TOKEN);
         poolManager.initialize(other, TickMath.getSqrtRatioAtTick(0));
-        // No hook registered for `other`; a swap must not touch hook accounting.
         IPoolManager.SwapParams memory p = IPoolManager.SwapParams({
             zeroForOne: true,
             amountSpecified: -int256(uint256(1000 ether)),

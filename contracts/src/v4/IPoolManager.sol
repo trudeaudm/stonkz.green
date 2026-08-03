@@ -5,9 +5,9 @@ import {BalanceDelta} from "./types/BalanceDelta.sol";
 import {PoolKey, PoolId} from "./types/PoolKey.sol";
 
 /// @title ISwapHook — v4-style hook callback invoked by the PoolManager after a swap.
-/// @dev StonkzFeeHook implements this (fees-and-governance.md §1). `feeAmount` is denominated
-///      in `tokenIn` (the currency the trader paid). The hook MUST NOT revert — a trade can
-///      never fail because of hook fee logic (§1.2).
+/// @dev StonkzFeeHook implements this (docs/06 / M3.5). `feeAmount` is denominated
+///      in `tokenIn`. Phase 3 replaces this seam with BeforeSwapDelta. The hook MUST NOT
+///      revert — a trade can never fail because of hook fee logic.
 interface ISwapHook {
     function afterSwap(PoolKey calldata key, address tokenIn, uint256 feeAmount) external;
 }
@@ -75,7 +75,6 @@ interface IPoolManager {
 
     function poolHook(PoolId id) external view returns (address hook);
 
-    /// @notice Best-effort ONE-shot conversion of `tokenAmount` (user token) → pair currency,
-    ///         re-entering the SAME pool (§1.1). Reverts on failure so the hook can accrue (§1.2).
-    function convertTokenToPair(PoolKey memory key, uint256 tokenAmount) external returns (uint256 pairOut);
+    // convertTokenToPair REMOVED (FEECHAIN Phase 0 / docs/06): not in canonical Uniswap v4;
+    // M4 best-effort conversion path deleted. See docs/stop-task-feechain-phase0.md.
 }
