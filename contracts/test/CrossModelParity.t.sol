@@ -57,22 +57,23 @@ contract CrossModelParity is Test {
     }
 
     /// @dev A manually-registered "auction-like" token: same hook + governor wiring, no listing.
+    ///      FEECHAIN Phase 2: main pools use LP fee 0 + hook (docs/06), matching DirectListing.
     function _manualToken(uint256 supply, address creator) internal returns (StonkzLaunchToken tok, PoolKey memory key) {
         tok = new StonkzLaunchToken("Auct", "AUC", supply, address(this));
-        key = _poolKey(PAIR, address(tok));
+        key = _mainPoolKey(PAIR, address(tok));
         pm.initialize(key, TickMath.getSqrtRatioAtTick(0));
         hook.registerPool(address(tok), PAIR, creator, key);
         gov.registerToken(address(tok), 0, 0, 0); // at-large = supply
     }
 
-    function _poolKey(address a, address b) internal pure returns (PoolKey memory k) {
+    function _mainPoolKey(address a, address b) internal view returns (PoolKey memory k) {
         (address c0, address c1) = a < b ? (a, b) : (b, a);
         k = PoolKey({
             currency0: Currency.wrap(c0),
             currency1: Currency.wrap(c1),
-            fee: 3000,
+            fee: 0, // pips = 0%
             tickSpacing: 60,
-            hooks: address(0)
+            hooks: address(hook)
         });
     }
 
@@ -88,7 +89,8 @@ contract CrossModelParity is Test {
 
     // ─── fee parity ──────────────────────────────────────────────────────────
 
-    /// @notice Same swap → same 80/20 split on a direct pool and a manual pool.
+    /// @notice Same pair-currency swap → same protocolFeeBps split on a direct pool and a manual pool.
+    /// @dev FEECHAIN Phase 3: main LP fee 0 pips, hook 100 bps = 1%; protocolFeeBps 2500 bps = 25% of fee.
     function test_C4_feeSplitParity_directAndManual() public {
         StonkzDirectListing l = _directToken();
         address tokA = address(l.token());
@@ -97,16 +99,16 @@ contract CrossModelParity is Test {
         (StonkzLaunchToken tokB, PoolKey memory keyB) = _manualToken(1_000_000 ether, CREATOR);
 
         uint256 amountIn = 1000 ether;
-        _swapPayingToken(keyA, tokA, amountIn);
-        _swapPayingToken(keyB, address(tokB), amountIn);
+        _swapPayingToken(keyA, PAIR, amountIn);
+        _swapPayingToken(keyB, PAIR, amountIn);
 
-        uint256 expectReceiver = (3 ether * 8000) / 10_000;
-        uint256 expectTreasury = 3 ether - expectReceiver;
-        // Identical, wei-exact, for both launch models.
-        assertEq(hook.receiverPairProceeds(tokA), expectReceiver, "direct 80%");
-        assertEq(hook.receiverPairProceeds(address(tokB)), expectReceiver, "manual 80%");
-        assertEq(hook.tokenPairProceeds(tokA), expectTreasury, "direct 20%");
-        assertEq(hook.tokenPairProceeds(address(tokB)), expectTreasury, "manual 20%");
+        uint256 feeGross = (amountIn * 100) / 10_000; // 100 bps = 1%
+        uint256 expectTreasury = (feeGross * 2500) / 10_000; // 2500 bps = 25% of fee
+        uint256 expectReceiver = feeGross - expectTreasury;
+        assertEq(hook.receiverPairProceeds(tokA), expectReceiver, "direct receiver");
+        assertEq(hook.receiverPairProceeds(address(tokB)), expectReceiver, "manual receiver");
+        assertEq(hook.tokenPairProceeds(tokA), expectTreasury, "direct protocol");
+        assertEq(hook.tokenPairProceeds(address(tokB)), expectTreasury, "manual protocol");
         assertEq(hook.receiverPairProceeds(tokA), hook.receiverPairProceeds(address(tokB)), "parity");
     }
 

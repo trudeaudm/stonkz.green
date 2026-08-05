@@ -6,6 +6,9 @@ import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {MockPoolManager} from "../src/mock/MockPoolManager.sol";
 import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
 import {FeeLocker} from "../src/FeeLocker.sol";
+import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
+import {CTOGovernor} from "../src/CTOGovernor.sol";
+import {ICTOGovernor} from "../src/interfaces/IStonkzGovernance.sol";
 import {StonkzLiquidityStrategy} from "../src/StonkzLiquidityStrategy.sol";
 import {PoolKey, PoolIdLibrary} from "../src/v4/types/PoolKey.sol";
 import {Currency} from "../src/v4/types/Currency.sol";
@@ -16,17 +19,22 @@ abstract contract PoolBackendHarness is Test {
     IPoolManager public poolManager;
     BuybackAccumulator public accumulator;
     FeeLocker public feeLocker;
+    StonkzFeeHook public hook;
     StonkzLiquidityStrategy public strategy;
 
     address internal constant PAIR = address(0xB111);
     address internal constant USER = address(0xB222);
     address internal constant STONKZ = address(0x4663);
+    address internal constant TREASURY = address(0x7A5E);
 
     function _deployBackend(IPoolManager pm) internal {
         poolManager = pm;
         accumulator = new BuybackAccumulator(PAIR, STONKZ, address(0));
         feeLocker = new FeeLocker(pm, accumulator, address(0));
-        strategy = new StonkzLiquidityStrategy(pm, accumulator, feeLocker, PAIR, STONKZ);
+        CTOGovernor gov = new CTOGovernor();
+        hook = new StonkzFeeHook(pm, TREASURY, ICTOGovernor(address(gov)));
+        gov.setRegistry(hook);
+        strategy = new StonkzLiquidityStrategy(pm, accumulator, feeLocker, hook, PAIR, STONKZ);
         accumulator.setStrategy(address(strategy));
     }
 }
@@ -54,7 +62,7 @@ contract PoolSeamAttacks is PoolBackendHarness {
         uint160 wrong = TickMath.getSqrtRatioAtTick(-10000);
         uint160 target = TickMath.getSqrtRatioAtTick(0);
         poolManager.initialize(key, wrong);
-        MockPoolManager(address(poolManager)).forcePrice(key.toId(), wrong);
+        MockPoolManager(payable(address(poolManager))).forcePrice(key.toId(), wrong);
 
         uint256 spent = poolManager.syncToPrice(key, target, 10 ether);
         (uint160 sqrtPrice,,,) = poolManager.getSlot0(key.toId());
@@ -72,7 +80,7 @@ contract PoolSeamAttacks is PoolBackendHarness {
         });
         uint160 target = TickMath.getSqrtRatioAtTick(0);
         poolManager.initialize(key, target);
-        MockPoolManager(address(poolManager)).setSyncCost(key.toId(), 100 ether);
+        MockPoolManager(payable(address(poolManager))).setSyncCost(key.toId(), 100 ether);
 
         vm.expectRevert(abi.encodeWithSelector(IPoolManager.SyncBudgetExceeded.selector, 100 ether, 1 ether));
         poolManager.syncToPrice(key, target, 1 ether);

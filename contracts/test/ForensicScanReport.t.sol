@@ -29,6 +29,7 @@ contract ForensicScanReportTest is Test {
         string memory root = string.concat(vm.projectRoot(), "/test/vectors/fuzz/");
         string memory manifest = vm.readFile(string.concat(root, "manifest.json"));
         uint256 count = manifest.readUint(".count");
+        // scan-report*.csv/json are gitignored — rewrite is fine; never track.
         string memory csvPath = string.concat(root, "scan-report.csv");
         vm.writeFile(csvPath, "scenario,firstBlock,field,magnitude,tightCap,sizeBonus,multiBid\n");
 

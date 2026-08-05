@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.26;
 
-/// @title BuybackAccumulator — carve + fee routing + pre-genesis parking (spec §8.3)
-/// @notice Immutable. Permissionless crank: bounded STONKZ4663 buy + burn.
+/// @title BuybackAccumulator — carve + pre-genesis parking + manual DCA (spec §8.3)
+/// @notice Immutable. Automatic main-fee routing RETIRED (FEECHAIN Phase 4). Remains treasury's
+///         manually-funded DCA instrument: settle carve, park/release side tokens, permissionless
+///         bounded STONKZ4663 buy + burn. `receiveFees` is manual top-up only.
 contract BuybackAccumulator {
     uint256 public constant MAX_BUY_PER_CRANK = 500 ether; // hardcoded bound — no admin
     uint256 public constant CRANK_COOLDOWN = 30; // seconds
@@ -53,7 +55,7 @@ contract BuybackAccumulator {
         emit CarveReceived(msg.sender, msg.value);
     }
 
-    /// @notice FeeLocker routes main-pool pair fees here (spec §8.6).
+    /// @notice Manual pair-currency top-up for DCA (FEECHAIN Phase 4: no automatic fee path).
     function receiveFees() external payable {
         require(msg.value > 0, "zero");
         pairBalance += msg.value;

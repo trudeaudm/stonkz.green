@@ -37,7 +37,9 @@ contract StonkzDirectListing {
     uint16 internal constant MAIN_BPS = 9500; // 95% of listing supply → main pool (§2.2)
     uint16 internal constant SIDE_BPS = 500; // 5% of listing supply → side pool (§2.2)
     int24 internal constant TICK_SPACING = 60;
-    uint24 internal constant POOL_FEE = 3000;
+    /// @dev PoolKey.fee is in PIPS (never mix with hookFeeBps). docs/06 rates.
+    uint24 internal constant MAIN_LP_FEE = 0; // pips = 0%
+    uint24 internal constant SIDE_LP_FEE = 3000; // pips = 0.3%
 
     // ─── immutable wiring ────────────────────────────────────────────────────
     IPoolManager public immutable poolManager;
@@ -186,7 +188,7 @@ contract StonkzDirectListing {
     // ─── main pool: single-sided [startTick, MAX_TICK] (§2.2) ────────────────
 
     function _createMainPool(bool pairIsToken0) internal {
-        mainPoolKey = _poolKey(pairToken, address(token));
+        mainPoolKey = _mainPoolKey(pairToken, address(token));
         if (!poolManager.isInitialized(mainPoolKey.toId())) {
             poolManager.initialize(mainPoolKey, startSqrtPriceX96);
         }
@@ -247,7 +249,7 @@ contract StonkzDirectListing {
 
         sideTickLower = bottom;
         sideTickUpper = top;
-        sidePoolKey = _poolKey(stonkz4663, address(token));
+        sidePoolKey = _sidePoolKey(stonkz4663, address(token));
 
         uint160 initSqrt = TickMath.getSqrtRatioAtTick(bottom - TICK_SPACING);
         if (!poolManager.isInitialized(sidePoolKey.toId())) {
@@ -322,12 +324,25 @@ contract StonkzDirectListing {
 
     // ─── internal helpers (mirror StonkzLiquidityStrategy) ───────────────────
 
-    function _poolKey(address a, address b) internal pure returns (PoolKey memory key) {
+    /// @dev docs/06: fee 0, hook attached (StonkzFeeHook). Shared `_poolKey` removed in FEECHAIN Phase 2.
+    function _mainPoolKey(address a, address b) internal view returns (PoolKey memory key) {
         (address c0, address c1) = a < b ? (a, b) : (b, a);
         key = PoolKey({
             currency0: Currency.wrap(c0),
             currency1: Currency.wrap(c1),
-            fee: POOL_FEE,
+            fee: MAIN_LP_FEE,
+            tickSpacing: TICK_SPACING,
+            hooks: address(hook)
+        });
+    }
+
+    /// @dev docs/06: LP fee 3000 pips = 0.3%, NO hook.
+    function _sidePoolKey(address a, address b) internal pure returns (PoolKey memory key) {
+        (address c0, address c1) = a < b ? (a, b) : (b, a);
+        key = PoolKey({
+            currency0: Currency.wrap(c0),
+            currency1: Currency.wrap(c1),
+            fee: SIDE_LP_FEE,
             tickSpacing: TICK_SPACING,
             hooks: address(0)
         });

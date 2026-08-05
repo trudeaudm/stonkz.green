@@ -6,13 +6,12 @@ import {PoolKey, PoolId, PoolIdLibrary} from "./v4/types/PoolKey.sol";
 import {Currency, CurrencyLibrary} from "./v4/types/Currency.sol";
 import {StonkzFeeHook} from "./StonkzFeeHook.sol";
 
-/// @title FeeLockerV2 — immutable custody + hook-integrated main-pool fee accounting
-/// @notice fees-and-governance.md §1.5 / spec §8.6. New launches use v2: the primary pool's
-///         ongoing fees are handled by StonkzFeeHook (per-swap take + best-effort convert +
-///         80/20 split). Side-pool compounding is UNCHANGED from FeeLocker v1 (fees compound
-///         back into the same position via a permissionless crank).
+/// @title FeeLockerV2 — immutable custody; side-pool compounding
+/// @notice Main-pool fee conversion crank REMOVED (FEECHAIN Phase 0 / docs/06).
+///         Ongoing main fees are handled by StonkzFeeHook. Side-pool compounding is
+///         UNCHANGED from FeeLocker v1.
 /// @dev Per-token immutability: tokens already launched under v1 keep v1 (no migration).
-///      No admin, no upgradeability.
+///      No admin, no upgradeability. crankMainFees retired — Phase 4 severs FeeLocker main route.
 contract FeeLockerV2 {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
@@ -39,12 +38,11 @@ contract FeeLockerV2 {
     mapping(uint256 => LockedPosition) public locks;
 
     event PositionLocked(uint256 indexed lockId, PoolId indexed poolId, PoolKind kind, bytes32 positionId);
-    event MainFeesCranked(uint256 indexed lockId, address indexed token, uint256 tokenIn, uint256 pairOut);
     event SideFeesCompounded(uint256 indexed lockId, uint256 fee0, uint256 fee1);
 
-    error NotMain();
     error NotSide();
     error Inactive();
+    error MainFeeCrankRetired(); // Phase 0: conversion crank deleted
 
     constructor(IPoolManager poolManager_, StonkzFeeHook hook_) {
         poolManager = poolManager_;
@@ -73,15 +71,9 @@ contract FeeLockerV2 {
         emit PositionLocked(lockId, key.toId(), kind, positionId);
     }
 
-    /// @notice Permissionless: route main-pool fees via the hook's bounded conversion + 80/20
-    ///         split (§1). Ongoing per-swap fees are already taken by the hook; this cranks the
-    ///         accrual fallback for any conversions that were deferred.
-    function crankMainFees(uint256 lockId) external returns (uint256 tokenIn, uint256 pairOut) {
-        LockedPosition storage lp = locks[lockId];
-        if (!lp.active) revert Inactive();
-        if (lp.kind != PoolKind.Main) revert NotMain();
-        (tokenIn, pairOut) = hook.crankConvert(lp.userToken);
-        emit MainFeesCranked(lockId, lp.userToken, tokenIn, pairOut);
+    /// @notice RETIRED (FEECHAIN Phase 0). Conversion crank deleted per docs/06.
+    function crankMainFees(uint256) external pure returns (uint256, uint256) {
+        revert MainFeeCrankRetired();
     }
 
     /// @notice Permissionless: collect side-pool fees and compound into the same position.

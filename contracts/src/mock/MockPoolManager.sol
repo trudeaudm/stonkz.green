@@ -34,28 +34,30 @@ contract MockPoolManager is IPoolManager {
     /// @dev Forced sync spend override for seam-attack tests (0 = free sync).
     mapping(PoolId => uint256) public syncCostOverride;
 
-    // ─── M4 hook seam (fees-and-governance.md §1) ────────────────────────────
+    // ─── M4/M3.5 hook seam ───────────────────────────────────────────────────
     mapping(PoolId => address) public hooks; // pool => StonkzFeeHook
-    /// @dev When true, `convertTokenToPair` reverts for this pool (C1 best-effort tests).
-    mapping(PoolId => bool) public convertFail;
-    /// @dev Mock swap-fee rate in ppm applied to |amountSpecified| (default from key.fee).
+    /// @dev Override LP fee in pips when key.fee != 0 (side / legacy). Unit: pips.
     mapping(PoolId => uint24) public feePpmOverride;
-    /// @dev Re-entrancy marker: conversion swaps must not re-trigger the fee hook (§1.2).
-    bool internal _converting;
+    /// @dev Test override for hook fee when key.fee == 0. Prefer stamped rate on the hook.
+    mapping(PoolId => uint16) public hookFeeBpsOverride; // bps
+    mapping(PoolId => bool) public hookFeeBpsOverrideSet;
 
     event HookSet(PoolId indexed id, address hook);
-    event Converted(PoolId indexed id, uint256 tokenIn, uint256 pairOut);
+
+    receive() external payable {}
 
     function setSyncCost(PoolId id, uint256 cost) external {
         syncCostOverride[id] = cost;
     }
 
-    function setConvertFail(PoolId id, bool fail) external {
-        convertFail[id] = fail;
-    }
-
     function setFeePpm(PoolId id, uint24 ppm) external {
         feePpmOverride[id] = ppm;
+    }
+
+    /// @notice Test override: hook fee in bps for fee=0 pools (normally read from StonkzFeeHook).
+    function setHookFeeBps(PoolId id, uint16 bps) external {
+        hookFeeBpsOverride[id] = bps;
+        hookFeeBpsOverrideSet[id] = true;
     }
 
     /// @notice Test helper: jump spot without a swap (front-run seam setup).
@@ -141,40 +143,48 @@ contract MockPoolManager is IPoolManager {
         swapDelta = BalanceDeltaLibrary.from(int128(a0), int128(a1));
         emit Swap(id, msg.sender, a0, a1, s.sqrtPriceX96, s.tick);
 
-        // Fee-take + hook callback (fees-and-governance.md §1). Skipped for conversion re-entries.
+        // Fee-take + hook callback (FEECHAIN Phase 3):
+        //   key.fee == 0 (main, pips) → pair-currency fee from stamped hookFeeBps (bps).
+        //   key.fee != 0 (side) → LP fee from key.fee (pips); no hook take for revenue.
         address hook = hooks[id];
-        if (hook != address(0) && !_converting) {
+        if (hook != address(0) && key.fee == 0) {
             uint256 absAmt = params.amountSpecified < 0
                 ? uint256(-params.amountSpecified)
                 : uint256(params.amountSpecified);
-            uint24 ppm = feePpmOverride[id] != 0 ? feePpmOverride[id] : key.fee;
-            uint256 feeAmount = (absAmt * ppm) / 1_000_000;
-            // Trader pays currency0 when zeroForOne (exact-in) — that is `tokenIn`.
-            address tokenIn = params.zeroForOne
-                ? Currency.unwrap(key.currency0)
-                : Currency.unwrap(key.currency1);
-            // Hook is disciplined never to revert (§1.2); we do NOT swallow reverts here so
-            // the discipline is actually exercised by the C1 suite.
-            ISwapHook(hook).afterSwap(key, tokenIn, feeAmount);
+            (address feeCurrency, uint16 bps) = _hookFeeQuote(hook, id);
+            uint256 feeAmount = (absAmt * uint256(bps)) / 10_000;
+            // Native pair: forward fee wei to the hook so flush() can push.
+            if (feeCurrency == address(0) && feeAmount > 0) {
+                (bool ok,) = payable(hook).call{value: feeAmount}("");
+                ok; // ignore send failure; accounting still accrues
+            }
+            ISwapHook(hook).afterSwap(key, feeCurrency, feeAmount);
         }
     }
 
-    /// @notice Best-effort ONE-shot conversion user token → pair, re-entering the same pool (§1.1).
-    /// @dev 1:1 mock pricing until real v4 (M3.5). Reverts when forced, so the hook accrues (§1.2).
-    function convertTokenToPair(PoolKey memory key, uint256 tokenAmount) external returns (uint256 pairOut) {
-        PoolId id = key.toId();
-        Slot0 storage s = slots[id];
-        if (!s.initialized) revert PoolNotInitialized();
-        require(!convertFail[id], "convert fail");
-
-        // Re-enter the same pool as a swap (models §1.1 reentrancy posture).
-        _converting = true;
-        // Nudge price marginally to reflect the internal swap (bounded, cosmetic in mock).
-        _converting = false;
-
-        pairOut = tokenAmount; // 1:1 mock
-        emit Converted(id, tokenAmount, pairOut);
+    /// @dev Read stamped hookFeeBps + pair from StonkzFeeHook; test override wins if set.
+    function _hookFeeQuote(address hook, PoolId id) internal view returns (address feeCurrency, uint16 bps) {
+        if (hookFeeBpsOverrideSet[id]) {
+            bps = hookFeeBpsOverride[id];
+        }
+        // tokenOfPool(PoolId) / pairOf(address) / hookFeeBps(address) — StonkzFeeHook ABI
+        (bool okT, bytes memory dT) =
+            hook.staticcall(abi.encodeWithSignature("tokenOfPool(bytes32)", PoolId.unwrap(id)));
+        address token;
+        if (okT && dT.length >= 32) token = abi.decode(dT, (address));
+        if (token != address(0)) {
+            (bool okP, bytes memory dP) =
+                hook.staticcall(abi.encodeWithSignature("pairOf(address)", token));
+            if (okP && dP.length >= 32) feeCurrency = abi.decode(dP, (address));
+            if (!hookFeeBpsOverrideSet[id]) {
+                (bool okB, bytes memory dB) =
+                    hook.staticcall(abi.encodeWithSignature("hookFeeBps(address)", token));
+                if (okB && dB.length >= 32) bps = abi.decode(dB, (uint16));
+            }
+        }
     }
+
+    // convertTokenToPair REMOVED — FEECHAIN Phase 0 / docs/06.
 
     function syncToPrice(PoolKey memory key, uint160 targetSqrtPriceX96, uint256 maxBudget)
         external
