@@ -3,6 +3,9 @@ contracts/out/
 contracts/cache/
 contracts/broadcast/
 contracts/lib/
+# ForensicScanReport.t.sol rewrites these on every run
+contracts/test/vectors/fuzz/scan-report.csv
+contracts/test/vectors/fuzz/scan-report-summary.json
 .env
 .env.*
 *.log
