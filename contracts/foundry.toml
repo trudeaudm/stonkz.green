@@ -11,7 +11,8 @@ via_ir = true
 # Bare `forge test` MemoryOOG without this — CI historically passed --gas-limit
 # 3000000000 on the unit/vector + fuzz buckets; pin it in-profile so a fresh
 # clone is green without remembering the flag.
-gas_limit = 3000000000
+# M5 ladder differential clears N=1000 periods with up to 300 actives; 3e9 OOGed road at-bar.
+gas_limit = 5000000000
 fuzz = { runs = 2048 }
 invariant = { runs = 512, depth = 64 }
 extra_output = ["storageLayout"]
