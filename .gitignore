@@ -14,5 +14,5 @@ contracts/test/vectors/fuzz/scan-report-summary.json
 
 # working docs — deliberately untracked, see docs/00-START-HERE.md
 docs/00-START-HERE.md
-docs/0[1-9]-*.md
+docs/[0-9][0-9]-*.md
 docs/stonkz-*.html
