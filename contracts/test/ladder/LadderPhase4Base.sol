@@ -81,6 +81,9 @@ abstract contract LadderPhase4Base is Test {
         uint256 auctionSupply = supply - (supply * c.holdbackBps) / 10_000;
         uint256 floor = _tierFloor(c.tier);
         address vault = c.holdbackBps > 0 ? VAULT : address(0);
+        // Per-auction settlement stamped before the bell (LadderSettlement is single-use).
+        LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
+        s.setStonkzRef(STONKZ);
         auction = new StonkzLadderAuction(
             StonkzLadderAuction.Params({
                 supply: supply,
@@ -103,7 +106,8 @@ abstract contract LadderPhase4Base is Test {
                 pairToken: address(0),
                 creator: CREATOR,
                 treasury: TREASURY,
-                vaultRef: vault
+                vaultRef: vault,
+                settlement: address(s)
             })
         );
         auction.start();
@@ -115,10 +119,9 @@ abstract contract LadderPhase4Base is Test {
         auction.placeBid{value: size}(size, maxPrice);
     }
 
+    /// @dev Settlement already stamped at deploy — return it + fresh MockTok.
     function _wireSettlement(StonkzLadderAuction auction) internal returns (LadderSettlement s, MockTok tok) {
-        s = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
-        s.setStonkzRef(STONKZ);
-        auction.setSettlement(s);
+        s = auction.settlement();
         tok = new MockTok();
     }
 

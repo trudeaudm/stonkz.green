@@ -115,6 +115,7 @@ contract StonkzLadderAuction {
     error HoldbackAlreadyDeposited();
     error VaultUnsetAtSettlement();
     error AlreadySettled();
+    error SettlementFrozenAfterBell();
     error SettlementUnset();
     error NotDone();
     error RaiseGateFailed();
@@ -145,6 +146,7 @@ contract StonkzLadderAuction {
         address creator;
         address treasury;
         address vaultRef; // stamped from factory
+        address settlement; // optional: wired at construction (factory path; no forwarder)
     }
 
     constructor(Params memory p) {
@@ -190,6 +192,11 @@ contract StonkzLadderAuction {
         creator = p.creator;
         treasury = p.treasury;
         owner = msg.sender;
+        if (p.settlement != address(0)) {
+            if (p.settlement.code.length == 0) revert SettlementUnset();
+            settlement = LadderSettlement(p.settlement);
+            emit SettlementWired(p.settlement);
+        }
 
         weights = LadderWeights.makeWeights(N);
         price = floorPrice;
@@ -202,7 +209,12 @@ contract StonkzLadderAuction {
         startTime = uint64(block.timestamp);
     }
 
+    /// @notice Wire/replace settlement before the bell (owner only — direct-deploy tests).
+    ///         Frozen once `done` (bell) — rewiring after end is impossible.
+    ///         Factory-filed auctions stamp settlement in Params at construction.
     function setSettlement(LadderSettlement s) external onlyOwner {
+        if (done) revert SettlementFrozenAfterBell();
+        if (settled) revert AlreadySettled();
         settlement = s;
         emit SettlementWired(address(s));
     }
@@ -440,7 +452,9 @@ contract StonkzLadderAuction {
     }
 
     /// @notice Full settlement via LadderSettlement (raise split + vault + pool + hook).
-    /// @dev Auction must hold `raised` native (escrow) and `holdbackAmount` of userToken.
+    /// @dev PERMISSIONLESS after the bell (done). Same posture as vault execute / hook flush.
+    ///      Caller may be anyone; funds route only to stamped creator/treasury/vault/pools.
+    ///      Pre-end paths keep their guards (NotDone / NotGraduated). No owner gate.
     function settle(address userToken) external payable {
         if (!done) revert NotDone();
         if (!graduated) revert NotGraduated();

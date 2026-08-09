@@ -82,7 +82,8 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
             pairToken: address(0),
             creator: CREATOR,
             treasury: TREASURY,
-            vaultRef: vault
+            vaultRef: vault,
+            settlement: address(0)
         });
     }
 
@@ -209,7 +210,28 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
 
     /// @dev Exclusion-family third leg: VEST/vault 20% + cash holdback 20%. Both extractions verified.
     function test_P3_A1A5_09_vaultAndCashHoldback() public {
-        (LadderTypes.Inputs memory inn, LadderTypes.Outputs memory exp) = _replay("09-vault-holdback-cashhb.json");
+        string memory file = "09-vault-holdback-cashhb.json";
+        string memory json = _loadRaw(file);
+        LadderTypes.Inputs memory inn = loadInputs(json);
+        LadderTypes.Outputs memory exp = loadOutputs(json);
+        LadderTypes.Bid[] memory bids = loadBids(json);
+
+        // Native pair settlement stamped before the bell (no post-end rewire).
+        LadderSettlement nativeSettle =
+            new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
+        nativeSettle.setStonkzRef(STONKZ);
+
+        StonkzLadderAuction.Params memory p = _params(inn, address(mockVault));
+        p.settlement = address(nativeSettle);
+        auction = new StonkzLadderAuction(p);
+        auction.start();
+        for (uint256 i; i < bids.length; i++) {
+            address w = bids[i].wallet;
+            vm.deal(w, bids[i].size + 1 ether);
+            vm.prank(w);
+            auction.placeBid{value: bids[i].size}(bids[i].size, bids[i].maxPrice);
+        }
+        auction.clearAllForTest();
 
         assertTrue(auction.graduated(), "09 graduated");
         assertApproxEqAbs(auction.lpHealth(), 0.3546e18, 0.001e18, "lpHealth ~0.3546");
@@ -220,24 +242,14 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
         assertEq(exp.mcapFDV, 62_000 ether, "FDV 62k");
         assertEq(exp.mcapCirculating, 49_600 ether, "circ 49.6k");
 
-        // Settlement: vault deposit + creator cash leg in the same settle().
         uint256 unsold = inn.auctionSupply - auction.soldTokens();
         uint256 side = (unsold * inn.sidePoolBps) / 10_000;
         uint256 mainAsk = unsold - side;
         uint256 vaultAmt = (inn.supply * inn.holdbackBps) / 10_000;
-        tok.mint(address(settlement), vaultAmt + mainAsk + side);
 
         uint256 creatorBefore = CREATOR.balance;
         uint256 treasuryBefore = TREASURY.balance;
         uint256 vaultTokBefore = tok.balanceOf(address(mockVault));
-
-        // Fresh settlement instance bound to this auction's PAIR=address(0) path:
-        // re-wire settlement with pairToken address(0) for native.
-        LadderSettlement nativeSettle =
-            new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
-        nativeSettle.setStonkzRef(STONKZ);
-        // Need ownership to set settlement — auction owner is this test contract.
-        auction.setSettlement(nativeSettle);
         tok.mint(address(nativeSettle), vaultAmt + mainAsk + side);
 
         auction.settle(address(tok));
@@ -326,7 +338,8 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
             pairToken: address(0),
             creator: CREATOR,
             treasury: TREASURY,
-            vaultRef: address(0)
+            vaultRef: address(0),
+            settlement: address(0)
         });
         assertEq(factory.defaultCarveBps(), 400);
         StonkzLadderAuction a = factory.file(p);
@@ -363,7 +376,8 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
             pairToken: address(0),
             creator: CREATOR,
             treasury: TREASURY,
-            vaultRef: address(0)
+            vaultRef: address(0),
+            settlement: address(0)
         });
         LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
         // Direct probe: unsold 4; side 5% → main ask 3.8 < 5% of supply (5).
@@ -390,20 +404,45 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
     }
 
     function test_P3_hookRegister_matchesExpressPattern() public {
-        _replay("02-god-2p5k-at-bar.json");
+        string memory json = _loadRaw("02-god-2p5k-at-bar.json");
+        LadderTypes.Inputs memory inn = loadInputs(json);
+        LadderTypes.Bid[] memory bids = loadBids(json);
+
         LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
         s.setStonkzRef(STONKZ);
-        auction.setSettlement(s);
+        StonkzLadderAuction.Params memory p = _params(inn, address(0));
+        p.settlement = address(s);
+        auction = new StonkzLadderAuction(p);
+        auction.start();
+        for (uint256 i; i < bids.length; i++) {
+            address w = bids[i].wallet;
+            vm.deal(w, bids[i].size + 1 ether);
+            vm.prank(w);
+            auction.placeBid{value: bids[i].size}(bids[i].size, bids[i].maxPrice);
+        }
+        auction.clearAllForTest();
+
         uint256 unsold = auction.auctionSupply() - auction.soldTokens();
-        // Fund settle with ask+side tokens; eth escrow already on auction.
         tok.mint(address(s), unsold + 1 ether);
-        // Ensure auction has the raised balance to forward (bids escrowed it).
         assertGe(address(auction).balance, auction.raised());
         auction.settle(address(tok));
         assertTrue(hook.registered(address(tok)));
         (,, uint24 fee,, address hooksAddr) = s.mainPoolKey();
         assertEq(hooksAddr, address(hook), "hooks on PoolKey");
         assertEq(uint256(fee), 0, "main LP fee 0 pips");
+    }
+
+    function test_P3_setSettlement_frozenAfterBell() public {
+        LadderTypes.Inputs memory inn = loadInputs(_loadRaw("02-god-2p5k-at-bar.json"));
+        _deploy(inn);
+        // End with no bids — still freezes settlement wiring.
+        vm.warp(auction.startTime() + auction.duration() + 1);
+        auction.clearAllForTest();
+        assertTrue(auction.done());
+
+        LadderSettlement s2 = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
+        vm.expectRevert(StonkzLadderAuction.SettlementFrozenAfterBell.selector);
+        auction.setSettlement(s2);
     }
 }
 

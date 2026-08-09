@@ -52,7 +52,8 @@ contract LadderPhase1 is LadderVectorLoader, LadderAsserts {
                 pairToken: address(0),
                 creator: address(0xCE0),
                 treasury: address(0x7A5E),
-                vaultRef: vault
+                vaultRef: vault,
+                settlement: address(0)
             })
         );
         auction.start();
