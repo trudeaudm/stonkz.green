@@ -91,7 +91,7 @@ contract LadderPhase4Adversarial is LadderPhase4Base {
 
     /// @notice Property fuzz: no (holdback, cashHB, strategy) graduates with lpHealth < floor.
     ///         holdbackPct swept across [0, tier ceiling] — circFrac load (vector 09 margin).
-    /// forge-config: default.fuzz.runs = 96
+    /// forge-config: default.fuzz.runs = 256
     function testFuzz_P4_noGraduateBelowFloor(
         uint8 tierRaw,
         uint16 holdbackBpsRaw,

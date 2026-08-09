@@ -79,14 +79,21 @@ contract StonkzLadderAuction {
     mapping(address => Wallet) public wallets;
     address[] public bidderList;
 
-    mapping(uint16 => uint256) public pathPrice;
-    mapping(uint16 => uint256) public pathSold;
-    mapping(uint16 => uint256) public pathOffered;
+    /// @dev Explicitly cleared periods only. Idle catch-up skips writes (docs/09 §1/§2);
+    ///      views reconstruct flat idle gaps in O(lookback).
+    mapping(uint16 => uint256) internal _pathPrice;
+    mapping(uint16 => uint256) internal _pathSold;
+    mapping(uint16 => uint256) internal _pathOffered;
+    mapping(uint16 => bool) internal _pathRecorded;
+    /// @dev Latest recorded path price — idle gaps inherit this (or floorPrice if none).
+    uint256 internal _lastPathPrice;
 
     address public owner;
 
     event BidPlaced(address indexed wallet, uint256 size, uint256 maxPrice, uint16 period);
     event PeriodCleared(uint16 indexed period, uint256 price, uint256 offered, uint256 sold, uint256 rung);
+    /// @notice Closed-form idle catch-up: no live book ⇒ period index jumps, path flat.
+    event PeriodsIdleSkipped(uint16 indexed fromPeriod, uint16 indexed toPeriod, uint256 price);
     event AuctionDone(bool graduated, uint256 raised, uint256 clearingPrice);
     event HoldbackDeposited(address indexed vault, uint256 amount);
     event RefundClaimed(address indexed wallet, uint256 amount);
@@ -186,6 +193,7 @@ contract StonkzLadderAuction {
         weights = LadderWeights.makeWeights(N);
         price = floorPrice;
         rung = 0;
+        _lastPathPrice = floorPrice;
     }
 
     function start() external {
@@ -230,10 +238,23 @@ contract StonkzLadderAuction {
         if (startTime == 0 || done) return;
         uint256 target = LadderConstants.periodIndex(startTime, block.timestamp, duration);
         if (target > N) target = N;
+        _catchUpTo(uint16(target));
+        if (periodIndex >= N && !done) _finalize();
+    }
+
+    /// @dev Idle book (no live wallets at price): O(1) period-index jump — docs/09 §1/§2.
+    ///      Live book: per-period clear (sales / rung advance).
+    function _catchUpTo(uint16 target) internal {
+        if (target > N) target = N;
         while (periodIndex < target) {
+            if (!_anyLive(price)) {
+                uint16 from = periodIndex;
+                periodIndex = target;
+                emit PeriodsIdleSkipped(from, target, price);
+                break;
+            }
             _clearPeriod();
         }
-        if (periodIndex >= N && !done) _finalize();
     }
 
     function clearNextForTest() external {
@@ -250,9 +271,7 @@ contract StonkzLadderAuction {
     function clearAllForTest() external {
         if (done) revert AuctionFinished();
         if (startTime == 0) startTime = uint64(block.timestamp);
-        while (periodIndex < N) {
-            _clearPeriod();
-        }
+        _catchUpTo(N);
         if (!done) _finalize();
     }
 
@@ -262,9 +281,11 @@ contract StonkzLadderAuction {
         uint256 sold;
         if (_anyLive(price)) sold = _fill(offered, price);
 
-        pathPrice[next] = price;
-        pathSold[next] = sold;
-        pathOffered[next] = offered;
+        _pathPrice[next] = price;
+        _pathSold[next] = sold;
+        _pathOffered[next] = offered;
+        _pathRecorded[next] = true;
+        _lastPathPrice = price;
         emit PeriodCleared(next, price, offered, sold, rung);
         periodIndex = next;
 
@@ -500,6 +521,32 @@ contract StonkzLadderAuction {
 
     function currentMmax() external view returns (uint256) {
         return LadderMath.mmax(floorMcap, lpShareWad, raised, _liveBudget(price), lpHealthTargetWad, circFrac);
+    }
+
+    /// @notice Path price at 1-indexed period. Idle-skipped gaps inherit last recorded / floor.
+    function pathPrice(uint16 p) external view returns (uint256) {
+        if (p == 0 || p > periodIndex) return 0;
+        if (_pathRecorded[p]) return _pathPrice[p];
+        // Walk back to nearest explicit clear; else floor (idle from genesis).
+        uint16 i = p;
+        while (i > 0) {
+            if (_pathRecorded[i]) return _pathPrice[i];
+            unchecked {
+                i--;
+            }
+        }
+        return _lastPathPrice;
+    }
+
+    function pathSold(uint16 p) external view returns (uint256) {
+        if (p == 0 || p > periodIndex) return 0;
+        return _pathSold[p]; // idle skip ⇒ 0
+    }
+
+    function pathOffered(uint16 p) external view returns (uint256) {
+        if (p == 0 || p > periodIndex) return 0;
+        if (_pathRecorded[p]) return _pathOffered[p];
+        return FixedPointMathLib.fullMulDiv(auctionSupply, weights[p - 1], WAD);
     }
 
     function raiseSplit() external view returns (uint256 toLP, uint256 toTreasury, uint256 toCreator) {
