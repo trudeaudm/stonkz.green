@@ -6,10 +6,17 @@ import {LadderConstants} from "./LadderConstants.sol";
 
 /// @title LadderMath — rung grid, Mmax, liveBudget clamps (docs/09 §1)
 /// @dev Prices always exactly on grid: price = (startMcap + k * rungInterval) / supply.
+///      circFrac = 1 - holdbackPct when holdbackPct > 0, else 1 (David 2026-08-08 ruling).
 library LadderMath {
     using FixedPointMathLib for uint256;
 
     uint256 internal constant WAD = LadderConstants.WAD;
+
+    /// @notice circFrac WAD from holdback bps. holdbackBps=0 → 1e18; else 1 - holdback.
+    function circFracWad(uint16 holdbackBps) internal pure returns (uint256) {
+        if (holdbackBps == 0) return WAD;
+        return WAD - FixedPointMathLib.fullMulDiv(WAD, holdbackBps, 10_000);
+    }
 
     /// @notice Rung index for a mcap (round DOWN). docs/09 §1.
     function rungOf(uint256 mcap, uint256 startMcap, uint256 rungInterval) internal pure returns (uint256) {
@@ -17,7 +24,7 @@ library LadderMath {
         return (mcap - startMcap) / rungInterval;
     }
 
-    /// @notice Price (WAD pair/token) at rung k. Exact on grid.
+    /// @notice Price (WAD pair/token) at rung k. Exact on grid. Uses FDV supply (not circ).
     function rungPrice(uint256 k, uint256 startMcap, uint256 rungInterval, uint256 supply)
         internal
         pure
@@ -28,19 +35,20 @@ library LadderMath {
         return FixedPointMathLib.fullMulDiv(mcap, WAD, supply);
     }
 
-    /// @notice Mmax mcap (WAD dollars). circFrac = 1 ALWAYS until vault (docs/09 §1).
+    /// @notice Mmax mcap (WAD dollars).
     /// Mmax = startMcap + lpShare * (raised + liveBudget) / (lpHealthTarget * circFrac)
     function mmax(
         uint256 startMcap,
         uint256 lpShareWad,
         uint256 raised,
         uint256 liveBudget,
-        uint256 lpHealthTargetWad
+        uint256 lpHealthTargetWad,
+        uint256 circFrac
     ) internal pure returns (uint256) {
-        // circFrac = 1 (FDV fallback). vault hook = owner-settable later; default no exclusion.
-        if (lpHealthTargetWad == 0) return startMcap;
+        if (lpHealthTargetWad == 0 || circFrac == 0) return startMcap;
         uint256 num = FixedPointMathLib.fullMulDiv(lpShareWad, raised + liveBudget, WAD);
-        uint256 add = FixedPointMathLib.fullMulDiv(num, WAD, lpHealthTargetWad);
+        uint256 denom = FixedPointMathLib.fullMulDiv(lpHealthTargetWad, circFrac, WAD);
+        uint256 add = FixedPointMathLib.fullMulDiv(num, WAD, denom);
         return startMcap + add;
     }
 

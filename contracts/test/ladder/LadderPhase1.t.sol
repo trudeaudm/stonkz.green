@@ -7,6 +7,7 @@ import {LadderAsserts} from "./LadderAsserts.sol";
 import {LadderTypes} from "../../src/ladder/LadderTypes.sol";
 import {LadderConstants} from "../../src/ladder/LadderConstants.sol";
 import {StonkzLadderAuction} from "../../src/ladder/StonkzLadderAuction.sol";
+import {LadderConstants} from "../../src/ladder/LadderConstants.sol";
 
 /// @title LadderPhase1 — rungs, periods, liveBudget; A5 on at-bar vectors (docs/09)
 contract LadderPhase1 is LadderVectorLoader, LadderAsserts {
@@ -22,6 +23,7 @@ contract LadderPhase1 is LadderVectorLoader, LadderAsserts {
     }
 
     function _deploy(LadderTypes.Inputs memory inn) internal {
+        address vault = inn.holdbackBps > 0 ? address(0xBEEF) : address(0);
         auction = new StonkzLadderAuction(
             StonkzLadderAuction.Params({
                 supply: inn.supply,
@@ -32,13 +34,19 @@ contract LadderPhase1 is LadderVectorLoader, LadderAsserts {
                 lpHealthTargetWad: inn.lpHealthTarget,
                 carveBps: inn.protocolCarveBps,
                 cashHoldbackBps: inn.cashHoldbackBps,
+                holdbackBps: inn.holdbackBps,
+                holdbackDelivery: inn.holdbackBps > 0
+                    ? LadderConstants.HoldbackDelivery.Vault
+                    : LadderConstants.HoldbackDelivery.None,
+                tier: inn.tier,
                 sidePoolBps: inn.sidePoolBps,
                 walletCapBps: inn.walletCapBps,
                 sizeBonusBps: inn.sizeBonusBps,
                 maxUniqueActives: 300,
                 pairToken: address(0),
                 creator: address(0xCE0),
-                treasury: address(0x7A5E)
+                treasury: address(0x7A5E),
+                vaultRef: vault
             })
         );
         auction.start();

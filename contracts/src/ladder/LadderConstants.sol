@@ -65,6 +65,25 @@ library LadderConstants {
     ///      solady powWad uses this directly. Value from ln(1.1)/ln(2) * 1e18.
     int256 internal constant ALPHA_WAD = 137_503_523_749_934_908; // WAD; log2(1.1)
 
+    // ─── holdback ceilings (bps of total supply). Vault-only; TAKE removed. ─
+    uint16 internal constant GOD_HOLDBACK_BPS_MAX = 4000; // bps of supply (40%)
+    uint16 internal constant H4_HOLDBACK_BPS_MAX = 5000; // bps of supply (50%)
+    uint16 internal constant DAILY_HOLDBACK_BPS_MAX = 6000; // bps of supply (60%)
+    uint16 internal constant ROAD_HOLDBACK_BPS_MAX = 7000; // bps of supply (70%)
+
+    /// @dev Holdback delivery: NONE or VAULT only. TAKE is dead.
+    enum HoldbackDelivery {
+        None,
+        Vault
+    }
+
+    function holdbackCeilingBps(uint8 tierId) internal pure returns (uint16) {
+        if (tierId == 0) return GOD_HOLDBACK_BPS_MAX;
+        if (tierId == 1) return H4_HOLDBACK_BPS_MAX;
+        if (tierId == 2) return DAILY_HOLDBACK_BPS_MAX;
+        return ROAD_HOLDBACK_BPS_MAX;
+    }
+
     /// @dev Canary-corruptible mirror of RAISE_RATIO_BPS (test-only via env). Production
     ///      code MUST use RAISE_RATIO_BPS. Exposed so LadderCanary can prove non-vacuity.
     function raiseRatioBps(bool wrong) internal pure returns (uint16) {

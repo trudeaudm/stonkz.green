@@ -65,7 +65,8 @@ function replay(file) {
   const rungInterval = inn.rungIntervalUsd;
   const lpShare = inn.lpShare;
   const lpHealthTarget = inn.lpHealthTarget;
-  const circFrac = 1; // ruled FDV fallback
+  // David 2026-08-08: circFrac = 1 - holdbackPct when holdbackPct > 0, else 1.
+  const circFrac = inn.holdbackPct > 0 ? 1 - inn.holdbackPct / 100 : 1;
   const alpha = Math.log2(1 + inn.sizeBonusPct / 100);
   const capTokens = (auctionSupply * inn.walletCapPct) / 100;
   const w = makeWeights(N);

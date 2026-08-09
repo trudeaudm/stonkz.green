@@ -44,8 +44,8 @@ abstract contract LadderAsserts is Test {
         for (uint256 i; i < exp.length; i++) {
             (bool found, LadderTypes.Fill memory g) = _findFill(got, exp[i].wallet);
             assertTrue(found, "A2: missing wallet fill");
-            assertApproxEqAbs(g.spent, exp[i].spent, LadderTolerance.moneyTol(exp[i].spent), "A2: spent");
-            assertApproxEqAbs(g.refund, exp[i].refund, LadderTolerance.moneyTol(exp[i].refund), "A2: refund");
+            assertApproxEqAbs(g.spent, exp[i].spent, LadderTolerance.moneyWalletTol(exp[i].spent), "A2: spent");
+            assertApproxEqAbs(g.refund, exp[i].refund, LadderTolerance.moneyWalletTol(exp[i].refund), "A2: refund");
             assertApproxEqAbs(g.tokens, exp[i].tokens, LadderTolerance.tokenTol(exp[i].tokens), "A2: tokens");
             assertApproxEqAbs(
                 g.committed, exp[i].committed, LadderTolerance.moneyTol(exp[i].committed), "A2: committed"

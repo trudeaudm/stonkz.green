@@ -28,10 +28,20 @@ contract LadderMathTest is Test {
     function test_mmax_circFracOne() public pure {
         // liveBudget=$1678.091..., raised=0, lpShare=0.91, target=0.25
         uint256 live = 1678.0910366455 ether;
-        uint256 mm = LadderMath.mmax(FLOOR, 0.91e18, 0, live, 0.25e18);
+        uint256 mm = LadderMath.mmax(FLOOR, 0.91e18, 0, live, 0.25e18, WAD);
         // 2500 + 0.91*1678.091/0.25 ≈ 8608.25
         assertApproxEqAbs(mm, 8608.25 ether, 0.01 ether);
         assertEq(LadderMath.maxRung(mm, FLOOR, RUNG), 6);
+    }
+
+    function test_mmax_circFracHoldback60() public pure {
+        // Vector 08 shape: circFrac=0.4 → Mmax ≈ 141170
+        uint256 live = 20180.0211141103 ether; // approx full book at open for that vector
+        // Use exact identity from ruling: start + lpShare*live/(target*0.4)
+        uint256 mm = LadderMath.mmax(10_000 ether, 0.91e18, 0, live, 0.35e18, 0.4e18);
+        assertApproxEqAbs(mm, 141_170 ether, 1 ether);
+        assertEq(LadderMath.circFracWad(6000), 0.4e18);
+        assertEq(LadderMath.circFracWad(0), WAD);
     }
 
     function test_walletLiveContribution_capRoomClamp() public pure {
