@@ -9,6 +9,7 @@ import {LadderConstants} from "../../src/ladder/LadderConstants.sol";
 import {LadderTolerance} from "./LadderTolerance.sol";
 import {StonkzLadderAuction} from "../../src/ladder/StonkzLadderAuction.sol";
 import {StonkzLadderFactory} from "../../src/ladder/StonkzLadderFactory.sol";
+import {MockVault} from "./MockVault.sol";
 
 /// @title LadderPhase2 — bids/fills A2; vault-only holdback guards (docs/09 + circFrac ruling)
 contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
@@ -16,6 +17,11 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
 
     StonkzLadderAuction internal auction;
     StonkzLadderFactory internal factory;
+    MockVault internal mockVault;
+
+    function setUp() public {
+        mockVault = new MockVault();
+    }
 
     function _duration(LadderTypes.Tier t) internal pure returns (uint256) {
         if (t == LadderTypes.Tier.God) return LadderConstants.GOD_DURATION;
@@ -55,7 +61,7 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
     }
 
     function _deploy(LadderTypes.Inputs memory inn) internal {
-        address vault = inn.holdbackBps > 0 ? address(0xBEEF) : address(0);
+        address vault = inn.holdbackBps > 0 ? address(mockVault) : address(0);
         auction = new StonkzLadderAuction(_params(inn, vault));
         auction.start();
     }
@@ -140,18 +146,24 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
         vm.expectRevert(StonkzLadderFactory.VaultRequiredForHoldback.selector);
         factory.file(p);
 
-        factory.setVaultRef(address(0xBEEF));
+        factory.setVaultRef(address(mockVault));
         StonkzLadderAuction a = factory.file(p);
-        assertEq(a.vaultRef(), address(0xBEEF));
+        assertEq(a.vaultRef(), address(mockVault));
         assertEq(a.holdbackBps(), 6000);
         assertEq(a.circFrac(), 0.4e18);
     }
 
+    function test_P2_setVaultRef_rejectsEOA() public {
+        factory = new StonkzLadderFactory();
+        vm.expectRevert(StonkzLadderFactory.VaultRefNotContract.selector);
+        factory.setVaultRef(address(0xBEEF));
+    }
+
     function test_P2_tierCeiling_god41Reverts_40Files() public {
         factory = new StonkzLadderFactory();
-        factory.setVaultRef(address(0xBEEF));
+        factory.setVaultRef(address(mockVault));
         LadderTypes.Inputs memory inn = loadInputs(_loadRaw("02-god-2p5k-at-bar.json"));
-        StonkzLadderAuction.Params memory p = _params(inn, address(0xBEEF));
+        StonkzLadderAuction.Params memory p = _params(inn, address(mockVault));
         p.tier = LadderTypes.Tier.God;
         p.holdbackDelivery = LadderConstants.HoldbackDelivery.Vault;
         p.holdbackBps = 4100;
@@ -169,7 +181,7 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
     function test_P2_settlement_depositsHoldbackToVault() public {
         MockERC20 tok = new MockERC20();
         factory = new StonkzLadderFactory();
-        factory.setVaultRef(address(0xBEEF));
+        factory.setVaultRef(address(mockVault));
 
         StonkzLadderAuction.Params memory p = StonkzLadderAuction.Params({
             supply: 1_000_000_000 ether,
@@ -209,7 +221,8 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
         assertEq(amt, (p.supply * 4000) / 10_000);
         tok.mint(address(auction), amt);
         auction.depositHoldback(address(tok));
-        assertEq(tok.balanceOf(address(0xBEEF)), amt);
+        assertEq(tok.balanceOf(address(mockVault)), amt);
+        assertEq(mockVault.custody(address(tok)), amt);
         assertTrue(auction.holdbackDeposited());
     }
 
@@ -239,13 +252,27 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
 
 contract MockERC20 {
     mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
 
     function mint(address to, uint256 amt) external {
         balanceOf[to] += amt;
     }
 
+    function approve(address spender, uint256 amt) external returns (bool) {
+        allowance[msg.sender][spender] = amt;
+        return true;
+    }
+
     function transfer(address to, uint256 amt) external returns (bool) {
         balanceOf[msg.sender] -= amt;
+        balanceOf[to] += amt;
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 amt) external returns (bool) {
+        uint256 a = allowance[from][msg.sender];
+        if (a != type(uint256).max) allowance[from][msg.sender] = a - amt;
+        balanceOf[from] -= amt;
         balanceOf[to] += amt;
         return true;
     }

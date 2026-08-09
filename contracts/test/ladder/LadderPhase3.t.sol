@@ -16,6 +16,7 @@ import {StonkzFeeHook} from "../../src/StonkzFeeHook.sol";
 import {CTOGovernor} from "../../src/CTOGovernor.sol";
 import {ICTOGovernor} from "../../src/interfaces/IStonkzGovernance.sol";
 import {PoolKey, PoolIdLibrary} from "../../src/v4/types/PoolKey.sol";
+import {MockVault} from "./MockVault.sol";
 
 /// @title LadderPhase3 — gate + settlement; full A1–A5 incl. vector 09 vault+cashHB
 contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
@@ -28,14 +29,15 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
     MockPoolManager internal pm;
     StonkzFeeHook internal hook;
     MockLaunchToken internal tok;
+    MockVault internal mockVault;
 
     address internal constant TREASURY = address(0x7A5E);
     address internal constant CREATOR = address(0xCE0);
-    address internal constant VAULT = address(0xBEEF);
     address internal constant PAIR = address(0xB111);
     address internal constant STONKZ = address(0x4663);
 
     function setUp() public {
+        mockVault = new MockVault();
         pm = new MockPoolManager();
         CTOGovernor gov = new CTOGovernor();
         hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
@@ -43,7 +45,7 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
         settlement = new LadderSettlement(IPoolManager(address(pm)), hook, PAIR);
         settlement.setStonkzRef(STONKZ);
         factory = new StonkzLadderFactory();
-        factory.setVaultRef(VAULT);
+        factory.setVaultRef(address(mockVault));
         tok = new MockLaunchToken();
     }
 
@@ -85,7 +87,7 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
     }
 
     function _deploy(LadderTypes.Inputs memory inn) internal {
-        address vault = inn.holdbackBps > 0 ? VAULT : address(0);
+        address vault = inn.holdbackBps > 0 ? address(mockVault) : address(0);
         auction = new StonkzLadderAuction(_params(inn, vault));
         auction.setSettlement(settlement);
         auction.start();
@@ -227,7 +229,7 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
 
         uint256 creatorBefore = CREATOR.balance;
         uint256 treasuryBefore = TREASURY.balance;
-        uint256 vaultTokBefore = tok.balanceOf(VAULT);
+        uint256 vaultTokBefore = tok.balanceOf(address(mockVault));
 
         // Fresh settlement instance bound to this auction's PAIR=address(0) path:
         // re-wire settlement with pairToken address(0) for native.
@@ -247,7 +249,8 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
         assertEq(nativeSettle.toLP(), toLP);
         assertEq(CREATOR.balance - creatorBefore, toCreator, "cash holdback to creator");
         assertEq(TREASURY.balance - treasuryBefore, toTreasury, "carve to treasury");
-        assertEq(tok.balanceOf(VAULT) - vaultTokBefore, vaultAmt, "vault token holdback");
+        assertEq(tok.balanceOf(address(mockVault)) - vaultTokBefore, vaultAmt, "vault token holdback");
+        assertEq(mockVault.custody(address(tok)), vaultAmt, "vault custody");
         assertTrue(hook.registered(address(tok)), "hook registered like Express");
         assertTrue(nativeSettle.askTickLower() < nativeSettle.askTickUpper(), "ask range");
         assertTrue(nativeSettle.cashTickLower() < nativeSettle.cashTickUpper(), "cash range");
@@ -270,7 +273,7 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
         // 08-shaped: daily + vault holdback (circFrac=0.4). Absurd health floor.
         // Raise must clear even if price sticks near floor (auctionSupply*floorPrice > threshold).
         LadderTypes.Inputs memory inn = loadInputs(_loadRaw("08-locked-holdback-60.json"));
-        StonkzLadderAuction.Params memory p = _params(inn, VAULT);
+        StonkzLadderAuction.Params memory p = _params(inn, address(mockVault));
         p.lpHealthTargetWad = 50e18; // 5000% — impossible
         p.floorMcap = 5_000 ether; // threshold = 3_000; auctionSupply*floorPrice = 400M*5e-6 = $2k — still low
         // Use full supply as auction so floor stick still clears raise: 1e9 * 5e-6 = $5k > $3k.
@@ -406,13 +409,27 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
 
 contract MockLaunchToken {
     mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
 
     function mint(address to, uint256 amt) external {
         balanceOf[to] += amt;
     }
 
+    function approve(address spender, uint256 amt) external returns (bool) {
+        allowance[msg.sender][spender] = amt;
+        return true;
+    }
+
     function transfer(address to, uint256 amt) external returns (bool) {
         balanceOf[msg.sender] -= amt;
+        balanceOf[to] += amt;
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 amt) external returns (bool) {
+        uint256 a = allowance[from][msg.sender];
+        if (a != type(uint256).max) allowance[from][msg.sender] = a - amt;
+        balanceOf[from] -= amt;
         balanceOf[to] += amt;
         return true;
     }
