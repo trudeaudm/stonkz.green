@@ -6,6 +6,7 @@ import {LadderWeights} from "../LadderWeights.sol";
 import {LadderConstants} from "./LadderConstants.sol";
 import {LadderMath} from "./LadderMath.sol";
 import {LadderTypes} from "./LadderTypes.sol";
+import {LadderSettlement} from "./LadderSettlement.sol";
 
 /// @title StonkzLadderAuction — fair-launch ladder (docs/09)
 /// @notice Time-derived rung periods, Mmax/liveBudget price rule, per-address weight fills.
@@ -59,7 +60,11 @@ contract StonkzLadderAuction {
     bool public done;
     bool public graduated;
     bool public holdbackDeposited;
+    bool public settled;
     uint16 public uniqueBidders;
+    uint256 public lpHealth; // WAD fraction at finalize
+    bytes32[] public failReasons; // keccak of gate names
+    LadderSettlement public settlement;
 
     struct Wallet {
         uint256 committed;
@@ -85,6 +90,8 @@ contract StonkzLadderAuction {
     event AuctionDone(bool graduated, uint256 raised, uint256 clearingPrice);
     event HoldbackDeposited(address indexed vault, uint256 amount);
     event RefundClaimed(address indexed wallet, uint256 amount);
+    event GateFailed(bytes32 indexed reason);
+    event SettlementWired(address indexed settlement);
 
     error MinBid();
     error MaxPriceBelowLive();
@@ -99,6 +106,11 @@ contract StonkzLadderAuction {
     error NotGraduated();
     error HoldbackAlreadyDeposited();
     error VaultUnsetAtSettlement();
+    error AlreadySettled();
+    error SettlementUnset();
+    error NotDone();
+    error RaiseGateFailed();
+    error HealthGateFailed();
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
@@ -179,6 +191,11 @@ contract StonkzLadderAuction {
     function start() external {
         if (startTime != 0) revert AuctionFinished();
         startTime = uint64(block.timestamp);
+    }
+
+    function setSettlement(LadderSettlement s) external onlyOwner {
+        settlement = s;
+        emit SettlementWired(address(s));
     }
 
     /// @notice Place bid. Min $5. Reverts if maxPrice < live price. No cancel. Not a swap.
@@ -382,13 +399,62 @@ contract StonkzLadderAuction {
         uint256 circMcap = FixedPointMathLib.fullMulDiv(fdv, circFrac, WAD);
         uint256 circStart = FixedPointMathLib.fullMulDiv(floorMcap, circFrac, WAD);
         uint256 denom = circMcap > circStart ? circMcap - circStart : 0;
-        uint256 lpHealth = denom == 0 ? 0 : FixedPointMathLib.fullMulDiv(poolCash, WAD, denom);
-        graduated = (raised >= threshold) && (lpHealth >= lpHealthTargetWad);
+        lpHealth = denom == 0 ? 0 : FixedPointMathLib.fullMulDiv(poolCash, WAD, denom);
+
+        bool raiseOk = raised >= threshold;
+        bool healthOk = lpHealth >= lpHealthTargetWad;
+        if (!raiseOk) {
+            bytes32 r = keccak256("raise");
+            failReasons.push(r);
+            emit GateFailed(r);
+        }
+        if (!healthOk) {
+            bytes32 r = keccak256("lpHealth");
+            failReasons.push(r);
+            emit GateFailed(r);
+        }
+        graduated = raiseOk && healthOk;
         emit AuctionDone(graduated, raised, price);
     }
 
-    /// @notice Deposit holdbackPct × supply tokens to the stamped vault. Belt-and-braces vault check.
-    /// @dev Caller must have pre-funded this contract with the token amount (or mint path in Phase 3).
+    /// @notice Full settlement via LadderSettlement (raise split + vault + pool + hook).
+    /// @dev Auction must hold `raised` native (escrow) and `holdbackAmount` of userToken.
+    function settle(address userToken) external payable {
+        if (!done) revert NotDone();
+        if (!graduated) revert NotGraduated();
+        if (settled) revert AlreadySettled();
+        if (address(settlement) == address(0)) revert SettlementUnset();
+        settled = true;
+
+        LadderSettlement.SettleArgs memory a = LadderSettlement.SettleArgs({
+            graduated: graduated,
+            raised: raised,
+            supply: supply,
+            auctionSupply: auctionSupply,
+            soldTokens: soldTokens,
+            printPrice: price,
+            floorPrice: floorPrice,
+            carveBps: carveBps,
+            cashHoldbackBps: cashHoldbackBps,
+            holdbackBps: holdbackBps,
+            sidePoolBps: sidePoolBps,
+            vaultRef: vaultRef,
+            creator: creator,
+            treasury: treasury,
+            userToken: userToken
+        });
+
+        // Forward escrowed pair currency for cash legs + LP cash.
+        uint256 pay = raised;
+        if (pairToken == address(0)) {
+            settlement.settle{value: pay}(a);
+        } else {
+            settlement.settle(a);
+        }
+        if (holdbackBps > 0) holdbackDeposited = true;
+    }
+
+    /// @notice Deposit holdbackPct × supply tokens to the stamped vault (standalone path / tests).
     function depositHoldback(address token) external {
         if (!done || !graduated) revert NotGraduated();
         if (holdbackBps == 0) revert NothingToClaim();
@@ -398,6 +464,10 @@ contract StonkzLadderAuction {
         holdbackDeposited = true;
         _safeTransfer(token, vaultRef, amt);
         emit HoldbackDeposited(vaultRef, amt);
+    }
+
+    function failReasonCount() external view returns (uint256) {
+        return failReasons.length;
     }
 
     function holdbackAmount() external view returns (uint256) {

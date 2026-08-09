@@ -21,7 +21,7 @@ abstract contract LadderVectorLoader is Test {
         "06-daily-20k-heavy.json",
         "07-road-40k-at-bar.json",
         "08-locked-holdback-60.json",
-        "09-take-holdback-cashhb.json",
+        "09-vault-holdback-cashhb.json",
         "10-wallet-cap-binding.json"
     ];
 

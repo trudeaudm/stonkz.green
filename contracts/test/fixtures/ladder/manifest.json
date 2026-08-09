@@ -58,7 +58,7 @@
       "pathRows": 1000
     },
     {
-      "file": "09-take-holdback-cashhb.json",
+      "file": "09-vault-holdback-cashhb.json",
       "tier": "daily",
       "graduated": true,
       "bids": 45,
