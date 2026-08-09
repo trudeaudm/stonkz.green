@@ -115,6 +115,7 @@ contract StonkzLadderAuction {
     error HoldbackAlreadyDeposited();
     error VaultUnsetAtSettlement();
     error AlreadySettled();
+    error SettlementFrozenAfterBell();
     error SettlementUnset();
     error NotDone();
     error RaiseGateFailed();
@@ -208,10 +209,11 @@ contract StonkzLadderAuction {
         startTime = uint64(block.timestamp);
     }
 
-    /// @notice Wire/replace settlement before settle (owner only — direct-deploy tests).
-    ///         Factory-filed auctions stamp settlement in Params at construction so the
-    ///         filer never needs a factory forwarder; anyone may then settle after done.
+    /// @notice Wire/replace settlement before the bell (owner only — direct-deploy tests).
+    ///         Frozen once `done` (bell) — rewiring after end is impossible.
+    ///         Factory-filed auctions stamp settlement in Params at construction.
     function setSettlement(LadderSettlement s) external onlyOwner {
+        if (done) revert SettlementFrozenAfterBell();
         if (settled) revert AlreadySettled();
         settlement = s;
         emit SettlementWired(address(s));

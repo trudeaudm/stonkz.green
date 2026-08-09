@@ -99,6 +99,21 @@ contract VaultPhase1 is LadderVectorLoader {
         factory.setVaultRef(address(0xBEEF));
     }
 
+    function test_P1_setSettlement_frozenAfterBell() public {
+        LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
+        StonkzLadderAuction.Params memory p = _params(loadInputs(_loadRaw("02-god-2p5k-at-bar.json")));
+        p.settlement = address(s);
+        StonkzLadderAuction a = new StonkzLadderAuction(p);
+        a.start();
+        vm.warp(a.startTime() + a.duration() + 1);
+        a.clearAllForTest();
+        assertTrue(a.done());
+
+        LadderSettlement s2 = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
+        vm.expectRevert(StonkzLadderAuction.SettlementFrozenAfterBell.selector);
+        a.setSettlement(s2);
+    }
+
     /// @notice Factory path e2e: settlement stamped in Params at file (no factory forwarder).
     ///         Anyone may settle after the bell — permissionless.
     function test_P1_factoryE2e_permissionlessSettle() public {
