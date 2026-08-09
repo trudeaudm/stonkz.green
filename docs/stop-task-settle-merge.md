@@ -9,9 +9,11 @@
 **Closed on the branch before merge:** `SettlementFrozenAfterBell` when `done`;
 tests `test_P1_setSettlement_frozenAfterBell` + `test_P3_setSettlement_frozenAfterBell`.
 
-## Legacy retirement (follow-up commit on main)
+## Legacy retirement
+**Retirement hash:** `3058176854cb368d39262a89be056dba487ef2d4`  
 - Moved `StonkzAuction`, `IStonkzAuction`, `StonkzAuctionManager` + all their tests
-  into `contracts/legacy/` (not deleted — many forensic suites import them).
+  into `contracts/legacy/` (not deleted — forensic suites import them; nothing in
+  live `src/`/`test` imported them).
 - Kept shared live deps in `src/`: `LadderWeights`, `CreatorReserveLib` (Express).
 - Removed CI jobs: Handler invariant campaign, Differential fuzz consumer
   (both StonkzAuction-only). Live Foundry job is now `forge test` on the live tree.
