@@ -2,8 +2,8 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
-import {IStonkzAuction} from "../src/IStonkzAuction.sol";
-import {StonkzAuction} from "../src/StonkzAuction.sol";
+import {IStonkzAuction} from "../IStonkzAuction.sol";
+import {StonkzAuction} from "../StonkzAuction.sol";
 
 /// @notice Task M: OutPrice USD claim pre-settle must not forfeit filled tokens.
 contract RegressionClaimForfeit is Test {

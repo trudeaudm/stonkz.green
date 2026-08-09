@@ -2,8 +2,8 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
-import {IStonkzAuction} from "../src/IStonkzAuction.sol";
-import {StonkzAuction} from "../src/StonkzAuction.sol";
+import {IStonkzAuction} from "../IStonkzAuction.sol";
+import {StonkzAuction} from "../StonkzAuction.sol";
 /// @title Reserves — C6 (spec §8.4 / §8.5)
 contract ReservesTest is Test {
     uint256 constant BID_FEE = 0.1 ether;

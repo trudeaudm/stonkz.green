@@ -3,8 +3,8 @@ pragma solidity ^0.8.26;
 
 import {Test, stdJson} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
-import {IStonkzAuction} from "../src/IStonkzAuction.sol";
-import {StonkzAuction} from "../src/StonkzAuction.sol";
+import {IStonkzAuction} from "../IStonkzAuction.sol";
+import {StonkzAuction} from "../StonkzAuction.sol";
 import {console2} from "forge-std/console2.sol";
 
 contract ForensicG1SetDiff is Test {

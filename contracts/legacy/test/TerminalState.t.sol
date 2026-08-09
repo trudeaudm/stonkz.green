@@ -2,8 +2,8 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
-import {IStonkzAuction} from "../src/IStonkzAuction.sol";
-import {StonkzAuction} from "../src/StonkzAuction.sol";
+import {IStonkzAuction} from "../IStonkzAuction.sol";
+import {StonkzAuction} from "../StonkzAuction.sol";
 
 /// @title TerminalState — C4 basics (spec §8.0)
 contract TerminalStateTest is Test {

@@ -2,8 +2,8 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
-import {IStonkzAuction} from "../src/IStonkzAuction.sol";
-import {StonkzAuction} from "../src/StonkzAuction.sol";
+import {IStonkzAuction} from "../IStonkzAuction.sol";
+import {StonkzAuction} from "../StonkzAuction.sol";
 
 /// @notice Regression for fuzz-halt-005: weight basis drops on OutBudget / OutPrice
 ///         at the correct auction blocks (spec Ã‚Â§3). Demand basis stays distinct (Ã‚Â§4).

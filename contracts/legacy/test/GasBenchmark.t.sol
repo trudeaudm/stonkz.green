@@ -2,8 +2,8 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
-import {IStonkzAuction} from "../src/IStonkzAuction.sol";
-import {StonkzAuction} from "../src/StonkzAuction.sol";
+import {IStonkzAuction} from "../IStonkzAuction.sol";
+import {StonkzAuction} from "../StonkzAuction.sol";
 
 /// @notice Task O / T gas benches — lazy path (eagerFills=false), ALL-SIMPLE @300.
 /// @dev Task T target: warm single clear ≤ 2.5M. On miss: record + auto-derive

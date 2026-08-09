@@ -2,8 +2,8 @@
 pragma solidity ^0.8.26;
 
 import {Test, stdJson} from "forge-std/Test.sol";
-import {IStonkzAuction} from "../src/IStonkzAuction.sol";
-import {StonkzAuction} from "../src/StonkzAuction.sol";
+import {IStonkzAuction} from "../IStonkzAuction.sol";
+import {StonkzAuction} from "../StonkzAuction.sol";
 
 /// @notice Differential fuzz: replay all `test/vectors/fuzz/*.json` (seed 4663).
 /// @dev Comparison policy (Task I):

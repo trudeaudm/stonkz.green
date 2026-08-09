@@ -3,8 +3,8 @@ pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
-import {IStonkzAuction} from "../src/IStonkzAuction.sol";
-import {StonkzAuction} from "../src/StonkzAuction.sol";
+import {IStonkzAuction} from "../IStonkzAuction.sol";
+import {StonkzAuction} from "../StonkzAuction.sol";
 
 /// @notice Task P: cost attribution for 300-active clears (no mechanism changes).
 /// @dev Verdict: per-address (bidder) SSTOREs dominate (~87%); per-position ~12%.

@@ -3,9 +3,9 @@ pragma solidity ^0.8.26;
 
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
 import {IStonkzAuction} from "./IStonkzAuction.sol";
-import {LadderWeights} from "./LadderWeights.sol";
-import {CreatorReserveLib} from "./CreatorReserveLib.sol";
-import {StonkzLiquidityStrategy} from "./StonkzLiquidityStrategy.sol";
+import {LadderWeights} from "../src/LadderWeights.sol";
+import {CreatorReserveLib} from "../src/CreatorReserveLib.sol";
+import {StonkzLiquidityStrategy} from "../src/StonkzLiquidityStrategy.sol";
 
 /// @title StonkzAuction — Ladder Auction (spec §§1–7)
 /// @notice Per-capita fills with size tilt, demand-gated price, three-phase release,

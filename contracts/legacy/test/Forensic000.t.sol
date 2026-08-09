@@ -2,8 +2,8 @@
 pragma solidity ^0.8.26;
 
 import {Test, stdJson, console2} from "forge-std/Test.sol";
-import {IStonkzAuction} from "../src/IStonkzAuction.sol";
-import {StonkzAuction} from "../src/StonkzAuction.sol";
+import {IStonkzAuction} from "../IStonkzAuction.sol";
+import {StonkzAuction} from "../StonkzAuction.sol";
 import {TracedWaterFill} from "./forensic/TracedWaterFill.sol";
 
 /// @notice Forensic replay of fuzz-000 to schedule cursor 5; traces Solidity fill path

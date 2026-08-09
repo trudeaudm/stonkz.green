@@ -3,8 +3,8 @@ pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
 import {stdJson} from "forge-std/StdJson.sol";
-import {IStonkzAuction} from "../src/IStonkzAuction.sol";
-import {StonkzAuction} from "../src/StonkzAuction.sol";
+import {IStonkzAuction} from "../IStonkzAuction.sol";
+import {StonkzAuction} from "../StonkzAuction.sol";
 
 /// @notice Task S2/G1''': eager vs lazy with derived D-bound + set/mark equivalence.
 /// D = Σ_{blocks active} 4×ceil(weight_b/WAD) + P (live positions at compare).

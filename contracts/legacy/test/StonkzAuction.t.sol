@@ -2,9 +2,9 @@
 pragma solidity ^0.8.26;
 
 import {Test, stdJson} from "forge-std/Test.sol";
-import {IStonkzAuction} from "../src/IStonkzAuction.sol";
-import {StonkzAuction} from "../src/StonkzAuction.sol";
-import {LadderWeights} from "../src/LadderWeights.sol";
+import {IStonkzAuction} from "../IStonkzAuction.sol";
+import {StonkzAuction} from "../StonkzAuction.sol";
+import {LadderWeights} from "../../src/LadderWeights.sol";
 
 /// @notice Differential + invariant + regression suite (docs/mechanism-spec.md Ã‚Â§9).
 /// @dev Vectors from `node reference/gen-vectors.js` Ã¢â‚¬â€ all amounts are 1e18 WAD.

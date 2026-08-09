@@ -2,8 +2,8 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
-import {IStonkzAuction} from "../src/IStonkzAuction.sol";
-import {StonkzAuction} from "../src/StonkzAuction.sol";
+import {IStonkzAuction} from "../IStonkzAuction.sol";
+import {StonkzAuction} from "../StonkzAuction.sol";
 
 /// @notice Task Q'/F1'/G1''': WriteBudget for ALL-SIMPLE warm clears + compound bound.
 ///         ALL-SIMPLE warm clear (300 actives): <=16 SSTOREs (measured ~8).
