@@ -74,7 +74,8 @@ contract VaultPhase1 is LadderVectorLoader {
             pairToken: address(0),
             creator: CREATOR,
             treasury: TREASURY,
-            vaultRef: address(0)
+            vaultRef: address(0),
+            settlement: address(0)
         });
     }
 
@@ -98,30 +99,60 @@ contract VaultPhase1 is LadderVectorLoader {
         factory.setVaultRef(address(0xBEEF));
     }
 
-    /// @notice OBSTACLE (reported, not worked around): factory.file stamps vaultRef and sets
-    ///         auction.owner = address(factory). setSettlement is onlyOwner on the auction.
-    ///         Factory has no forwarding setter; factory.owner (EOA) cannot call through the
-    ///         factory contract. Therefore factory → file → settle cannot complete as deployed.
-    ///         Evidence: setSettlement from filer/creator/factory.owner all revert NotOwner.
-    function test_P1_factoryE2e_blocked_auctionOwnerIsFactory() public {
+    /// @notice Factory path e2e: settlement stamped in Params at file (no factory forwarder).
+    ///         Anyone may settle after the bell — permissionless.
+    function test_P1_factoryE2e_permissionlessSettle() public {
         factory.setVaultRef(address(vault));
         LadderTypes.Inputs memory inn = loadInputs(_loadRaw("08-locked-holdback-60.json"));
-        StonkzLadderAuction a = factory.file(_params(inn));
-        assertEq(a.vaultRef(), address(vault));
-        assertEq(a.owner(), address(factory), "filed auction owned by factory");
+        LadderTypes.Outputs memory exp = loadOutputs(_loadRaw("08-locked-holdback-60.json"));
+        uint256 vaultAmt = (inn.supply * uint256(inn.holdbackBps)) / 10_000;
+        assertEq(exp.lockedTokens, vaultAmt);
 
         LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
-        // Filer / test contract is factory.owner but NOT auction.owner.
-        vm.expectRevert(StonkzLadderAuction.NotOwner.selector);
-        a.setSettlement(s);
-        // Creator also cannot wire settlement.
-        vm.prank(CREATOR);
-        vm.expectRevert(StonkzLadderAuction.NotOwner.selector);
-        a.setSettlement(s);
-        // Even pranking factory.owner fails — need msg.sender == address(factory).
-        vm.prank(factory.owner());
-        vm.expectRevert(StonkzLadderAuction.NotOwner.selector);
-        a.setSettlement(s);
+        s.setStonkzRef(STONKZ);
+
+        StonkzLadderAuction.Params memory p = _params(inn);
+        p.settlement = address(s); // stamped at construction — no setSettlement forwarder
+        StonkzLadderAuction a = factory.file(p);
+        assertEq(a.vaultRef(), address(vault));
+        assertEq(address(a.settlement()), address(s), "settlement stamped at file");
+        assertEq(a.owner(), address(factory));
+
+        a.start();
+        LadderTypes.Bid[] memory bids = loadBids(_loadRaw("08-locked-holdback-60.json"));
+        for (uint256 i; i < bids.length; i++) {
+            address w = bids[i].wallet;
+            vm.deal(w, bids[i].size + 1 ether);
+            vm.prank(w);
+            a.placeBid{value: bids[i].size}(bids[i].size, bids[i].maxPrice);
+        }
+
+        // Bell: warp past duration, then finalize.
+        vm.warp(a.startTime() + a.duration() + 1);
+        a.clearAllForTest(); // O(1)-catch-up finalize after bell (same end state as poke-to-done)
+        assertTrue(a.done(), "auction ended");
+        assertTrue(a.graduated(), "08 graduates");
+
+        VaultMockToken tok = new VaultMockToken();
+        uint256 unsold = inn.auctionSupply - a.soldTokens();
+        uint256 side = (unsold * inn.sidePoolBps) / 10_000;
+        uint256 mainAsk = unsold - side;
+        tok.mint(address(s), inn.supply);
+        assertGe(inn.supply, vaultAmt + mainAsk + side);
+
+        address crank = address(0xC2A4C); // random non-owner / non-creator
+        vm.prank(crank);
+        a.settle(address(tok));
+
+        (uint256 toLP, uint256 toTreasury, uint256 toCreator) = a.raiseSplit();
+        assertEq(s.toLP() + s.toTreasury() + s.toCreator(), a.raised(), "three-leg exact");
+        assertEq(s.toLP(), toLP);
+        assertEq(s.toTreasury(), toTreasury);
+        assertEq(s.toCreator(), toCreator);
+        assertEq(vault.custody(address(tok)), vaultAmt, "vault custody");
+        assertEq(vault.lockedBalance(address(tok)), vaultAmt, "lockedBalance");
+        assertEq(vault.balanceOf(address(tok), CREATOR), vaultAmt);
+        assertTrue(a.settled());
     }
 
     function test_P1_lockedBalance_excludesQueuedDirect_pathPendingCounts() public {

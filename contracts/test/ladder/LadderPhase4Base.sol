@@ -103,7 +103,8 @@ abstract contract LadderPhase4Base is Test {
                 pairToken: address(0),
                 creator: CREATOR,
                 treasury: TREASURY,
-                vaultRef: vault
+                vaultRef: vault,
+                settlement: address(0)
             })
         );
         auction.start();

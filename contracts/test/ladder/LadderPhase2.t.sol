@@ -56,7 +56,8 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
             pairToken: address(0),
             creator: address(0xCE0),
             treasury: address(0x7A5E),
-            vaultRef: vault
+            vaultRef: vault,
+            settlement: address(0)
         });
     }
 
@@ -202,7 +203,8 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
             pairToken: address(0),
             creator: address(0xCE0),
             treasury: address(0x7A5E),
-            vaultRef: address(0)
+            vaultRef: address(0),
+            settlement: address(0)
         });
         auction = factory.file(p);
         auction.start();

@@ -82,7 +82,8 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
             pairToken: address(0),
             creator: CREATOR,
             treasury: TREASURY,
-            vaultRef: vault
+            vaultRef: vault,
+            settlement: address(0)
         });
     }
 
@@ -326,7 +327,8 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
             pairToken: address(0),
             creator: CREATOR,
             treasury: TREASURY,
-            vaultRef: address(0)
+            vaultRef: address(0),
+            settlement: address(0)
         });
         assertEq(factory.defaultCarveBps(), 400);
         StonkzLadderAuction a = factory.file(p);
@@ -363,7 +365,8 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
             pairToken: address(0),
             creator: CREATOR,
             treasury: TREASURY,
-            vaultRef: address(0)
+            vaultRef: address(0),
+            settlement: address(0)
         });
         LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
         // Direct probe: unsold 4; side 5% → main ask 3.8 < 5% of supply (5).
