@@ -7,6 +7,7 @@ import {LadderConstants} from "./LadderConstants.sol";
 import {LadderMath} from "./LadderMath.sol";
 import {LadderTypes} from "./LadderTypes.sol";
 import {LadderSettlement} from "./LadderSettlement.sol";
+import {IStonkzVault} from "../vault/IStonkzVault.sol";
 
 /// @title StonkzLadderAuction — fair-launch ladder (docs/09)
 /// @notice Time-derived rung periods, Mmax/liveBudget price rule, per-address weight fills.
@@ -483,7 +484,12 @@ contract StonkzLadderAuction {
         if (vaultRef == address(0)) revert VaultUnsetAtSettlement();
         uint256 amt = FixedPointMathLib.fullMulDiv(supply, holdbackBps, 10_000);
         holdbackDeposited = true;
-        _safeTransfer(token, vaultRef, amt);
+        if (vaultRef.code.length > 0) {
+            _safeApprove(token, vaultRef, amt);
+            IStonkzVault(vaultRef).deposit(token, amt, creator);
+        } else {
+            _safeTransfer(token, vaultRef, amt);
+        }
         emit HoldbackDeposited(vaultRef, amt);
     }
 
@@ -510,6 +516,11 @@ contract StonkzLadderAuction {
 
     function _safeTransfer(address token, address to, uint256 amt) internal {
         (bool ok, bytes memory data) = token.call(abi.encodeWithSignature("transfer(address,uint256)", to, amt));
+        if (!ok || (data.length != 0 && !abi.decode(data, (bool)))) revert TransferFailed();
+    }
+
+    function _safeApprove(address token, address spender, uint256 amt) internal {
+        (bool ok, bytes memory data) = token.call(abi.encodeWithSignature("approve(address,uint256)", spender, amt));
         if (!ok || (data.length != 0 && !abi.decode(data, (bool)))) revert TransferFailed();
     }
 
