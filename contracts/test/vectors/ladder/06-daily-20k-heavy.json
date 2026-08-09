@@ -1,0 +1,8216 @@
+{
+ "schema": "stonkz-ladder-vector/1",
+ "generated": "2026-08-08T22:41:05.061Z",
+ "inputs": {
+  "tier": "daily",
+  "floorMcap": 20000,
+  "raiseRatio": 0.6,
+  "supply": 1000000000,
+  "holdbackDelivery": "none",
+  "holdbackPct": 0,
+  "cashHoldbackPct": 5,
+  "protocolCarvePct": 4,
+  "sidePoolPct": 5,
+  "walletCapPct": 5,
+  "sizeBonusPct": 10,
+  "leftoverMode": "lp",
+  "rungIntervalUsd": 1000,
+  "maxRungsPerBlock": 1,
+  "kappaHat": 1.34,
+  "lpHealthTarget": 0.35,
+  "N": 1000,
+  "epochSeconds": null,
+  "threshold": 12000,
+  "lpShare": 0.91,
+  "auctionSupply": 1000000000,
+  "reserve": 0,
+  "floorPrice": 0.00002
+ },
+ "bids": [
+  {
+   "wallet": "A",
+   "size": 1156.2595408579,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "B",
+   "size": 1685.8603196991,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "C",
+   "size": 548.8856506668,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "D",
+   "size": 1637.2160773898,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "E",
+   "size": 964.058132397,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "F",
+   "size": 1277.6278499503,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "G",
+   "size": 1766.8442350658,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "H",
+   "size": 1074.203625002,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "I",
+   "size": 918.6818506376,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "J",
+   "size": 698.0193902077,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "K",
+   "size": 527.8034448846,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "L",
+   "size": 1049.1457846431,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "M",
+   "size": 1528.6711983796,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "N",
+   "size": 1705.3982168182,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "O",
+   "size": 984.9958422151,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "P",
+   "size": 1006.5276720591,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "Q",
+   "size": 761.0752488491,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "R",
+   "size": 672.7767992917,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "S",
+   "size": 1281.6808608927,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "T",
+   "size": 1767.8949743546,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "U",
+   "size": 1177.3963168531,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "V",
+   "size": 535.855178859,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "W",
+   "size": 1834.43371359,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "X",
+   "size": 1312.5382808747,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "Y",
+   "size": 1203.5655787976,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "Z",
+   "size": 988.6269953235,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AA",
+   "size": 536.6885948445,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AB",
+   "size": 1399.4264463891,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AC",
+   "size": 574.1387558422,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AD",
+   "size": 1448.8084463816,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AE",
+   "size": 1409.0521435295,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AF",
+   "size": 1707.3851972573,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AG",
+   "size": 670.1021004608,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AH",
+   "size": 1227.3774579667,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AI",
+   "size": 1131.5998080427,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AJ",
+   "size": 519.3482208435,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AK",
+   "size": 904.2377849409,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AL",
+   "size": 1689.2781835465,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AM",
+   "size": 1568.0879979432,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AN",
+   "size": 592.7327728796,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AO",
+   "size": 945.8883335376,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AP",
+   "size": 526.9512748937,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AQ",
+   "size": 1833.2538849456,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AR",
+   "size": 1137.6185992442,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AS",
+   "size": 1163.6191180552,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AT",
+   "size": 1716.0350423847,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AU",
+   "size": 790.5426408306,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AV",
+   "size": 1259.6053365523,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AW",
+   "size": 1408.2178692372,
+   "maxPrice": 1,
+   "block": 0
+  },
+  {
+   "wallet": "AX",
+   "size": 1067.6602366323,
+   "maxPrice": 1,
+   "block": 0
+  }
+ ],
+ "clearingPath": [
+  {
+   "block": 1,
+   "price": 0.00002,
+   "offered": 1248.439451,
+   "sold": 1248.439451,
+   "phase": "shallow"
+  },
+  {
+   "block": 2,
+   "price": 0.000021,
+   "offered": 2496.878901,
+   "sold": 2496.878901,
+   "phase": "shallow"
+  },
+  {
+   "block": 3,
+   "price": 0.000022,
+   "offered": 3745.318352,
+   "sold": 3745.318352,
+   "phase": "shallow"
+  },
+  {
+   "block": 4,
+   "price": 0.000023,
+   "offered": 4993.757803,
+   "sold": 4993.757803,
+   "phase": "shallow"
+  },
+  {
+   "block": 5,
+   "price": 0.000024,
+   "offered": 6242.197253,
+   "sold": 6242.197253,
+   "phase": "shallow"
+  },
+  {
+   "block": 6,
+   "price": 0.000025,
+   "offered": 7490.636704,
+   "sold": 7490.636704,
+   "phase": "shallow"
+  },
+  {
+   "block": 7,
+   "price": 0.000026,
+   "offered": 8739.076155,
+   "sold": 8739.076155,
+   "phase": "shallow"
+  },
+  {
+   "block": 8,
+   "price": 0.000027,
+   "offered": 9987.515605,
+   "sold": 9987.515605,
+   "phase": "shallow"
+  },
+  {
+   "block": 9,
+   "price": 0.000028,
+   "offered": 11235.955056,
+   "sold": 11235.955056,
+   "phase": "shallow"
+  },
+  {
+   "block": 10,
+   "price": 0.000029,
+   "offered": 12484.394507,
+   "sold": 12484.394507,
+   "phase": "shallow"
+  },
+  {
+   "block": 11,
+   "price": 0.00003,
+   "offered": 13732.833958,
+   "sold": 13732.833958,
+   "phase": "shallow"
+  },
+  {
+   "block": 12,
+   "price": 0.000031,
+   "offered": 14981.273408,
+   "sold": 14981.273408,
+   "phase": "shallow"
+  },
+  {
+   "block": 13,
+   "price": 0.000032,
+   "offered": 16229.712859,
+   "sold": 16229.712859,
+   "phase": "shallow"
+  },
+  {
+   "block": 14,
+   "price": 0.000033,
+   "offered": 17478.15231,
+   "sold": 17478.15231,
+   "phase": "shallow"
+  },
+  {
+   "block": 15,
+   "price": 0.000034,
+   "offered": 18726.59176,
+   "sold": 18726.59176,
+   "phase": "shallow"
+  },
+  {
+   "block": 16,
+   "price": 0.000035,
+   "offered": 19975.031211,
+   "sold": 19975.031211,
+   "phase": "shallow"
+  },
+  {
+   "block": 17,
+   "price": 0.000036,
+   "offered": 21223.470662,
+   "sold": 21223.470662,
+   "phase": "shallow"
+  },
+  {
+   "block": 18,
+   "price": 0.000037,
+   "offered": 22471.910112,
+   "sold": 22471.910112,
+   "phase": "shallow"
+  },
+  {
+   "block": 19,
+   "price": 0.000038,
+   "offered": 23720.349563,
+   "sold": 23720.349563,
+   "phase": "shallow"
+  },
+  {
+   "block": 20,
+   "price": 0.000039,
+   "offered": 24968.789014,
+   "sold": 24968.789014,
+   "phase": "shallow"
+  },
+  {
+   "block": 21,
+   "price": 0.00004,
+   "offered": 26217.228464,
+   "sold": 26217.228464,
+   "phase": "shallow"
+  },
+  {
+   "block": 22,
+   "price": 0.000041,
+   "offered": 27465.667915,
+   "sold": 27465.667915,
+   "phase": "shallow"
+  },
+  {
+   "block": 23,
+   "price": 0.000042,
+   "offered": 28714.107366,
+   "sold": 28714.107366,
+   "phase": "shallow"
+  },
+  {
+   "block": 24,
+   "price": 0.000043,
+   "offered": 29962.546816,
+   "sold": 29962.546816,
+   "phase": "shallow"
+  },
+  {
+   "block": 25,
+   "price": 0.000044,
+   "offered": 31210.986267,
+   "sold": 31210.986267,
+   "phase": "shallow"
+  },
+  {
+   "block": 26,
+   "price": 0.000045,
+   "offered": 32459.425718,
+   "sold": 32459.425718,
+   "phase": "shallow"
+  },
+  {
+   "block": 27,
+   "price": 0.000046,
+   "offered": 33707.865169,
+   "sold": 33707.865169,
+   "phase": "shallow"
+  },
+  {
+   "block": 28,
+   "price": 0.000047,
+   "offered": 34956.304619,
+   "sold": 34956.304619,
+   "phase": "shallow"
+  },
+  {
+   "block": 29,
+   "price": 0.000048,
+   "offered": 36204.74407,
+   "sold": 36204.74407,
+   "phase": "shallow"
+  },
+  {
+   "block": 30,
+   "price": 0.000049,
+   "offered": 37453.183521,
+   "sold": 37453.183521,
+   "phase": "shallow"
+  },
+  {
+   "block": 31,
+   "price": 0.00005,
+   "offered": 38701.622971,
+   "sold": 38701.622971,
+   "phase": "shallow"
+  },
+  {
+   "block": 32,
+   "price": 0.000051,
+   "offered": 39950.062422,
+   "sold": 39950.062422,
+   "phase": "shallow"
+  },
+  {
+   "block": 33,
+   "price": 0.000052,
+   "offered": 41198.501873,
+   "sold": 41198.501873,
+   "phase": "shallow"
+  },
+  {
+   "block": 34,
+   "price": 0.000053,
+   "offered": 42446.941323,
+   "sold": 42446.941323,
+   "phase": "shallow"
+  },
+  {
+   "block": 35,
+   "price": 0.000054,
+   "offered": 43695.380774,
+   "sold": 43695.380774,
+   "phase": "shallow"
+  },
+  {
+   "block": 36,
+   "price": 0.000055,
+   "offered": 44943.820225,
+   "sold": 44943.820225,
+   "phase": "shallow"
+  },
+  {
+   "block": 37,
+   "price": 0.000056,
+   "offered": 46192.259675,
+   "sold": 46192.259675,
+   "phase": "shallow"
+  },
+  {
+   "block": 38,
+   "price": 0.000057,
+   "offered": 47440.699126,
+   "sold": 47440.699126,
+   "phase": "shallow"
+  },
+  {
+   "block": 39,
+   "price": 0.000058,
+   "offered": 48689.138577,
+   "sold": 48689.138577,
+   "phase": "shallow"
+  },
+  {
+   "block": 40,
+   "price": 0.000059,
+   "offered": 49937.578027,
+   "sold": 49937.578027,
+   "phase": "shallow"
+  },
+  {
+   "block": 41,
+   "price": 0.00006,
+   "offered": 51186.017478,
+   "sold": 51186.017478,
+   "phase": "shallow"
+  },
+  {
+   "block": 42,
+   "price": 0.000061,
+   "offered": 52434.456929,
+   "sold": 52434.456929,
+   "phase": "shallow"
+  },
+  {
+   "block": 43,
+   "price": 0.000062,
+   "offered": 53682.89638,
+   "sold": 53682.89638,
+   "phase": "shallow"
+  },
+  {
+   "block": 44,
+   "price": 0.000063,
+   "offered": 54931.33583,
+   "sold": 54931.33583,
+   "phase": "shallow"
+  },
+  {
+   "block": 45,
+   "price": 0.000064,
+   "offered": 56179.775281,
+   "sold": 56179.775281,
+   "phase": "shallow"
+  },
+  {
+   "block": 46,
+   "price": 0.000065,
+   "offered": 57428.214732,
+   "sold": 57428.214732,
+   "phase": "shallow"
+  },
+  {
+   "block": 47,
+   "price": 0.000066,
+   "offered": 58676.654182,
+   "sold": 58676.654182,
+   "phase": "shallow"
+  },
+  {
+   "block": 48,
+   "price": 0.000067,
+   "offered": 59925.093633,
+   "sold": 59925.093633,
+   "phase": "shallow"
+  },
+  {
+   "block": 49,
+   "price": 0.000068,
+   "offered": 61173.533084,
+   "sold": 61173.533084,
+   "phase": "shallow"
+  },
+  {
+   "block": 50,
+   "price": 0.000069,
+   "offered": 62421.972534,
+   "sold": 62421.972534,
+   "phase": "shallow"
+  },
+  {
+   "block": 51,
+   "price": 0.00007,
+   "offered": 63670.411985,
+   "sold": 63670.411985,
+   "phase": "shallow"
+  },
+  {
+   "block": 52,
+   "price": 0.000071,
+   "offered": 64918.851436,
+   "sold": 64918.851436,
+   "phase": "shallow"
+  },
+  {
+   "block": 53,
+   "price": 0.000072,
+   "offered": 66167.290886,
+   "sold": 66167.290886,
+   "phase": "shallow"
+  },
+  {
+   "block": 54,
+   "price": 0.000073,
+   "offered": 67415.730337,
+   "sold": 67415.730337,
+   "phase": "shallow"
+  },
+  {
+   "block": 55,
+   "price": 0.000074,
+   "offered": 68664.169788,
+   "sold": 68664.169788,
+   "phase": "shallow"
+  },
+  {
+   "block": 56,
+   "price": 0.000075,
+   "offered": 69912.609238,
+   "sold": 69912.609238,
+   "phase": "shallow"
+  },
+  {
+   "block": 57,
+   "price": 0.000076,
+   "offered": 71161.048689,
+   "sold": 71161.048689,
+   "phase": "shallow"
+  },
+  {
+   "block": 58,
+   "price": 0.000077,
+   "offered": 72409.48814,
+   "sold": 72409.48814,
+   "phase": "shallow"
+  },
+  {
+   "block": 59,
+   "price": 0.000078,
+   "offered": 73657.927591,
+   "sold": 73657.927591,
+   "phase": "shallow"
+  },
+  {
+   "block": 60,
+   "price": 0.000079,
+   "offered": 74906.367041,
+   "sold": 74906.367041,
+   "phase": "shallow"
+  },
+  {
+   "block": 61,
+   "price": 0.00008,
+   "offered": 76154.806492,
+   "sold": 76154.806492,
+   "phase": "shallow"
+  },
+  {
+   "block": 62,
+   "price": 0.000081,
+   "offered": 77403.245943,
+   "sold": 77403.245943,
+   "phase": "shallow"
+  },
+  {
+   "block": 63,
+   "price": 0.000082,
+   "offered": 78651.685393,
+   "sold": 78651.685393,
+   "phase": "shallow"
+  },
+  {
+   "block": 64,
+   "price": 0.000083,
+   "offered": 79900.124844,
+   "sold": 79900.124844,
+   "phase": "shallow"
+  },
+  {
+   "block": 65,
+   "price": 0.000084,
+   "offered": 81148.564295,
+   "sold": 81148.564295,
+   "phase": "shallow"
+  },
+  {
+   "block": 66,
+   "price": 0.000085,
+   "offered": 82397.003745,
+   "sold": 82397.003745,
+   "phase": "shallow"
+  },
+  {
+   "block": 67,
+   "price": 0.000086,
+   "offered": 83645.443196,
+   "sold": 83645.443196,
+   "phase": "shallow"
+  },
+  {
+   "block": 68,
+   "price": 0.000087,
+   "offered": 84893.882647,
+   "sold": 84893.882647,
+   "phase": "shallow"
+  },
+  {
+   "block": 69,
+   "price": 0.000088,
+   "offered": 86142.322097,
+   "sold": 86142.322097,
+   "phase": "shallow"
+  },
+  {
+   "block": 70,
+   "price": 0.000089,
+   "offered": 87390.761548,
+   "sold": 87390.761548,
+   "phase": "shallow"
+  },
+  {
+   "block": 71,
+   "price": 0.00009,
+   "offered": 88639.200999,
+   "sold": 88639.200999,
+   "phase": "shallow"
+  },
+  {
+   "block": 72,
+   "price": 0.000091,
+   "offered": 89887.640449,
+   "sold": 89887.640449,
+   "phase": "shallow"
+  },
+  {
+   "block": 73,
+   "price": 0.000092,
+   "offered": 91136.0799,
+   "sold": 91136.0799,
+   "phase": "shallow"
+  },
+  {
+   "block": 74,
+   "price": 0.000093,
+   "offered": 92384.519351,
+   "sold": 92384.519351,
+   "phase": "shallow"
+  },
+  {
+   "block": 75,
+   "price": 0.000094,
+   "offered": 93632.958801,
+   "sold": 93632.958801,
+   "phase": "shallow"
+  },
+  {
+   "block": 76,
+   "price": 0.000095,
+   "offered": 94881.398252,
+   "sold": 94881.398252,
+   "phase": "shallow"
+  },
+  {
+   "block": 77,
+   "price": 0.000096,
+   "offered": 96129.837703,
+   "sold": 96129.837703,
+   "phase": "shallow"
+  },
+  {
+   "block": 78,
+   "price": 0.000097,
+   "offered": 97378.277154,
+   "sold": 97378.277154,
+   "phase": "shallow"
+  },
+  {
+   "block": 79,
+   "price": 0.000098,
+   "offered": 98626.716604,
+   "sold": 98626.716604,
+   "phase": "shallow"
+  },
+  {
+   "block": 80,
+   "price": 0.000099,
+   "offered": 99875.156055,
+   "sold": 99875.156055,
+   "phase": "shallow"
+  },
+  {
+   "block": 81,
+   "price": 0.0001,
+   "offered": 101123.595506,
+   "sold": 101123.595506,
+   "phase": "shallow"
+  },
+  {
+   "block": 82,
+   "price": 0.000101,
+   "offered": 102372.034956,
+   "sold": 102372.034956,
+   "phase": "shallow"
+  },
+  {
+   "block": 83,
+   "price": 0.000102,
+   "offered": 103620.474407,
+   "sold": 103620.474407,
+   "phase": "shallow"
+  },
+  {
+   "block": 84,
+   "price": 0.000103,
+   "offered": 104868.913858,
+   "sold": 104868.913858,
+   "phase": "shallow"
+  },
+  {
+   "block": 85,
+   "price": 0.000104,
+   "offered": 106117.353308,
+   "sold": 106117.353308,
+   "phase": "shallow"
+  },
+  {
+   "block": 86,
+   "price": 0.000105,
+   "offered": 107365.792759,
+   "sold": 107365.792759,
+   "phase": "shallow"
+  },
+  {
+   "block": 87,
+   "price": 0.000106,
+   "offered": 108614.23221,
+   "sold": 108614.23221,
+   "phase": "shallow"
+  },
+  {
+   "block": 88,
+   "price": 0.000107,
+   "offered": 109862.67166,
+   "sold": 109862.67166,
+   "phase": "shallow"
+  },
+  {
+   "block": 89,
+   "price": 0.000108,
+   "offered": 111111.111111,
+   "sold": 111111.111111,
+   "phase": "shallow"
+  },
+  {
+   "block": 90,
+   "price": 0.000109,
+   "offered": 112359.550562,
+   "sold": 112359.550562,
+   "phase": "shallow"
+  },
+  {
+   "block": 91,
+   "price": 0.00011,
+   "offered": 113607.990012,
+   "sold": 113607.990012,
+   "phase": "shallow"
+  },
+  {
+   "block": 92,
+   "price": 0.000111,
+   "offered": 114856.429463,
+   "sold": 114856.429463,
+   "phase": "shallow"
+  },
+  {
+   "block": 93,
+   "price": 0.000112,
+   "offered": 116104.868914,
+   "sold": 116104.868914,
+   "phase": "shallow"
+  },
+  {
+   "block": 94,
+   "price": 0.000113,
+   "offered": 117353.308365,
+   "sold": 117353.308365,
+   "phase": "shallow"
+  },
+  {
+   "block": 95,
+   "price": 0.000114,
+   "offered": 118601.747815,
+   "sold": 118601.747815,
+   "phase": "shallow"
+  },
+  {
+   "block": 96,
+   "price": 0.000115,
+   "offered": 119850.187266,
+   "sold": 119850.187266,
+   "phase": "shallow"
+  },
+  {
+   "block": 97,
+   "price": 0.000116,
+   "offered": 121098.626717,
+   "sold": 121098.626717,
+   "phase": "shallow"
+  },
+  {
+   "block": 98,
+   "price": 0.000117,
+   "offered": 122347.066167,
+   "sold": 122347.066167,
+   "phase": "shallow"
+  },
+  {
+   "block": 99,
+   "price": 0.000118,
+   "offered": 123595.505618,
+   "sold": 123595.505618,
+   "phase": "shallow"
+  },
+  {
+   "block": 100,
+   "price": 0.000119,
+   "offered": 124843.945069,
+   "sold": 124843.945069,
+   "phase": "shallow"
+  },
+  {
+   "block": 101,
+   "price": 0.00012,
+   "offered": 126092.384519,
+   "sold": 126092.384519,
+   "phase": "shallow"
+  },
+  {
+   "block": 102,
+   "price": 0.000121,
+   "offered": 127340.82397,
+   "sold": 127340.82397,
+   "phase": "shallow"
+  },
+  {
+   "block": 103,
+   "price": 0.000122,
+   "offered": 128589.263421,
+   "sold": 128589.263421,
+   "phase": "shallow"
+  },
+  {
+   "block": 104,
+   "price": 0.000123,
+   "offered": 129837.702871,
+   "sold": 129837.702871,
+   "phase": "shallow"
+  },
+  {
+   "block": 105,
+   "price": 0.000124,
+   "offered": 131086.142322,
+   "sold": 131086.142322,
+   "phase": "shallow"
+  },
+  {
+   "block": 106,
+   "price": 0.000125,
+   "offered": 132334.581773,
+   "sold": 132334.581773,
+   "phase": "shallow"
+  },
+  {
+   "block": 107,
+   "price": 0.000126,
+   "offered": 133583.021223,
+   "sold": 133583.021223,
+   "phase": "shallow"
+  },
+  {
+   "block": 108,
+   "price": 0.000127,
+   "offered": 134831.460674,
+   "sold": 134831.460674,
+   "phase": "shallow"
+  },
+  {
+   "block": 109,
+   "price": 0.000128,
+   "offered": 136079.900125,
+   "sold": 136079.900125,
+   "phase": "shallow"
+  },
+  {
+   "block": 110,
+   "price": 0.000129,
+   "offered": 137328.339576,
+   "sold": 137328.339576,
+   "phase": "shallow"
+  },
+  {
+   "block": 111,
+   "price": 0.00013,
+   "offered": 138576.779026,
+   "sold": 138576.779026,
+   "phase": "shallow"
+  },
+  {
+   "block": 112,
+   "price": 0.000131,
+   "offered": 139825.218477,
+   "sold": 139825.218477,
+   "phase": "shallow"
+  },
+  {
+   "block": 113,
+   "price": 0.000132,
+   "offered": 141073.657928,
+   "sold": 141073.657928,
+   "phase": "shallow"
+  },
+  {
+   "block": 114,
+   "price": 0.000133,
+   "offered": 142322.097378,
+   "sold": 142322.097378,
+   "phase": "shallow"
+  },
+  {
+   "block": 115,
+   "price": 0.000134,
+   "offered": 143570.536829,
+   "sold": 143570.536829,
+   "phase": "shallow"
+  },
+  {
+   "block": 116,
+   "price": 0.000135,
+   "offered": 144818.97628,
+   "sold": 144818.97628,
+   "phase": "shallow"
+  },
+  {
+   "block": 117,
+   "price": 0.000136,
+   "offered": 146067.41573,
+   "sold": 146067.41573,
+   "phase": "shallow"
+  },
+  {
+   "block": 118,
+   "price": 0.000137,
+   "offered": 147315.855181,
+   "sold": 147315.855181,
+   "phase": "shallow"
+  },
+  {
+   "block": 119,
+   "price": 0.000138,
+   "offered": 148564.294632,
+   "sold": 148564.294632,
+   "phase": "shallow"
+  },
+  {
+   "block": 120,
+   "price": 0.000139,
+   "offered": 149812.734082,
+   "sold": 149812.734082,
+   "phase": "shallow"
+  },
+  {
+   "block": 121,
+   "price": 0.00014,
+   "offered": 151061.173533,
+   "sold": 151061.173533,
+   "phase": "shallow"
+  },
+  {
+   "block": 122,
+   "price": 0.000141,
+   "offered": 152309.612984,
+   "sold": 152309.612984,
+   "phase": "shallow"
+  },
+  {
+   "block": 123,
+   "price": 0.000142,
+   "offered": 153558.052434,
+   "sold": 153558.052434,
+   "phase": "shallow"
+  },
+  {
+   "block": 124,
+   "price": 0.000143,
+   "offered": 154806.491885,
+   "sold": 154806.491885,
+   "phase": "shallow"
+  },
+  {
+   "block": 125,
+   "price": 0.000144,
+   "offered": 156054.931336,
+   "sold": 156054.931336,
+   "phase": "shallow"
+  },
+  {
+   "block": 126,
+   "price": 0.000145,
+   "offered": 157303.370787,
+   "sold": 157303.370787,
+   "phase": "shallow"
+  },
+  {
+   "block": 127,
+   "price": 0.000146,
+   "offered": 158551.810237,
+   "sold": 158551.810237,
+   "phase": "shallow"
+  },
+  {
+   "block": 128,
+   "price": 0.000147,
+   "offered": 159800.249688,
+   "sold": 159800.249688,
+   "phase": "shallow"
+  },
+  {
+   "block": 129,
+   "price": 0.000148,
+   "offered": 161048.689139,
+   "sold": 161048.689139,
+   "phase": "shallow"
+  },
+  {
+   "block": 130,
+   "price": 0.000149,
+   "offered": 162297.128589,
+   "sold": 162297.128589,
+   "phase": "shallow"
+  },
+  {
+   "block": 131,
+   "price": 0.00015,
+   "offered": 163545.56804,
+   "sold": 163545.56804,
+   "phase": "shallow"
+  },
+  {
+   "block": 132,
+   "price": 0.000151,
+   "offered": 164794.007491,
+   "sold": 164794.007491,
+   "phase": "shallow"
+  },
+  {
+   "block": 133,
+   "price": 0.000152,
+   "offered": 166042.446941,
+   "sold": 166042.446941,
+   "phase": "shallow"
+  },
+  {
+   "block": 134,
+   "price": 0.000153,
+   "offered": 167290.886392,
+   "sold": 167290.886392,
+   "phase": "shallow"
+  },
+  {
+   "block": 135,
+   "price": 0.000154,
+   "offered": 168539.325843,
+   "sold": 168539.325843,
+   "phase": "shallow"
+  },
+  {
+   "block": 136,
+   "price": 0.000155,
+   "offered": 169787.765293,
+   "sold": 169787.765293,
+   "phase": "shallow"
+  },
+  {
+   "block": 137,
+   "price": 0.000156,
+   "offered": 171036.204744,
+   "sold": 171036.204744,
+   "phase": "shallow"
+  },
+  {
+   "block": 138,
+   "price": 0.000157,
+   "offered": 172284.644195,
+   "sold": 172284.644195,
+   "phase": "shallow"
+  },
+  {
+   "block": 139,
+   "price": 0.000158,
+   "offered": 173533.083645,
+   "sold": 173533.083645,
+   "phase": "shallow"
+  },
+  {
+   "block": 140,
+   "price": 0.000159,
+   "offered": 174781.523096,
+   "sold": 174781.523096,
+   "phase": "shallow"
+  },
+  {
+   "block": 141,
+   "price": 0.00016,
+   "offered": 176029.962547,
+   "sold": 176029.962547,
+   "phase": "shallow"
+  },
+  {
+   "block": 142,
+   "price": 0.000161,
+   "offered": 177278.401998,
+   "sold": 177278.401998,
+   "phase": "shallow"
+  },
+  {
+   "block": 143,
+   "price": 0.000162,
+   "offered": 178526.841448,
+   "sold": 178526.841448,
+   "phase": "shallow"
+  },
+  {
+   "block": 144,
+   "price": 0.000163,
+   "offered": 179775.280899,
+   "sold": 179775.280899,
+   "phase": "shallow"
+  },
+  {
+   "block": 145,
+   "price": 0.000164,
+   "offered": 181023.72035,
+   "sold": 181023.72035,
+   "phase": "shallow"
+  },
+  {
+   "block": 146,
+   "price": 0.000165,
+   "offered": 182272.1598,
+   "sold": 182272.1598,
+   "phase": "shallow"
+  },
+  {
+   "block": 147,
+   "price": 0.000166,
+   "offered": 183520.599251,
+   "sold": 183520.599251,
+   "phase": "shallow"
+  },
+  {
+   "block": 148,
+   "price": 0.000167,
+   "offered": 184769.038702,
+   "sold": 184769.038702,
+   "phase": "shallow"
+  },
+  {
+   "block": 149,
+   "price": 0.000168,
+   "offered": 186017.478152,
+   "sold": 186017.478152,
+   "phase": "shallow"
+  },
+  {
+   "block": 150,
+   "price": 0.000168,
+   "offered": 187265.917603,
+   "sold": 187265.917603,
+   "phase": "shallow"
+  },
+  {
+   "block": 151,
+   "price": 0.000168,
+   "offered": 188514.357054,
+   "sold": 188514.357054,
+   "phase": "shallow"
+  },
+  {
+   "block": 152,
+   "price": 0.000168,
+   "offered": 189762.796504,
+   "sold": 189762.796504,
+   "phase": "shallow"
+  },
+  {
+   "block": 153,
+   "price": 0.000168,
+   "offered": 191011.235955,
+   "sold": 191011.235955,
+   "phase": "shallow"
+  },
+  {
+   "block": 154,
+   "price": 0.000168,
+   "offered": 192259.675406,
+   "sold": 192259.675406,
+   "phase": "shallow"
+  },
+  {
+   "block": 155,
+   "price": 0.000168,
+   "offered": 193508.114856,
+   "sold": 193508.114856,
+   "phase": "shallow"
+  },
+  {
+   "block": 156,
+   "price": 0.000168,
+   "offered": 194756.554307,
+   "sold": 194756.554307,
+   "phase": "shallow"
+  },
+  {
+   "block": 157,
+   "price": 0.000168,
+   "offered": 196004.993758,
+   "sold": 196004.993758,
+   "phase": "shallow"
+  },
+  {
+   "block": 158,
+   "price": 0.000168,
+   "offered": 197253.433208,
+   "sold": 197253.433208,
+   "phase": "shallow"
+  },
+  {
+   "block": 159,
+   "price": 0.000168,
+   "offered": 198501.872659,
+   "sold": 198501.872659,
+   "phase": "shallow"
+  },
+  {
+   "block": 160,
+   "price": 0.000168,
+   "offered": 199750.31211,
+   "sold": 199750.31211,
+   "phase": "shallow"
+  },
+  {
+   "block": 161,
+   "price": 0.000168,
+   "offered": 200998.751561,
+   "sold": 200998.751561,
+   "phase": "shallow"
+  },
+  {
+   "block": 162,
+   "price": 0.000168,
+   "offered": 202247.191011,
+   "sold": 202247.191011,
+   "phase": "shallow"
+  },
+  {
+   "block": 163,
+   "price": 0.000168,
+   "offered": 203495.630462,
+   "sold": 203495.630462,
+   "phase": "shallow"
+  },
+  {
+   "block": 164,
+   "price": 0.000168,
+   "offered": 204744.069913,
+   "sold": 204744.069913,
+   "phase": "shallow"
+  },
+  {
+   "block": 165,
+   "price": 0.000168,
+   "offered": 205992.509363,
+   "sold": 205992.509363,
+   "phase": "shallow"
+  },
+  {
+   "block": 166,
+   "price": 0.000168,
+   "offered": 207240.948814,
+   "sold": 207240.948814,
+   "phase": "shallow"
+  },
+  {
+   "block": 167,
+   "price": 0.000168,
+   "offered": 208489.388265,
+   "sold": 208489.388265,
+   "phase": "shallow"
+  },
+  {
+   "block": 168,
+   "price": 0.000168,
+   "offered": 209737.827715,
+   "sold": 209737.827715,
+   "phase": "shallow"
+  },
+  {
+   "block": 169,
+   "price": 0.000168,
+   "offered": 210986.267166,
+   "sold": 210986.267166,
+   "phase": "shallow"
+  },
+  {
+   "block": 170,
+   "price": 0.000168,
+   "offered": 212234.706617,
+   "sold": 212234.706617,
+   "phase": "shallow"
+  },
+  {
+   "block": 171,
+   "price": 0.000168,
+   "offered": 213483.146067,
+   "sold": 213483.146067,
+   "phase": "shallow"
+  },
+  {
+   "block": 172,
+   "price": 0.000168,
+   "offered": 214731.585518,
+   "sold": 214731.585518,
+   "phase": "shallow"
+  },
+  {
+   "block": 173,
+   "price": 0.000168,
+   "offered": 215980.024969,
+   "sold": 215980.024969,
+   "phase": "shallow"
+  },
+  {
+   "block": 174,
+   "price": 0.000168,
+   "offered": 217228.464419,
+   "sold": 217228.464419,
+   "phase": "shallow"
+  },
+  {
+   "block": 175,
+   "price": 0.000168,
+   "offered": 218476.90387,
+   "sold": 218476.90387,
+   "phase": "shallow"
+  },
+  {
+   "block": 176,
+   "price": 0.000168,
+   "offered": 219725.343321,
+   "sold": 219725.343321,
+   "phase": "shallow"
+  },
+  {
+   "block": 177,
+   "price": 0.000168,
+   "offered": 220973.782772,
+   "sold": 220973.782772,
+   "phase": "shallow"
+  },
+  {
+   "block": 178,
+   "price": 0.000168,
+   "offered": 222222.222222,
+   "sold": 222222.222222,
+   "phase": "shallow"
+  },
+  {
+   "block": 179,
+   "price": 0.000168,
+   "offered": 223470.661673,
+   "sold": 223470.661673,
+   "phase": "shallow"
+  },
+  {
+   "block": 180,
+   "price": 0.000168,
+   "offered": 224719.101124,
+   "sold": 224719.101124,
+   "phase": "shallow"
+  },
+  {
+   "block": 181,
+   "price": 0.000168,
+   "offered": 225967.540574,
+   "sold": 225967.540574,
+   "phase": "shallow"
+  },
+  {
+   "block": 182,
+   "price": 0.000168,
+   "offered": 227215.980025,
+   "sold": 227215.980025,
+   "phase": "shallow"
+  },
+  {
+   "block": 183,
+   "price": 0.000168,
+   "offered": 228464.419476,
+   "sold": 228464.419476,
+   "phase": "shallow"
+  },
+  {
+   "block": 184,
+   "price": 0.000168,
+   "offered": 229712.858926,
+   "sold": 229712.858926,
+   "phase": "shallow"
+  },
+  {
+   "block": 185,
+   "price": 0.000168,
+   "offered": 230961.298377,
+   "sold": 230961.298377,
+   "phase": "shallow"
+  },
+  {
+   "block": 186,
+   "price": 0.000168,
+   "offered": 232209.737828,
+   "sold": 232209.737828,
+   "phase": "shallow"
+  },
+  {
+   "block": 187,
+   "price": 0.000168,
+   "offered": 233458.177278,
+   "sold": 233458.177278,
+   "phase": "shallow"
+  },
+  {
+   "block": 188,
+   "price": 0.000168,
+   "offered": 234706.616729,
+   "sold": 234706.616729,
+   "phase": "shallow"
+  },
+  {
+   "block": 189,
+   "price": 0.000168,
+   "offered": 235955.05618,
+   "sold": 235955.05618,
+   "phase": "shallow"
+  },
+  {
+   "block": 190,
+   "price": 0.000168,
+   "offered": 237203.49563,
+   "sold": 237203.49563,
+   "phase": "shallow"
+  },
+  {
+   "block": 191,
+   "price": 0.000168,
+   "offered": 238451.935081,
+   "sold": 238451.935081,
+   "phase": "shallow"
+  },
+  {
+   "block": 192,
+   "price": 0.000168,
+   "offered": 239700.374532,
+   "sold": 239700.374532,
+   "phase": "shallow"
+  },
+  {
+   "block": 193,
+   "price": 0.000168,
+   "offered": 240948.813983,
+   "sold": 240948.813983,
+   "phase": "shallow"
+  },
+  {
+   "block": 194,
+   "price": 0.000168,
+   "offered": 242197.253433,
+   "sold": 242197.253433,
+   "phase": "shallow"
+  },
+  {
+   "block": 195,
+   "price": 0.000168,
+   "offered": 243445.692884,
+   "sold": 243445.692884,
+   "phase": "shallow"
+  },
+  {
+   "block": 196,
+   "price": 0.000168,
+   "offered": 244694.132335,
+   "sold": 244694.132335,
+   "phase": "shallow"
+  },
+  {
+   "block": 197,
+   "price": 0.000168,
+   "offered": 245942.571785,
+   "sold": 245942.571785,
+   "phase": "shallow"
+  },
+  {
+   "block": 198,
+   "price": 0.000168,
+   "offered": 247191.011236,
+   "sold": 247191.011236,
+   "phase": "shallow"
+  },
+  {
+   "block": 199,
+   "price": 0.000168,
+   "offered": 248439.450687,
+   "sold": 248439.450687,
+   "phase": "shallow"
+  },
+  {
+   "block": 200,
+   "price": 0.000168,
+   "offered": 249687.890137,
+   "sold": 249687.890137,
+   "phase": "shallow"
+  },
+  {
+   "block": 201,
+   "price": 0.000168,
+   "offered": 250936.329588,
+   "sold": 250936.329588,
+   "phase": "shallow"
+  },
+  {
+   "block": 202,
+   "price": 0.000168,
+   "offered": 252184.769039,
+   "sold": 252184.769039,
+   "phase": "shallow"
+  },
+  {
+   "block": 203,
+   "price": 0.000168,
+   "offered": 253433.208489,
+   "sold": 253433.208489,
+   "phase": "shallow"
+  },
+  {
+   "block": 204,
+   "price": 0.000168,
+   "offered": 254681.64794,
+   "sold": 254681.64794,
+   "phase": "shallow"
+  },
+  {
+   "block": 205,
+   "price": 0.000168,
+   "offered": 255930.087391,
+   "sold": 255930.087391,
+   "phase": "shallow"
+  },
+  {
+   "block": 206,
+   "price": 0.000168,
+   "offered": 257178.526841,
+   "sold": 257178.526841,
+   "phase": "shallow"
+  },
+  {
+   "block": 207,
+   "price": 0.000168,
+   "offered": 258426.966292,
+   "sold": 258426.966292,
+   "phase": "shallow"
+  },
+  {
+   "block": 208,
+   "price": 0.000168,
+   "offered": 259675.405743,
+   "sold": 259675.405743,
+   "phase": "shallow"
+  },
+  {
+   "block": 209,
+   "price": 0.000168,
+   "offered": 260923.845194,
+   "sold": 260923.845194,
+   "phase": "shallow"
+  },
+  {
+   "block": 210,
+   "price": 0.000168,
+   "offered": 262172.284644,
+   "sold": 262172.284644,
+   "phase": "shallow"
+  },
+  {
+   "block": 211,
+   "price": 0.000168,
+   "offered": 263420.724095,
+   "sold": 263420.724095,
+   "phase": "shallow"
+  },
+  {
+   "block": 212,
+   "price": 0.000168,
+   "offered": 264669.163546,
+   "sold": 264669.163546,
+   "phase": "shallow"
+  },
+  {
+   "block": 213,
+   "price": 0.000168,
+   "offered": 265917.602996,
+   "sold": 265917.602996,
+   "phase": "shallow"
+  },
+  {
+   "block": 214,
+   "price": 0.000168,
+   "offered": 267166.042447,
+   "sold": 267166.042447,
+   "phase": "shallow"
+  },
+  {
+   "block": 215,
+   "price": 0.000168,
+   "offered": 268414.481898,
+   "sold": 268414.481898,
+   "phase": "shallow"
+  },
+  {
+   "block": 216,
+   "price": 0.000168,
+   "offered": 269662.921348,
+   "sold": 269662.921348,
+   "phase": "shallow"
+  },
+  {
+   "block": 217,
+   "price": 0.000168,
+   "offered": 270911.360799,
+   "sold": 270911.360799,
+   "phase": "shallow"
+  },
+  {
+   "block": 218,
+   "price": 0.000168,
+   "offered": 272159.80025,
+   "sold": 272159.80025,
+   "phase": "shallow"
+  },
+  {
+   "block": 219,
+   "price": 0.000168,
+   "offered": 273408.2397,
+   "sold": 273408.2397,
+   "phase": "shallow"
+  },
+  {
+   "block": 220,
+   "price": 0.000168,
+   "offered": 274656.679151,
+   "sold": 274656.679151,
+   "phase": "shallow"
+  },
+  {
+   "block": 221,
+   "price": 0.000168,
+   "offered": 275905.118602,
+   "sold": 275905.118602,
+   "phase": "shallow"
+  },
+  {
+   "block": 222,
+   "price": 0.000168,
+   "offered": 277153.558052,
+   "sold": 277153.558052,
+   "phase": "shallow"
+  },
+  {
+   "block": 223,
+   "price": 0.000168,
+   "offered": 278401.997503,
+   "sold": 278401.997503,
+   "phase": "shallow"
+  },
+  {
+   "block": 224,
+   "price": 0.000168,
+   "offered": 279650.436954,
+   "sold": 279650.436954,
+   "phase": "shallow"
+  },
+  {
+   "block": 225,
+   "price": 0.000168,
+   "offered": 280898.876404,
+   "sold": 280898.876404,
+   "phase": "shallow"
+  },
+  {
+   "block": 226,
+   "price": 0.000168,
+   "offered": 282147.315855,
+   "sold": 282147.315855,
+   "phase": "shallow"
+  },
+  {
+   "block": 227,
+   "price": 0.000168,
+   "offered": 283395.755306,
+   "sold": 283395.755306,
+   "phase": "shallow"
+  },
+  {
+   "block": 228,
+   "price": 0.000168,
+   "offered": 284644.194757,
+   "sold": 284644.194757,
+   "phase": "shallow"
+  },
+  {
+   "block": 229,
+   "price": 0.000168,
+   "offered": 285892.634207,
+   "sold": 285892.634207,
+   "phase": "shallow"
+  },
+  {
+   "block": 230,
+   "price": 0.000168,
+   "offered": 287141.073658,
+   "sold": 287141.073658,
+   "phase": "shallow"
+  },
+  {
+   "block": 231,
+   "price": 0.000168,
+   "offered": 288389.513109,
+   "sold": 288389.513109,
+   "phase": "shallow"
+  },
+  {
+   "block": 232,
+   "price": 0.000168,
+   "offered": 289637.952559,
+   "sold": 289637.952559,
+   "phase": "shallow"
+  },
+  {
+   "block": 233,
+   "price": 0.000168,
+   "offered": 290886.39201,
+   "sold": 290886.39201,
+   "phase": "shallow"
+  },
+  {
+   "block": 234,
+   "price": 0.000168,
+   "offered": 292134.831461,
+   "sold": 292134.831461,
+   "phase": "shallow"
+  },
+  {
+   "block": 235,
+   "price": 0.000168,
+   "offered": 293383.270911,
+   "sold": 293383.270911,
+   "phase": "shallow"
+  },
+  {
+   "block": 236,
+   "price": 0.000168,
+   "offered": 294631.710362,
+   "sold": 294631.710362,
+   "phase": "shallow"
+  },
+  {
+   "block": 237,
+   "price": 0.000168,
+   "offered": 295880.149813,
+   "sold": 295880.149813,
+   "phase": "shallow"
+  },
+  {
+   "block": 238,
+   "price": 0.000168,
+   "offered": 297128.589263,
+   "sold": 297128.589263,
+   "phase": "shallow"
+  },
+  {
+   "block": 239,
+   "price": 0.000168,
+   "offered": 298377.028714,
+   "sold": 298377.028714,
+   "phase": "shallow"
+  },
+  {
+   "block": 240,
+   "price": 0.000168,
+   "offered": 299625.468165,
+   "sold": 299625.468165,
+   "phase": "shallow"
+  },
+  {
+   "block": 241,
+   "price": 0.000168,
+   "offered": 300873.907615,
+   "sold": 300873.907615,
+   "phase": "shallow"
+  },
+  {
+   "block": 242,
+   "price": 0.000168,
+   "offered": 302122.347066,
+   "sold": 302122.347066,
+   "phase": "shallow"
+  },
+  {
+   "block": 243,
+   "price": 0.000168,
+   "offered": 303370.786517,
+   "sold": 303370.786517,
+   "phase": "shallow"
+  },
+  {
+   "block": 244,
+   "price": 0.000168,
+   "offered": 304619.225968,
+   "sold": 304619.225968,
+   "phase": "shallow"
+  },
+  {
+   "block": 245,
+   "price": 0.000168,
+   "offered": 305867.665418,
+   "sold": 305867.665418,
+   "phase": "shallow"
+  },
+  {
+   "block": 246,
+   "price": 0.000168,
+   "offered": 307116.104869,
+   "sold": 307116.104869,
+   "phase": "shallow"
+  },
+  {
+   "block": 247,
+   "price": 0.000168,
+   "offered": 308364.54432,
+   "sold": 308364.54432,
+   "phase": "shallow"
+  },
+  {
+   "block": 248,
+   "price": 0.000168,
+   "offered": 309612.98377,
+   "sold": 309612.98377,
+   "phase": "shallow"
+  },
+  {
+   "block": 249,
+   "price": 0.000168,
+   "offered": 310861.423221,
+   "sold": 310861.423221,
+   "phase": "shallow"
+  },
+  {
+   "block": 250,
+   "price": 0.000168,
+   "offered": 312109.862672,
+   "sold": 312109.862672,
+   "phase": "shallow"
+  },
+  {
+   "block": 251,
+   "price": 0.000168,
+   "offered": 313358.302122,
+   "sold": 313358.302122,
+   "phase": "shallow"
+  },
+  {
+   "block": 252,
+   "price": 0.000168,
+   "offered": 314606.741573,
+   "sold": 314606.741573,
+   "phase": "shallow"
+  },
+  {
+   "block": 253,
+   "price": 0.000168,
+   "offered": 315855.181024,
+   "sold": 315855.181024,
+   "phase": "shallow"
+  },
+  {
+   "block": 254,
+   "price": 0.000168,
+   "offered": 317103.620474,
+   "sold": 317103.620474,
+   "phase": "shallow"
+  },
+  {
+   "block": 255,
+   "price": 0.000168,
+   "offered": 318352.059925,
+   "sold": 318352.059925,
+   "phase": "shallow"
+  },
+  {
+   "block": 256,
+   "price": 0.000168,
+   "offered": 319600.499376,
+   "sold": 319600.499376,
+   "phase": "shallow"
+  },
+  {
+   "block": 257,
+   "price": 0.000168,
+   "offered": 320848.938826,
+   "sold": 320848.938826,
+   "phase": "shallow"
+  },
+  {
+   "block": 258,
+   "price": 0.000168,
+   "offered": 322097.378277,
+   "sold": 322097.378277,
+   "phase": "shallow"
+  },
+  {
+   "block": 259,
+   "price": 0.000168,
+   "offered": 323345.817728,
+   "sold": 323345.817728,
+   "phase": "shallow"
+  },
+  {
+   "block": 260,
+   "price": 0.000168,
+   "offered": 324594.257179,
+   "sold": 324594.257179,
+   "phase": "shallow"
+  },
+  {
+   "block": 261,
+   "price": 0.000168,
+   "offered": 325842.696629,
+   "sold": 325842.696629,
+   "phase": "shallow"
+  },
+  {
+   "block": 262,
+   "price": 0.000168,
+   "offered": 327091.13608,
+   "sold": 327091.13608,
+   "phase": "shallow"
+  },
+  {
+   "block": 263,
+   "price": 0.000168,
+   "offered": 328339.575531,
+   "sold": 328339.575531,
+   "phase": "shallow"
+  },
+  {
+   "block": 264,
+   "price": 0.000168,
+   "offered": 329588.014981,
+   "sold": 329588.014981,
+   "phase": "shallow"
+  },
+  {
+   "block": 265,
+   "price": 0.000168,
+   "offered": 330836.454432,
+   "sold": 330836.454432,
+   "phase": "shallow"
+  },
+  {
+   "block": 266,
+   "price": 0.000168,
+   "offered": 332084.893883,
+   "sold": 332084.893883,
+   "phase": "shallow"
+  },
+  {
+   "block": 267,
+   "price": 0.000168,
+   "offered": 333333.333333,
+   "sold": 333333.333333,
+   "phase": "shallow"
+  },
+  {
+   "block": 268,
+   "price": 0.000168,
+   "offered": 334581.772784,
+   "sold": 334581.772784,
+   "phase": "shallow"
+  },
+  {
+   "block": 269,
+   "price": 0.000168,
+   "offered": 335830.212235,
+   "sold": 335830.212235,
+   "phase": "shallow"
+  },
+  {
+   "block": 270,
+   "price": 0.000168,
+   "offered": 337078.651685,
+   "sold": 337078.651685,
+   "phase": "shallow"
+  },
+  {
+   "block": 271,
+   "price": 0.000168,
+   "offered": 338327.091136,
+   "sold": 338327.091136,
+   "phase": "shallow"
+  },
+  {
+   "block": 272,
+   "price": 0.000168,
+   "offered": 339575.530587,
+   "sold": 339575.530587,
+   "phase": "shallow"
+  },
+  {
+   "block": 273,
+   "price": 0.000168,
+   "offered": 340823.970037,
+   "sold": 340823.970037,
+   "phase": "shallow"
+  },
+  {
+   "block": 274,
+   "price": 0.000168,
+   "offered": 342072.409488,
+   "sold": 342072.409488,
+   "phase": "shallow"
+  },
+  {
+   "block": 275,
+   "price": 0.000168,
+   "offered": 343320.848939,
+   "sold": 343320.848939,
+   "phase": "shallow"
+  },
+  {
+   "block": 276,
+   "price": 0.000168,
+   "offered": 344569.28839,
+   "sold": 344569.28839,
+   "phase": "shallow"
+  },
+  {
+   "block": 277,
+   "price": 0.000168,
+   "offered": 345817.72784,
+   "sold": 345817.72784,
+   "phase": "shallow"
+  },
+  {
+   "block": 278,
+   "price": 0.000168,
+   "offered": 347066.167291,
+   "sold": 347066.167291,
+   "phase": "shallow"
+  },
+  {
+   "block": 279,
+   "price": 0.000168,
+   "offered": 348314.606742,
+   "sold": 348314.606742,
+   "phase": "shallow"
+  },
+  {
+   "block": 280,
+   "price": 0.000168,
+   "offered": 349563.046192,
+   "sold": 349563.046192,
+   "phase": "shallow"
+  },
+  {
+   "block": 281,
+   "price": 0.000168,
+   "offered": 350811.485643,
+   "sold": 350811.485643,
+   "phase": "shallow"
+  },
+  {
+   "block": 282,
+   "price": 0.000168,
+   "offered": 352059.925094,
+   "sold": 352059.925094,
+   "phase": "shallow"
+  },
+  {
+   "block": 283,
+   "price": 0.000168,
+   "offered": 353308.364544,
+   "sold": 353308.364544,
+   "phase": "shallow"
+  },
+  {
+   "block": 284,
+   "price": 0.000168,
+   "offered": 354556.803995,
+   "sold": 354556.803995,
+   "phase": "shallow"
+  },
+  {
+   "block": 285,
+   "price": 0.000168,
+   "offered": 355805.243446,
+   "sold": 355805.243446,
+   "phase": "shallow"
+  },
+  {
+   "block": 286,
+   "price": 0.000168,
+   "offered": 357053.682896,
+   "sold": 357053.682896,
+   "phase": "shallow"
+  },
+  {
+   "block": 287,
+   "price": 0.000168,
+   "offered": 358302.122347,
+   "sold": 358302.122347,
+   "phase": "shallow"
+  },
+  {
+   "block": 288,
+   "price": 0.000168,
+   "offered": 359550.561798,
+   "sold": 359550.561798,
+   "phase": "shallow"
+  },
+  {
+   "block": 289,
+   "price": 0.000168,
+   "offered": 360799.001248,
+   "sold": 360799.001248,
+   "phase": "shallow"
+  },
+  {
+   "block": 290,
+   "price": 0.000168,
+   "offered": 362047.440699,
+   "sold": 362047.440699,
+   "phase": "shallow"
+  },
+  {
+   "block": 291,
+   "price": 0.000168,
+   "offered": 363295.88015,
+   "sold": 363295.88015,
+   "phase": "shallow"
+  },
+  {
+   "block": 292,
+   "price": 0.000168,
+   "offered": 364544.3196,
+   "sold": 364544.3196,
+   "phase": "shallow"
+  },
+  {
+   "block": 293,
+   "price": 0.000168,
+   "offered": 365792.759051,
+   "sold": 365792.759051,
+   "phase": "shallow"
+  },
+  {
+   "block": 294,
+   "price": 0.000168,
+   "offered": 367041.198502,
+   "sold": 367041.198502,
+   "phase": "shallow"
+  },
+  {
+   "block": 295,
+   "price": 0.000168,
+   "offered": 368289.637953,
+   "sold": 368289.637953,
+   "phase": "shallow"
+  },
+  {
+   "block": 296,
+   "price": 0.000168,
+   "offered": 369538.077403,
+   "sold": 369538.077403,
+   "phase": "shallow"
+  },
+  {
+   "block": 297,
+   "price": 0.000168,
+   "offered": 370786.516854,
+   "sold": 370786.516854,
+   "phase": "shallow"
+  },
+  {
+   "block": 298,
+   "price": 0.000168,
+   "offered": 372034.956305,
+   "sold": 372034.956305,
+   "phase": "shallow"
+  },
+  {
+   "block": 299,
+   "price": 0.000168,
+   "offered": 373283.395755,
+   "sold": 373283.395755,
+   "phase": "shallow"
+  },
+  {
+   "block": 300,
+   "price": 0.000168,
+   "offered": 374531.835206,
+   "sold": 374531.835206,
+   "phase": "shallow"
+  },
+  {
+   "block": 301,
+   "price": 0.000168,
+   "offered": 375780.274657,
+   "sold": 375780.274657,
+   "phase": "shallow"
+  },
+  {
+   "block": 302,
+   "price": 0.000168,
+   "offered": 377028.714107,
+   "sold": 377028.714107,
+   "phase": "shallow"
+  },
+  {
+   "block": 303,
+   "price": 0.000168,
+   "offered": 378277.153558,
+   "sold": 378277.153558,
+   "phase": "shallow"
+  },
+  {
+   "block": 304,
+   "price": 0.000168,
+   "offered": 379525.593009,
+   "sold": 379525.593009,
+   "phase": "shallow"
+  },
+  {
+   "block": 305,
+   "price": 0.000168,
+   "offered": 380774.032459,
+   "sold": 380774.032459,
+   "phase": "shallow"
+  },
+  {
+   "block": 306,
+   "price": 0.000168,
+   "offered": 382022.47191,
+   "sold": 382022.47191,
+   "phase": "shallow"
+  },
+  {
+   "block": 307,
+   "price": 0.000168,
+   "offered": 383270.911361,
+   "sold": 383270.911361,
+   "phase": "shallow"
+  },
+  {
+   "block": 308,
+   "price": 0.000168,
+   "offered": 384519.350811,
+   "sold": 384519.350811,
+   "phase": "shallow"
+  },
+  {
+   "block": 309,
+   "price": 0.000168,
+   "offered": 385767.790262,
+   "sold": 385767.790262,
+   "phase": "shallow"
+  },
+  {
+   "block": 310,
+   "price": 0.000168,
+   "offered": 387016.229713,
+   "sold": 387016.229713,
+   "phase": "shallow"
+  },
+  {
+   "block": 311,
+   "price": 0.000168,
+   "offered": 388264.669164,
+   "sold": 388264.669164,
+   "phase": "shallow"
+  },
+  {
+   "block": 312,
+   "price": 0.000168,
+   "offered": 389513.108614,
+   "sold": 389513.108614,
+   "phase": "shallow"
+  },
+  {
+   "block": 313,
+   "price": 0.000168,
+   "offered": 390761.548065,
+   "sold": 390761.548065,
+   "phase": "shallow"
+  },
+  {
+   "block": 314,
+   "price": 0.000168,
+   "offered": 392009.987516,
+   "sold": 392009.987516,
+   "phase": "shallow"
+  },
+  {
+   "block": 315,
+   "price": 0.000168,
+   "offered": 393258.426966,
+   "sold": 393258.426966,
+   "phase": "shallow"
+  },
+  {
+   "block": 316,
+   "price": 0.000168,
+   "offered": 394506.866417,
+   "sold": 394506.866417,
+   "phase": "shallow"
+  },
+  {
+   "block": 317,
+   "price": 0.000168,
+   "offered": 395755.305868,
+   "sold": 395755.305868,
+   "phase": "shallow"
+  },
+  {
+   "block": 318,
+   "price": 0.000168,
+   "offered": 397003.745318,
+   "sold": 397003.745318,
+   "phase": "shallow"
+  },
+  {
+   "block": 319,
+   "price": 0.000168,
+   "offered": 398252.184769,
+   "sold": 398252.184769,
+   "phase": "shallow"
+  },
+  {
+   "block": 320,
+   "price": 0.000168,
+   "offered": 399500.62422,
+   "sold": 399500.62422,
+   "phase": "shallow"
+  },
+  {
+   "block": 321,
+   "price": 0.000168,
+   "offered": 400749.06367,
+   "sold": 400749.06367,
+   "phase": "shallow"
+  },
+  {
+   "block": 322,
+   "price": 0.000168,
+   "offered": 401997.503121,
+   "sold": 401997.503121,
+   "phase": "shallow"
+  },
+  {
+   "block": 323,
+   "price": 0.000168,
+   "offered": 403245.942572,
+   "sold": 403245.942572,
+   "phase": "shallow"
+  },
+  {
+   "block": 324,
+   "price": 0.000168,
+   "offered": 404494.382022,
+   "sold": 404494.382022,
+   "phase": "shallow"
+  },
+  {
+   "block": 325,
+   "price": 0.000168,
+   "offered": 405742.821473,
+   "sold": 405742.821473,
+   "phase": "shallow"
+  },
+  {
+   "block": 326,
+   "price": 0.000168,
+   "offered": 406991.260924,
+   "sold": 406991.260924,
+   "phase": "shallow"
+  },
+  {
+   "block": 327,
+   "price": 0.000168,
+   "offered": 408239.700375,
+   "sold": 408239.700375,
+   "phase": "shallow"
+  },
+  {
+   "block": 328,
+   "price": 0.000168,
+   "offered": 409488.139825,
+   "sold": 409488.139825,
+   "phase": "shallow"
+  },
+  {
+   "block": 329,
+   "price": 0.000168,
+   "offered": 410736.579276,
+   "sold": 410736.579276,
+   "phase": "shallow"
+  },
+  {
+   "block": 330,
+   "price": 0.000168,
+   "offered": 411985.018727,
+   "sold": 411985.018727,
+   "phase": "shallow"
+  },
+  {
+   "block": 331,
+   "price": 0.000168,
+   "offered": 413233.458177,
+   "sold": 413233.458177,
+   "phase": "shallow"
+  },
+  {
+   "block": 332,
+   "price": 0.000168,
+   "offered": 414481.897628,
+   "sold": 414481.897628,
+   "phase": "shallow"
+  },
+  {
+   "block": 333,
+   "price": 0.000168,
+   "offered": 415730.337079,
+   "sold": 415730.337079,
+   "phase": "shallow"
+  },
+  {
+   "block": 334,
+   "price": 0.000168,
+   "offered": 416978.776529,
+   "sold": 416978.776529,
+   "phase": "shallow"
+  },
+  {
+   "block": 335,
+   "price": 0.000168,
+   "offered": 418227.21598,
+   "sold": 418227.21598,
+   "phase": "shallow"
+  },
+  {
+   "block": 336,
+   "price": 0.000168,
+   "offered": 419475.655431,
+   "sold": 419475.655431,
+   "phase": "shallow"
+  },
+  {
+   "block": 337,
+   "price": 0.000168,
+   "offered": 420724.094881,
+   "sold": 420724.094881,
+   "phase": "shallow"
+  },
+  {
+   "block": 338,
+   "price": 0.000168,
+   "offered": 421972.534332,
+   "sold": 421972.534332,
+   "phase": "shallow"
+  },
+  {
+   "block": 339,
+   "price": 0.000168,
+   "offered": 423220.973783,
+   "sold": 423220.973783,
+   "phase": "shallow"
+  },
+  {
+   "block": 340,
+   "price": 0.000168,
+   "offered": 424469.413233,
+   "sold": 424469.413233,
+   "phase": "shallow"
+  },
+  {
+   "block": 341,
+   "price": 0.000168,
+   "offered": 425717.852684,
+   "sold": 425717.852684,
+   "phase": "shallow"
+  },
+  {
+   "block": 342,
+   "price": 0.000168,
+   "offered": 426966.292135,
+   "sold": 426966.292135,
+   "phase": "shallow"
+  },
+  {
+   "block": 343,
+   "price": 0.000168,
+   "offered": 428214.731586,
+   "sold": 428214.731586,
+   "phase": "shallow"
+  },
+  {
+   "block": 344,
+   "price": 0.000168,
+   "offered": 429463.171036,
+   "sold": 429463.171036,
+   "phase": "shallow"
+  },
+  {
+   "block": 345,
+   "price": 0.000168,
+   "offered": 430711.610487,
+   "sold": 430711.610487,
+   "phase": "shallow"
+  },
+  {
+   "block": 346,
+   "price": 0.000168,
+   "offered": 431960.049938,
+   "sold": 431960.049938,
+   "phase": "shallow"
+  },
+  {
+   "block": 347,
+   "price": 0.000168,
+   "offered": 433208.489388,
+   "sold": 433208.489388,
+   "phase": "shallow"
+  },
+  {
+   "block": 348,
+   "price": 0.000168,
+   "offered": 434456.928839,
+   "sold": 434456.928839,
+   "phase": "shallow"
+  },
+  {
+   "block": 349,
+   "price": 0.000168,
+   "offered": 435705.36829,
+   "sold": 435705.36829,
+   "phase": "shallow"
+  },
+  {
+   "block": 350,
+   "price": 0.000168,
+   "offered": 436953.80774,
+   "sold": 436953.80774,
+   "phase": "shallow"
+  },
+  {
+   "block": 351,
+   "price": 0.000168,
+   "offered": 438202.247191,
+   "sold": 438202.247191,
+   "phase": "shallow"
+  },
+  {
+   "block": 352,
+   "price": 0.000168,
+   "offered": 439450.686642,
+   "sold": 439450.686642,
+   "phase": "shallow"
+  },
+  {
+   "block": 353,
+   "price": 0.000168,
+   "offered": 440699.126092,
+   "sold": 440699.126092,
+   "phase": "shallow"
+  },
+  {
+   "block": 354,
+   "price": 0.000168,
+   "offered": 441947.565543,
+   "sold": 441947.565543,
+   "phase": "shallow"
+  },
+  {
+   "block": 355,
+   "price": 0.000168,
+   "offered": 443196.004994,
+   "sold": 443196.004994,
+   "phase": "shallow"
+  },
+  {
+   "block": 356,
+   "price": 0.000168,
+   "offered": 444444.444444,
+   "sold": 444444.444444,
+   "phase": "shallow"
+  },
+  {
+   "block": 357,
+   "price": 0.000168,
+   "offered": 445692.883895,
+   "sold": 445692.883895,
+   "phase": "shallow"
+  },
+  {
+   "block": 358,
+   "price": 0.000168,
+   "offered": 446941.323346,
+   "sold": 446941.323346,
+   "phase": "shallow"
+  },
+  {
+   "block": 359,
+   "price": 0.000168,
+   "offered": 448189.762797,
+   "sold": 448189.762797,
+   "phase": "shallow"
+  },
+  {
+   "block": 360,
+   "price": 0.000168,
+   "offered": 449438.202247,
+   "sold": 449438.202247,
+   "phase": "shallow"
+  },
+  {
+   "block": 361,
+   "price": 0.000168,
+   "offered": 450686.641698,
+   "sold": 450686.641698,
+   "phase": "shallow"
+  },
+  {
+   "block": 362,
+   "price": 0.000168,
+   "offered": 451935.081149,
+   "sold": 451935.081149,
+   "phase": "shallow"
+  },
+  {
+   "block": 363,
+   "price": 0.000168,
+   "offered": 453183.520599,
+   "sold": 453183.520599,
+   "phase": "shallow"
+  },
+  {
+   "block": 364,
+   "price": 0.000168,
+   "offered": 454431.96005,
+   "sold": 454431.96005,
+   "phase": "shallow"
+  },
+  {
+   "block": 365,
+   "price": 0.000168,
+   "offered": 455680.399501,
+   "sold": 455680.399501,
+   "phase": "shallow"
+  },
+  {
+   "block": 366,
+   "price": 0.000168,
+   "offered": 456928.838951,
+   "sold": 456928.838951,
+   "phase": "shallow"
+  },
+  {
+   "block": 367,
+   "price": 0.000168,
+   "offered": 458177.278402,
+   "sold": 458177.278402,
+   "phase": "shallow"
+  },
+  {
+   "block": 368,
+   "price": 0.000168,
+   "offered": 459425.717853,
+   "sold": 459425.717853,
+   "phase": "shallow"
+  },
+  {
+   "block": 369,
+   "price": 0.000168,
+   "offered": 460674.157303,
+   "sold": 460674.157303,
+   "phase": "shallow"
+  },
+  {
+   "block": 370,
+   "price": 0.000168,
+   "offered": 461922.596754,
+   "sold": 461922.596754,
+   "phase": "shallow"
+  },
+  {
+   "block": 371,
+   "price": 0.000168,
+   "offered": 463171.036205,
+   "sold": 463171.036205,
+   "phase": "shallow"
+  },
+  {
+   "block": 372,
+   "price": 0.000168,
+   "offered": 464419.475655,
+   "sold": 464419.475655,
+   "phase": "shallow"
+  },
+  {
+   "block": 373,
+   "price": 0.000168,
+   "offered": 465667.915106,
+   "sold": 465667.915106,
+   "phase": "shallow"
+  },
+  {
+   "block": 374,
+   "price": 0.000168,
+   "offered": 466916.354557,
+   "sold": 466916.354557,
+   "phase": "shallow"
+  },
+  {
+   "block": 375,
+   "price": 0.000168,
+   "offered": 468164.794007,
+   "sold": 468164.794007,
+   "phase": "shallow"
+  },
+  {
+   "block": 376,
+   "price": 0.000168,
+   "offered": 469413.233458,
+   "sold": 469413.233458,
+   "phase": "shallow"
+  },
+  {
+   "block": 377,
+   "price": 0.000168,
+   "offered": 470661.672909,
+   "sold": 470661.672909,
+   "phase": "shallow"
+  },
+  {
+   "block": 378,
+   "price": 0.000168,
+   "offered": 471910.11236,
+   "sold": 471910.11236,
+   "phase": "shallow"
+  },
+  {
+   "block": 379,
+   "price": 0.000168,
+   "offered": 473158.55181,
+   "sold": 473158.55181,
+   "phase": "shallow"
+  },
+  {
+   "block": 380,
+   "price": 0.000168,
+   "offered": 474406.991261,
+   "sold": 474406.991261,
+   "phase": "shallow"
+  },
+  {
+   "block": 381,
+   "price": 0.000168,
+   "offered": 475655.430712,
+   "sold": 475655.430712,
+   "phase": "shallow"
+  },
+  {
+   "block": 382,
+   "price": 0.000168,
+   "offered": 476903.870162,
+   "sold": 476903.870162,
+   "phase": "shallow"
+  },
+  {
+   "block": 383,
+   "price": 0.000168,
+   "offered": 478152.309613,
+   "sold": 478152.309613,
+   "phase": "shallow"
+  },
+  {
+   "block": 384,
+   "price": 0.000168,
+   "offered": 479400.749064,
+   "sold": 479400.749064,
+   "phase": "shallow"
+  },
+  {
+   "block": 385,
+   "price": 0.000168,
+   "offered": 480649.188514,
+   "sold": 480649.188514,
+   "phase": "shallow"
+  },
+  {
+   "block": 386,
+   "price": 0.000168,
+   "offered": 481897.627965,
+   "sold": 481897.627965,
+   "phase": "shallow"
+  },
+  {
+   "block": 387,
+   "price": 0.000168,
+   "offered": 483146.067416,
+   "sold": 483146.067416,
+   "phase": "shallow"
+  },
+  {
+   "block": 388,
+   "price": 0.000168,
+   "offered": 484394.506866,
+   "sold": 484394.506866,
+   "phase": "shallow"
+  },
+  {
+   "block": 389,
+   "price": 0.000168,
+   "offered": 485642.946317,
+   "sold": 485642.946317,
+   "phase": "shallow"
+  },
+  {
+   "block": 390,
+   "price": 0.000168,
+   "offered": 486891.385768,
+   "sold": 486891.385768,
+   "phase": "shallow"
+  },
+  {
+   "block": 391,
+   "price": 0.000168,
+   "offered": 488139.825218,
+   "sold": 488139.825218,
+   "phase": "shallow"
+  },
+  {
+   "block": 392,
+   "price": 0.000168,
+   "offered": 489388.264669,
+   "sold": 489388.264669,
+   "phase": "shallow"
+  },
+  {
+   "block": 393,
+   "price": 0.000168,
+   "offered": 490636.70412,
+   "sold": 490636.70412,
+   "phase": "shallow"
+  },
+  {
+   "block": 394,
+   "price": 0.000168,
+   "offered": 491885.143571,
+   "sold": 491885.143571,
+   "phase": "shallow"
+  },
+  {
+   "block": 395,
+   "price": 0.000168,
+   "offered": 493133.583021,
+   "sold": 493133.583021,
+   "phase": "shallow"
+  },
+  {
+   "block": 396,
+   "price": 0.000168,
+   "offered": 494382.022472,
+   "sold": 494382.022472,
+   "phase": "shallow"
+  },
+  {
+   "block": 397,
+   "price": 0.000168,
+   "offered": 495630.461923,
+   "sold": 495630.461923,
+   "phase": "shallow"
+  },
+  {
+   "block": 398,
+   "price": 0.000168,
+   "offered": 496878.901373,
+   "sold": 496878.901373,
+   "phase": "shallow"
+  },
+  {
+   "block": 399,
+   "price": 0.000168,
+   "offered": 498127.340824,
+   "sold": 498127.340824,
+   "phase": "shallow"
+  },
+  {
+   "block": 400,
+   "price": 0.000168,
+   "offered": 499375.780275,
+   "sold": 499375.780275,
+   "phase": "shallow"
+  },
+  {
+   "block": 401,
+   "price": 0.000168,
+   "offered": 500624.219725,
+   "sold": 500624.219725,
+   "phase": "shallow"
+  },
+  {
+   "block": 402,
+   "price": 0.000168,
+   "offered": 501872.659176,
+   "sold": 501872.659176,
+   "phase": "shallow"
+  },
+  {
+   "block": 403,
+   "price": 0.000168,
+   "offered": 503121.098627,
+   "sold": 503121.098627,
+   "phase": "shallow"
+  },
+  {
+   "block": 404,
+   "price": 0.000168,
+   "offered": 504369.538077,
+   "sold": 504369.538077,
+   "phase": "shallow"
+  },
+  {
+   "block": 405,
+   "price": 0.000168,
+   "offered": 505617.977528,
+   "sold": 505617.977528,
+   "phase": "shallow"
+  },
+  {
+   "block": 406,
+   "price": 0.000168,
+   "offered": 506866.416979,
+   "sold": 506866.416979,
+   "phase": "shallow"
+  },
+  {
+   "block": 407,
+   "price": 0.000168,
+   "offered": 508114.856429,
+   "sold": 508114.856429,
+   "phase": "shallow"
+  },
+  {
+   "block": 408,
+   "price": 0.000168,
+   "offered": 509363.29588,
+   "sold": 509363.29588,
+   "phase": "shallow"
+  },
+  {
+   "block": 409,
+   "price": 0.000168,
+   "offered": 510611.735331,
+   "sold": 510611.735331,
+   "phase": "shallow"
+  },
+  {
+   "block": 410,
+   "price": 0.000168,
+   "offered": 511860.174782,
+   "sold": 511860.174782,
+   "phase": "shallow"
+  },
+  {
+   "block": 411,
+   "price": 0.000168,
+   "offered": 513108.614232,
+   "sold": 513108.614232,
+   "phase": "shallow"
+  },
+  {
+   "block": 412,
+   "price": 0.000168,
+   "offered": 514357.053683,
+   "sold": 514357.053683,
+   "phase": "shallow"
+  },
+  {
+   "block": 413,
+   "price": 0.000168,
+   "offered": 515605.493134,
+   "sold": 515605.493134,
+   "phase": "shallow"
+  },
+  {
+   "block": 414,
+   "price": 0.000168,
+   "offered": 516853.932584,
+   "sold": 516853.932584,
+   "phase": "shallow"
+  },
+  {
+   "block": 415,
+   "price": 0.000168,
+   "offered": 518102.372035,
+   "sold": 518102.372035,
+   "phase": "shallow"
+  },
+  {
+   "block": 416,
+   "price": 0.000168,
+   "offered": 519350.811486,
+   "sold": 519350.811486,
+   "phase": "shallow"
+  },
+  {
+   "block": 417,
+   "price": 0.000168,
+   "offered": 520599.250936,
+   "sold": 520599.250936,
+   "phase": "shallow"
+  },
+  {
+   "block": 418,
+   "price": 0.000168,
+   "offered": 521847.690387,
+   "sold": 521847.690387,
+   "phase": "shallow"
+  },
+  {
+   "block": 419,
+   "price": 0.000168,
+   "offered": 523096.129838,
+   "sold": 523096.129838,
+   "phase": "shallow"
+  },
+  {
+   "block": 420,
+   "price": 0.000168,
+   "offered": 524344.569288,
+   "sold": 524344.569288,
+   "phase": "shallow"
+  },
+  {
+   "block": 421,
+   "price": 0.000168,
+   "offered": 525593.008739,
+   "sold": 525593.008739,
+   "phase": "shallow"
+  },
+  {
+   "block": 422,
+   "price": 0.000168,
+   "offered": 526841.44819,
+   "sold": 526841.44819,
+   "phase": "shallow"
+  },
+  {
+   "block": 423,
+   "price": 0.000168,
+   "offered": 528089.88764,
+   "sold": 528089.88764,
+   "phase": "shallow"
+  },
+  {
+   "block": 424,
+   "price": 0.000168,
+   "offered": 529338.327091,
+   "sold": 529338.327091,
+   "phase": "shallow"
+  },
+  {
+   "block": 425,
+   "price": 0.000168,
+   "offered": 530586.766542,
+   "sold": 530586.766542,
+   "phase": "shallow"
+  },
+  {
+   "block": 426,
+   "price": 0.000168,
+   "offered": 531835.205993,
+   "sold": 531835.205993,
+   "phase": "shallow"
+  },
+  {
+   "block": 427,
+   "price": 0.000168,
+   "offered": 533083.645443,
+   "sold": 533083.645443,
+   "phase": "shallow"
+  },
+  {
+   "block": 428,
+   "price": 0.000168,
+   "offered": 534332.084894,
+   "sold": 534332.084894,
+   "phase": "shallow"
+  },
+  {
+   "block": 429,
+   "price": 0.000168,
+   "offered": 535580.524345,
+   "sold": 535580.524345,
+   "phase": "shallow"
+  },
+  {
+   "block": 430,
+   "price": 0.000168,
+   "offered": 536828.963795,
+   "sold": 536828.963795,
+   "phase": "shallow"
+  },
+  {
+   "block": 431,
+   "price": 0.000168,
+   "offered": 538077.403246,
+   "sold": 538077.403246,
+   "phase": "shallow"
+  },
+  {
+   "block": 432,
+   "price": 0.000168,
+   "offered": 539325.842697,
+   "sold": 539325.842697,
+   "phase": "shallow"
+  },
+  {
+   "block": 433,
+   "price": 0.000168,
+   "offered": 540574.282147,
+   "sold": 540574.282147,
+   "phase": "shallow"
+  },
+  {
+   "block": 434,
+   "price": 0.000168,
+   "offered": 541822.721598,
+   "sold": 541822.721598,
+   "phase": "shallow"
+  },
+  {
+   "block": 435,
+   "price": 0.000168,
+   "offered": 543071.161049,
+   "sold": 543071.161049,
+   "phase": "shallow"
+  },
+  {
+   "block": 436,
+   "price": 0.000168,
+   "offered": 544319.600499,
+   "sold": 544319.600499,
+   "phase": "shallow"
+  },
+  {
+   "block": 437,
+   "price": 0.000168,
+   "offered": 545568.03995,
+   "sold": 545568.03995,
+   "phase": "shallow"
+  },
+  {
+   "block": 438,
+   "price": 0.000168,
+   "offered": 546816.479401,
+   "sold": 546816.479401,
+   "phase": "shallow"
+  },
+  {
+   "block": 439,
+   "price": 0.000168,
+   "offered": 548064.918851,
+   "sold": 548064.918851,
+   "phase": "shallow"
+  },
+  {
+   "block": 440,
+   "price": 0.000168,
+   "offered": 549313.358302,
+   "sold": 549313.358302,
+   "phase": "shallow"
+  },
+  {
+   "block": 441,
+   "price": 0.000168,
+   "offered": 550561.797753,
+   "sold": 550561.797753,
+   "phase": "shallow"
+  },
+  {
+   "block": 442,
+   "price": 0.000168,
+   "offered": 551810.237203,
+   "sold": 551810.237203,
+   "phase": "shallow"
+  },
+  {
+   "block": 443,
+   "price": 0.000168,
+   "offered": 553058.676654,
+   "sold": 553058.676654,
+   "phase": "shallow"
+  },
+  {
+   "block": 444,
+   "price": 0.000168,
+   "offered": 554307.116105,
+   "sold": 554307.116105,
+   "phase": "shallow"
+  },
+  {
+   "block": 445,
+   "price": 0.000168,
+   "offered": 555555.555556,
+   "sold": 555555.555556,
+   "phase": "shallow"
+  },
+  {
+   "block": 446,
+   "price": 0.000168,
+   "offered": 556803.995006,
+   "sold": 556803.995006,
+   "phase": "shallow"
+  },
+  {
+   "block": 447,
+   "price": 0.000168,
+   "offered": 558052.434457,
+   "sold": 558052.434457,
+   "phase": "shallow"
+  },
+  {
+   "block": 448,
+   "price": 0.000168,
+   "offered": 559300.873908,
+   "sold": 559300.873908,
+   "phase": "shallow"
+  },
+  {
+   "block": 449,
+   "price": 0.000168,
+   "offered": 560549.313358,
+   "sold": 560549.313358,
+   "phase": "shallow"
+  },
+  {
+   "block": 450,
+   "price": 0.000168,
+   "offered": 561797.752809,
+   "sold": 561797.752809,
+   "phase": "shallow"
+  },
+  {
+   "block": 451,
+   "price": 0.000168,
+   "offered": 563046.19226,
+   "sold": 563046.19226,
+   "phase": "shallow"
+  },
+  {
+   "block": 452,
+   "price": 0.000168,
+   "offered": 564294.63171,
+   "sold": 564294.63171,
+   "phase": "shallow"
+  },
+  {
+   "block": 453,
+   "price": 0.000168,
+   "offered": 565543.071161,
+   "sold": 565543.071161,
+   "phase": "shallow"
+  },
+  {
+   "block": 454,
+   "price": 0.000168,
+   "offered": 566791.510612,
+   "sold": 566791.510612,
+   "phase": "shallow"
+  },
+  {
+   "block": 455,
+   "price": 0.000168,
+   "offered": 568039.950062,
+   "sold": 568039.950062,
+   "phase": "shallow"
+  },
+  {
+   "block": 456,
+   "price": 0.000168,
+   "offered": 569288.389513,
+   "sold": 569288.389513,
+   "phase": "shallow"
+  },
+  {
+   "block": 457,
+   "price": 0.000168,
+   "offered": 570536.828964,
+   "sold": 570536.828964,
+   "phase": "shallow"
+  },
+  {
+   "block": 458,
+   "price": 0.000168,
+   "offered": 571785.268414,
+   "sold": 571785.268414,
+   "phase": "shallow"
+  },
+  {
+   "block": 459,
+   "price": 0.000168,
+   "offered": 573033.707865,
+   "sold": 573033.707865,
+   "phase": "shallow"
+  },
+  {
+   "block": 460,
+   "price": 0.000168,
+   "offered": 574282.147316,
+   "sold": 574282.147316,
+   "phase": "shallow"
+  },
+  {
+   "block": 461,
+   "price": 0.000168,
+   "offered": 575530.586767,
+   "sold": 575530.586767,
+   "phase": "shallow"
+  },
+  {
+   "block": 462,
+   "price": 0.000168,
+   "offered": 576779.026217,
+   "sold": 576779.026217,
+   "phase": "shallow"
+  },
+  {
+   "block": 463,
+   "price": 0.000168,
+   "offered": 578027.465668,
+   "sold": 578027.465668,
+   "phase": "shallow"
+  },
+  {
+   "block": 464,
+   "price": 0.000168,
+   "offered": 579275.905119,
+   "sold": 579275.905119,
+   "phase": "shallow"
+  },
+  {
+   "block": 465,
+   "price": 0.000168,
+   "offered": 580524.344569,
+   "sold": 580524.344569,
+   "phase": "shallow"
+  },
+  {
+   "block": 466,
+   "price": 0.000168,
+   "offered": 581772.78402,
+   "sold": 581772.78402,
+   "phase": "shallow"
+  },
+  {
+   "block": 467,
+   "price": 0.000168,
+   "offered": 583021.223471,
+   "sold": 583021.223471,
+   "phase": "shallow"
+  },
+  {
+   "block": 468,
+   "price": 0.000168,
+   "offered": 584269.662921,
+   "sold": 584269.662921,
+   "phase": "shallow"
+  },
+  {
+   "block": 469,
+   "price": 0.000168,
+   "offered": 585518.102372,
+   "sold": 585518.102372,
+   "phase": "shallow"
+  },
+  {
+   "block": 470,
+   "price": 0.000168,
+   "offered": 586766.541823,
+   "sold": 586766.541823,
+   "phase": "shallow"
+  },
+  {
+   "block": 471,
+   "price": 0.000168,
+   "offered": 588014.981273,
+   "sold": 588014.981273,
+   "phase": "shallow"
+  },
+  {
+   "block": 472,
+   "price": 0.000168,
+   "offered": 589263.420724,
+   "sold": 589263.420724,
+   "phase": "shallow"
+  },
+  {
+   "block": 473,
+   "price": 0.000168,
+   "offered": 590511.860175,
+   "sold": 590511.860175,
+   "phase": "shallow"
+  },
+  {
+   "block": 474,
+   "price": 0.000168,
+   "offered": 591760.299625,
+   "sold": 591760.299625,
+   "phase": "shallow"
+  },
+  {
+   "block": 475,
+   "price": 0.000168,
+   "offered": 593008.739076,
+   "sold": 593008.739076,
+   "phase": "shallow"
+  },
+  {
+   "block": 476,
+   "price": 0.000168,
+   "offered": 594257.178527,
+   "sold": 594257.178527,
+   "phase": "shallow"
+  },
+  {
+   "block": 477,
+   "price": 0.000168,
+   "offered": 595505.617978,
+   "sold": 595505.617978,
+   "phase": "shallow"
+  },
+  {
+   "block": 478,
+   "price": 0.000168,
+   "offered": 596754.057428,
+   "sold": 596754.057428,
+   "phase": "shallow"
+  },
+  {
+   "block": 479,
+   "price": 0.000168,
+   "offered": 598002.496879,
+   "sold": 598002.496879,
+   "phase": "shallow"
+  },
+  {
+   "block": 480,
+   "price": 0.000168,
+   "offered": 599250.93633,
+   "sold": 599250.93633,
+   "phase": "shallow"
+  },
+  {
+   "block": 481,
+   "price": 0.000168,
+   "offered": 600499.37578,
+   "sold": 600499.37578,
+   "phase": "shallow"
+  },
+  {
+   "block": 482,
+   "price": 0.000168,
+   "offered": 601747.815231,
+   "sold": 601747.815231,
+   "phase": "shallow"
+  },
+  {
+   "block": 483,
+   "price": 0.000168,
+   "offered": 602996.254682,
+   "sold": 602996.254682,
+   "phase": "shallow"
+  },
+  {
+   "block": 484,
+   "price": 0.000168,
+   "offered": 604244.694132,
+   "sold": 604244.694132,
+   "phase": "shallow"
+  },
+  {
+   "block": 485,
+   "price": 0.000168,
+   "offered": 605493.133583,
+   "sold": 605493.133583,
+   "phase": "shallow"
+  },
+  {
+   "block": 486,
+   "price": 0.000168,
+   "offered": 606741.573034,
+   "sold": 606741.573034,
+   "phase": "shallow"
+  },
+  {
+   "block": 487,
+   "price": 0.000168,
+   "offered": 607990.012484,
+   "sold": 607990.012484,
+   "phase": "shallow"
+  },
+  {
+   "block": 488,
+   "price": 0.000168,
+   "offered": 609238.451935,
+   "sold": 609238.451935,
+   "phase": "shallow"
+  },
+  {
+   "block": 489,
+   "price": 0.000168,
+   "offered": 610486.891386,
+   "sold": 610486.891386,
+   "phase": "shallow"
+  },
+  {
+   "block": 490,
+   "price": 0.000168,
+   "offered": 611735.330836,
+   "sold": 611735.330836,
+   "phase": "shallow"
+  },
+  {
+   "block": 491,
+   "price": 0.000168,
+   "offered": 612983.770287,
+   "sold": 612983.770287,
+   "phase": "shallow"
+  },
+  {
+   "block": 492,
+   "price": 0.000168,
+   "offered": 614232.209738,
+   "sold": 614232.209738,
+   "phase": "shallow"
+  },
+  {
+   "block": 493,
+   "price": 0.000168,
+   "offered": 615480.649189,
+   "sold": 615480.649189,
+   "phase": "shallow"
+  },
+  {
+   "block": 494,
+   "price": 0.000168,
+   "offered": 616729.088639,
+   "sold": 616729.088639,
+   "phase": "shallow"
+  },
+  {
+   "block": 495,
+   "price": 0.000168,
+   "offered": 617977.52809,
+   "sold": 617977.52809,
+   "phase": "shallow"
+  },
+  {
+   "block": 496,
+   "price": 0.000168,
+   "offered": 619225.967541,
+   "sold": 619225.967541,
+   "phase": "shallow"
+  },
+  {
+   "block": 497,
+   "price": 0.000168,
+   "offered": 620474.406991,
+   "sold": 620474.406991,
+   "phase": "shallow"
+  },
+  {
+   "block": 498,
+   "price": 0.000168,
+   "offered": 621722.846442,
+   "sold": 621722.846442,
+   "phase": "shallow"
+  },
+  {
+   "block": 499,
+   "price": 0.000168,
+   "offered": 622971.285893,
+   "sold": 622971.285893,
+   "phase": "shallow"
+  },
+  {
+   "block": 500,
+   "price": 0.000168,
+   "offered": 624219.725343,
+   "sold": 624219.725343,
+   "phase": "shallow"
+  },
+  {
+   "block": 501,
+   "price": 0.000168,
+   "offered": 625468.164794,
+   "sold": 625468.164794,
+   "phase": "shallow"
+  },
+  {
+   "block": 502,
+   "price": 0.000168,
+   "offered": 626716.604245,
+   "sold": 626716.604245,
+   "phase": "shallow"
+  },
+  {
+   "block": 503,
+   "price": 0.000168,
+   "offered": 627965.043695,
+   "sold": 627965.043695,
+   "phase": "shallow"
+  },
+  {
+   "block": 504,
+   "price": 0.000168,
+   "offered": 629213.483146,
+   "sold": 629213.483146,
+   "phase": "shallow"
+  },
+  {
+   "block": 505,
+   "price": 0.000168,
+   "offered": 630461.922597,
+   "sold": 630461.922597,
+   "phase": "shallow"
+  },
+  {
+   "block": 506,
+   "price": 0.000168,
+   "offered": 631710.362047,
+   "sold": 631710.362047,
+   "phase": "shallow"
+  },
+  {
+   "block": 507,
+   "price": 0.000168,
+   "offered": 632958.801498,
+   "sold": 632958.801498,
+   "phase": "shallow"
+  },
+  {
+   "block": 508,
+   "price": 0.000168,
+   "offered": 634207.240949,
+   "sold": 634207.240949,
+   "phase": "shallow"
+  },
+  {
+   "block": 509,
+   "price": 0.000168,
+   "offered": 635455.6804,
+   "sold": 635455.6804,
+   "phase": "shallow"
+  },
+  {
+   "block": 510,
+   "price": 0.000168,
+   "offered": 636704.11985,
+   "sold": 636704.11985,
+   "phase": "shallow"
+  },
+  {
+   "block": 511,
+   "price": 0.000168,
+   "offered": 637952.559301,
+   "sold": 637952.559301,
+   "phase": "shallow"
+  },
+  {
+   "block": 512,
+   "price": 0.000168,
+   "offered": 639200.998752,
+   "sold": 639200.998752,
+   "phase": "shallow"
+  },
+  {
+   "block": 513,
+   "price": 0.000168,
+   "offered": 640449.438202,
+   "sold": 640449.438202,
+   "phase": "shallow"
+  },
+  {
+   "block": 514,
+   "price": 0.000168,
+   "offered": 641697.877653,
+   "sold": 641697.877653,
+   "phase": "shallow"
+  },
+  {
+   "block": 515,
+   "price": 0.000168,
+   "offered": 642946.317104,
+   "sold": 642946.317104,
+   "phase": "shallow"
+  },
+  {
+   "block": 516,
+   "price": 0.000168,
+   "offered": 644194.756554,
+   "sold": 644194.756554,
+   "phase": "shallow"
+  },
+  {
+   "block": 517,
+   "price": 0.000168,
+   "offered": 645443.196005,
+   "sold": 645443.196005,
+   "phase": "shallow"
+  },
+  {
+   "block": 518,
+   "price": 0.000168,
+   "offered": 646691.635456,
+   "sold": 646691.635456,
+   "phase": "shallow"
+  },
+  {
+   "block": 519,
+   "price": 0.000168,
+   "offered": 647940.074906,
+   "sold": 647940.074906,
+   "phase": "shallow"
+  },
+  {
+   "block": 520,
+   "price": 0.000168,
+   "offered": 649188.514357,
+   "sold": 649188.514357,
+   "phase": "shallow"
+  },
+  {
+   "block": 521,
+   "price": 0.000168,
+   "offered": 650436.953808,
+   "sold": 650436.953808,
+   "phase": "shallow"
+  },
+  {
+   "block": 522,
+   "price": 0.000168,
+   "offered": 651685.393258,
+   "sold": 651685.393258,
+   "phase": "shallow"
+  },
+  {
+   "block": 523,
+   "price": 0.000168,
+   "offered": 652933.832709,
+   "sold": 652933.832709,
+   "phase": "shallow"
+  },
+  {
+   "block": 524,
+   "price": 0.000168,
+   "offered": 654182.27216,
+   "sold": 654182.27216,
+   "phase": "shallow"
+  },
+  {
+   "block": 525,
+   "price": 0.000168,
+   "offered": 655430.71161,
+   "sold": 655430.71161,
+   "phase": "shallow"
+  },
+  {
+   "block": 526,
+   "price": 0.000168,
+   "offered": 656679.151061,
+   "sold": 656679.151061,
+   "phase": "shallow"
+  },
+  {
+   "block": 527,
+   "price": 0.000168,
+   "offered": 657927.590512,
+   "sold": 657927.590512,
+   "phase": "shallow"
+  },
+  {
+   "block": 528,
+   "price": 0.000168,
+   "offered": 659176.029963,
+   "sold": 659176.029963,
+   "phase": "shallow"
+  },
+  {
+   "block": 529,
+   "price": 0.000168,
+   "offered": 660424.469413,
+   "sold": 660424.469413,
+   "phase": "shallow"
+  },
+  {
+   "block": 530,
+   "price": 0.000168,
+   "offered": 661672.908864,
+   "sold": 661672.908864,
+   "phase": "shallow"
+  },
+  {
+   "block": 531,
+   "price": 0.000168,
+   "offered": 662921.348315,
+   "sold": 662921.348315,
+   "phase": "shallow"
+  },
+  {
+   "block": 532,
+   "price": 0.000168,
+   "offered": 664169.787765,
+   "sold": 664169.787765,
+   "phase": "shallow"
+  },
+  {
+   "block": 533,
+   "price": 0.000168,
+   "offered": 665418.227216,
+   "sold": 665418.227216,
+   "phase": "shallow"
+  },
+  {
+   "block": 534,
+   "price": 0.000168,
+   "offered": 666666.666667,
+   "sold": 666666.666667,
+   "phase": "shallow"
+  },
+  {
+   "block": 535,
+   "price": 0.000168,
+   "offered": 667915.106117,
+   "sold": 667915.106117,
+   "phase": "shallow"
+  },
+  {
+   "block": 536,
+   "price": 0.000168,
+   "offered": 669163.545568,
+   "sold": 669163.545568,
+   "phase": "shallow"
+  },
+  {
+   "block": 537,
+   "price": 0.000168,
+   "offered": 670411.985019,
+   "sold": 670411.985019,
+   "phase": "shallow"
+  },
+  {
+   "block": 538,
+   "price": 0.000168,
+   "offered": 671660.424469,
+   "sold": 671660.424469,
+   "phase": "shallow"
+  },
+  {
+   "block": 539,
+   "price": 0.000168,
+   "offered": 672908.86392,
+   "sold": 672908.86392,
+   "phase": "shallow"
+  },
+  {
+   "block": 540,
+   "price": 0.000168,
+   "offered": 674157.303371,
+   "sold": 674157.303371,
+   "phase": "shallow"
+  },
+  {
+   "block": 541,
+   "price": 0.000168,
+   "offered": 675405.742821,
+   "sold": 675405.742821,
+   "phase": "shallow"
+  },
+  {
+   "block": 542,
+   "price": 0.000168,
+   "offered": 676654.182272,
+   "sold": 676654.182272,
+   "phase": "shallow"
+  },
+  {
+   "block": 543,
+   "price": 0.000168,
+   "offered": 677902.621723,
+   "sold": 677902.621723,
+   "phase": "shallow"
+  },
+  {
+   "block": 544,
+   "price": 0.000168,
+   "offered": 679151.061174,
+   "sold": 679151.061174,
+   "phase": "shallow"
+  },
+  {
+   "block": 545,
+   "price": 0.000168,
+   "offered": 680399.500624,
+   "sold": 680399.500624,
+   "phase": "shallow"
+  },
+  {
+   "block": 546,
+   "price": 0.000168,
+   "offered": 681647.940075,
+   "sold": 681647.940075,
+   "phase": "shallow"
+  },
+  {
+   "block": 547,
+   "price": 0.000168,
+   "offered": 682896.379526,
+   "sold": 682896.379526,
+   "phase": "shallow"
+  },
+  {
+   "block": 548,
+   "price": 0.000168,
+   "offered": 684144.818976,
+   "sold": 684144.818976,
+   "phase": "shallow"
+  },
+  {
+   "block": 549,
+   "price": 0.000168,
+   "offered": 685393.258427,
+   "sold": 685393.258427,
+   "phase": "shallow"
+  },
+  {
+   "block": 550,
+   "price": 0.000168,
+   "offered": 686641.697878,
+   "sold": 686641.697878,
+   "phase": "shallow"
+  },
+  {
+   "block": 551,
+   "price": 0.000168,
+   "offered": 687890.137328,
+   "sold": 687890.137328,
+   "phase": "shallow"
+  },
+  {
+   "block": 552,
+   "price": 0.000168,
+   "offered": 689138.576779,
+   "sold": 689138.576779,
+   "phase": "shallow"
+  },
+  {
+   "block": 553,
+   "price": 0.000168,
+   "offered": 690387.01623,
+   "sold": 690387.01623,
+   "phase": "shallow"
+  },
+  {
+   "block": 554,
+   "price": 0.000168,
+   "offered": 691635.45568,
+   "sold": 691635.45568,
+   "phase": "shallow"
+  },
+  {
+   "block": 555,
+   "price": 0.000168,
+   "offered": 692883.895131,
+   "sold": 692883.895131,
+   "phase": "shallow"
+  },
+  {
+   "block": 556,
+   "price": 0.000168,
+   "offered": 694132.334582,
+   "sold": 694132.334582,
+   "phase": "shallow"
+  },
+  {
+   "block": 557,
+   "price": 0.000168,
+   "offered": 695380.774032,
+   "sold": 695380.774032,
+   "phase": "shallow"
+  },
+  {
+   "block": 558,
+   "price": 0.000168,
+   "offered": 696629.213483,
+   "sold": 696629.213483,
+   "phase": "shallow"
+  },
+  {
+   "block": 559,
+   "price": 0.000168,
+   "offered": 697877.652934,
+   "sold": 697877.652934,
+   "phase": "shallow"
+  },
+  {
+   "block": 560,
+   "price": 0.000168,
+   "offered": 699126.092385,
+   "sold": 699126.092385,
+   "phase": "shallow"
+  },
+  {
+   "block": 561,
+   "price": 0.000168,
+   "offered": 700374.531835,
+   "sold": 700374.531835,
+   "phase": "shallow"
+  },
+  {
+   "block": 562,
+   "price": 0.000168,
+   "offered": 701622.971286,
+   "sold": 701622.971286,
+   "phase": "shallow"
+  },
+  {
+   "block": 563,
+   "price": 0.000168,
+   "offered": 702871.410737,
+   "sold": 702871.410737,
+   "phase": "shallow"
+  },
+  {
+   "block": 564,
+   "price": 0.000168,
+   "offered": 704119.850187,
+   "sold": 704119.850187,
+   "phase": "shallow"
+  },
+  {
+   "block": 565,
+   "price": 0.000168,
+   "offered": 705368.289638,
+   "sold": 705368.289638,
+   "phase": "shallow"
+  },
+  {
+   "block": 566,
+   "price": 0.000168,
+   "offered": 706616.729089,
+   "sold": 706616.729089,
+   "phase": "shallow"
+  },
+  {
+   "block": 567,
+   "price": 0.000168,
+   "offered": 707865.168539,
+   "sold": 707865.168539,
+   "phase": "shallow"
+  },
+  {
+   "block": 568,
+   "price": 0.000168,
+   "offered": 709113.60799,
+   "sold": 709113.60799,
+   "phase": "shallow"
+  },
+  {
+   "block": 569,
+   "price": 0.000168,
+   "offered": 710362.047441,
+   "sold": 710362.047441,
+   "phase": "shallow"
+  },
+  {
+   "block": 570,
+   "price": 0.000168,
+   "offered": 711610.486891,
+   "sold": 711610.486891,
+   "phase": "shallow"
+  },
+  {
+   "block": 571,
+   "price": 0.000168,
+   "offered": 712858.926342,
+   "sold": 712858.926342,
+   "phase": "shallow"
+  },
+  {
+   "block": 572,
+   "price": 0.000168,
+   "offered": 714107.365793,
+   "sold": 714107.365793,
+   "phase": "shallow"
+  },
+  {
+   "block": 573,
+   "price": 0.000168,
+   "offered": 715355.805243,
+   "sold": 715355.805243,
+   "phase": "shallow"
+  },
+  {
+   "block": 574,
+   "price": 0.000168,
+   "offered": 716604.244694,
+   "sold": 716604.244694,
+   "phase": "shallow"
+  },
+  {
+   "block": 575,
+   "price": 0.000168,
+   "offered": 717852.684145,
+   "sold": 717852.684145,
+   "phase": "shallow"
+  },
+  {
+   "block": 576,
+   "price": 0.000168,
+   "offered": 719101.123596,
+   "sold": 719101.123596,
+   "phase": "shallow"
+  },
+  {
+   "block": 577,
+   "price": 0.000168,
+   "offered": 720349.563046,
+   "sold": 720349.563046,
+   "phase": "shallow"
+  },
+  {
+   "block": 578,
+   "price": 0.000168,
+   "offered": 721598.002497,
+   "sold": 721598.002497,
+   "phase": "shallow"
+  },
+  {
+   "block": 579,
+   "price": 0.000168,
+   "offered": 722846.441948,
+   "sold": 722846.441948,
+   "phase": "shallow"
+  },
+  {
+   "block": 580,
+   "price": 0.000168,
+   "offered": 724094.881398,
+   "sold": 724094.881398,
+   "phase": "shallow"
+  },
+  {
+   "block": 581,
+   "price": 0.000168,
+   "offered": 725343.320849,
+   "sold": 725343.320849,
+   "phase": "shallow"
+  },
+  {
+   "block": 582,
+   "price": 0.000168,
+   "offered": 726591.7603,
+   "sold": 726591.7603,
+   "phase": "shallow"
+  },
+  {
+   "block": 583,
+   "price": 0.000168,
+   "offered": 727840.19975,
+   "sold": 727840.19975,
+   "phase": "shallow"
+  },
+  {
+   "block": 584,
+   "price": 0.000168,
+   "offered": 729088.639201,
+   "sold": 729088.639201,
+   "phase": "shallow"
+  },
+  {
+   "block": 585,
+   "price": 0.000168,
+   "offered": 730337.078652,
+   "sold": 730337.078652,
+   "phase": "shallow"
+  },
+  {
+   "block": 586,
+   "price": 0.000168,
+   "offered": 731585.518102,
+   "sold": 731585.518102,
+   "phase": "shallow"
+  },
+  {
+   "block": 587,
+   "price": 0.000168,
+   "offered": 732833.957553,
+   "sold": 732833.957553,
+   "phase": "shallow"
+  },
+  {
+   "block": 588,
+   "price": 0.000168,
+   "offered": 734082.397004,
+   "sold": 734082.397004,
+   "phase": "shallow"
+  },
+  {
+   "block": 589,
+   "price": 0.000168,
+   "offered": 735330.836454,
+   "sold": 735330.836454,
+   "phase": "shallow"
+  },
+  {
+   "block": 590,
+   "price": 0.000168,
+   "offered": 736579.275905,
+   "sold": 736579.275905,
+   "phase": "shallow"
+  },
+  {
+   "block": 591,
+   "price": 0.000168,
+   "offered": 737827.715356,
+   "sold": 737827.715356,
+   "phase": "shallow"
+  },
+  {
+   "block": 592,
+   "price": 0.000168,
+   "offered": 739076.154806,
+   "sold": 739076.154806,
+   "phase": "shallow"
+  },
+  {
+   "block": 593,
+   "price": 0.000168,
+   "offered": 740324.594257,
+   "sold": 740324.594257,
+   "phase": "shallow"
+  },
+  {
+   "block": 594,
+   "price": 0.000168,
+   "offered": 741573.033708,
+   "sold": 741573.033708,
+   "phase": "shallow"
+  },
+  {
+   "block": 595,
+   "price": 0.000168,
+   "offered": 742821.473159,
+   "sold": 742821.473159,
+   "phase": "shallow"
+  },
+  {
+   "block": 596,
+   "price": 0.000168,
+   "offered": 744069.912609,
+   "sold": 744069.912609,
+   "phase": "shallow"
+  },
+  {
+   "block": 597,
+   "price": 0.000168,
+   "offered": 745318.35206,
+   "sold": 745318.35206,
+   "phase": "shallow"
+  },
+  {
+   "block": 598,
+   "price": 0.000168,
+   "offered": 746566.791511,
+   "sold": 746566.791511,
+   "phase": "shallow"
+  },
+  {
+   "block": 599,
+   "price": 0.000168,
+   "offered": 747815.230961,
+   "sold": 747815.230961,
+   "phase": "shallow"
+  },
+  {
+   "block": 600,
+   "price": 0.000168,
+   "offered": 749063.670412,
+   "sold": 749063.670412,
+   "phase": "shallow"
+  },
+  {
+   "block": 601,
+   "price": 0.000168,
+   "offered": 750312.109863,
+   "sold": 750312.109863,
+   "phase": "shallow"
+  },
+  {
+   "block": 602,
+   "price": 0.000168,
+   "offered": 751560.549313,
+   "sold": 751560.549313,
+   "phase": "shallow"
+  },
+  {
+   "block": 603,
+   "price": 0.000168,
+   "offered": 752808.988764,
+   "sold": 752808.988764,
+   "phase": "shallow"
+  },
+  {
+   "block": 604,
+   "price": 0.000168,
+   "offered": 754057.428215,
+   "sold": 754057.428215,
+   "phase": "shallow"
+  },
+  {
+   "block": 605,
+   "price": 0.000168,
+   "offered": 755305.867665,
+   "sold": 755305.867665,
+   "phase": "shallow"
+  },
+  {
+   "block": 606,
+   "price": 0.000168,
+   "offered": 756554.307116,
+   "sold": 756554.307116,
+   "phase": "shallow"
+  },
+  {
+   "block": 607,
+   "price": 0.000168,
+   "offered": 757802.746567,
+   "sold": 757802.746567,
+   "phase": "shallow"
+  },
+  {
+   "block": 608,
+   "price": 0.000168,
+   "offered": 759051.186017,
+   "sold": 759051.186017,
+   "phase": "shallow"
+  },
+  {
+   "block": 609,
+   "price": 0.000168,
+   "offered": 760299.625468,
+   "sold": 760299.625468,
+   "phase": "shallow"
+  },
+  {
+   "block": 610,
+   "price": 0.000168,
+   "offered": 761548.064919,
+   "sold": 761548.064919,
+   "phase": "shallow"
+  },
+  {
+   "block": 611,
+   "price": 0.000168,
+   "offered": 762796.50437,
+   "sold": 762796.50437,
+   "phase": "shallow"
+  },
+  {
+   "block": 612,
+   "price": 0.000168,
+   "offered": 764044.94382,
+   "sold": 764044.94382,
+   "phase": "shallow"
+  },
+  {
+   "block": 613,
+   "price": 0.000168,
+   "offered": 765293.383271,
+   "sold": 765293.383271,
+   "phase": "shallow"
+  },
+  {
+   "block": 614,
+   "price": 0.000168,
+   "offered": 766541.822722,
+   "sold": 766541.822722,
+   "phase": "shallow"
+  },
+  {
+   "block": 615,
+   "price": 0.000168,
+   "offered": 767790.262172,
+   "sold": 767790.262172,
+   "phase": "shallow"
+  },
+  {
+   "block": 616,
+   "price": 0.000168,
+   "offered": 769038.701623,
+   "sold": 769038.701623,
+   "phase": "shallow"
+  },
+  {
+   "block": 617,
+   "price": 0.000168,
+   "offered": 770287.141074,
+   "sold": 770287.141074,
+   "phase": "shallow"
+  },
+  {
+   "block": 618,
+   "price": 0.000168,
+   "offered": 771535.580524,
+   "sold": 771535.580524,
+   "phase": "shallow"
+  },
+  {
+   "block": 619,
+   "price": 0.000168,
+   "offered": 772784.019975,
+   "sold": 772784.019975,
+   "phase": "shallow"
+  },
+  {
+   "block": 620,
+   "price": 0.000168,
+   "offered": 774032.459426,
+   "sold": 774032.459426,
+   "phase": "shallow"
+  },
+  {
+   "block": 621,
+   "price": 0.000168,
+   "offered": 775280.898876,
+   "sold": 775280.898876,
+   "phase": "shallow"
+  },
+  {
+   "block": 622,
+   "price": 0.000168,
+   "offered": 776529.338327,
+   "sold": 776529.338327,
+   "phase": "shallow"
+  },
+  {
+   "block": 623,
+   "price": 0.000168,
+   "offered": 777777.777778,
+   "sold": 777777.777778,
+   "phase": "shallow"
+  },
+  {
+   "block": 624,
+   "price": 0.000168,
+   "offered": 779026.217228,
+   "sold": 779026.217228,
+   "phase": "shallow"
+  },
+  {
+   "block": 625,
+   "price": 0.000168,
+   "offered": 780274.656679,
+   "sold": 780274.656679,
+   "phase": "shallow"
+  },
+  {
+   "block": 626,
+   "price": 0.000168,
+   "offered": 781523.09613,
+   "sold": 781523.09613,
+   "phase": "shallow"
+  },
+  {
+   "block": 627,
+   "price": 0.000168,
+   "offered": 782771.535581,
+   "sold": 782771.535581,
+   "phase": "shallow"
+  },
+  {
+   "block": 628,
+   "price": 0.000168,
+   "offered": 784019.975031,
+   "sold": 784019.975031,
+   "phase": "shallow"
+  },
+  {
+   "block": 629,
+   "price": 0.000168,
+   "offered": 785268.414482,
+   "sold": 785268.414482,
+   "phase": "shallow"
+  },
+  {
+   "block": 630,
+   "price": 0.000168,
+   "offered": 786516.853933,
+   "sold": 786516.853933,
+   "phase": "shallow"
+  },
+  {
+   "block": 631,
+   "price": 0.000168,
+   "offered": 787765.293383,
+   "sold": 787765.293383,
+   "phase": "shallow"
+  },
+  {
+   "block": 632,
+   "price": 0.000168,
+   "offered": 789013.732834,
+   "sold": 789013.732834,
+   "phase": "shallow"
+  },
+  {
+   "block": 633,
+   "price": 0.000168,
+   "offered": 790262.172285,
+   "sold": 790262.172285,
+   "phase": "shallow"
+  },
+  {
+   "block": 634,
+   "price": 0.000168,
+   "offered": 791510.611735,
+   "sold": 791510.611735,
+   "phase": "shallow"
+  },
+  {
+   "block": 635,
+   "price": 0.000168,
+   "offered": 792759.051186,
+   "sold": 792759.051186,
+   "phase": "shallow"
+  },
+  {
+   "block": 636,
+   "price": 0.000168,
+   "offered": 794007.490637,
+   "sold": 794007.490637,
+   "phase": "shallow"
+  },
+  {
+   "block": 637,
+   "price": 0.000168,
+   "offered": 795255.930087,
+   "sold": 795255.930087,
+   "phase": "shallow"
+  },
+  {
+   "block": 638,
+   "price": 0.000168,
+   "offered": 796504.369538,
+   "sold": 796504.369538,
+   "phase": "shallow"
+  },
+  {
+   "block": 639,
+   "price": 0.000168,
+   "offered": 797752.808989,
+   "sold": 797752.808989,
+   "phase": "shallow"
+  },
+  {
+   "block": 640,
+   "price": 0.000168,
+   "offered": 799001.248439,
+   "sold": 799001.248439,
+   "phase": "shallow"
+  },
+  {
+   "block": 641,
+   "price": 0.000168,
+   "offered": 800249.68789,
+   "sold": 800249.68789,
+   "phase": "shallow"
+  },
+  {
+   "block": 642,
+   "price": 0.000168,
+   "offered": 801498.127341,
+   "sold": 801498.127341,
+   "phase": "shallow"
+  },
+  {
+   "block": 643,
+   "price": 0.000168,
+   "offered": 802746.566792,
+   "sold": 802746.566792,
+   "phase": "shallow"
+  },
+  {
+   "block": 644,
+   "price": 0.000168,
+   "offered": 803995.006242,
+   "sold": 803995.006242,
+   "phase": "shallow"
+  },
+  {
+   "block": 645,
+   "price": 0.000168,
+   "offered": 805243.445693,
+   "sold": 805243.445693,
+   "phase": "shallow"
+  },
+  {
+   "block": 646,
+   "price": 0.000168,
+   "offered": 806491.885144,
+   "sold": 806491.885144,
+   "phase": "shallow"
+  },
+  {
+   "block": 647,
+   "price": 0.000168,
+   "offered": 807740.324594,
+   "sold": 807740.324594,
+   "phase": "shallow"
+  },
+  {
+   "block": 648,
+   "price": 0.000168,
+   "offered": 808988.764045,
+   "sold": 808988.764045,
+   "phase": "shallow"
+  },
+  {
+   "block": 649,
+   "price": 0.000168,
+   "offered": 810237.203496,
+   "sold": 810237.203496,
+   "phase": "shallow"
+  },
+  {
+   "block": 650,
+   "price": 0.000168,
+   "offered": 811485.642946,
+   "sold": 811485.642946,
+   "phase": "shallow"
+  },
+  {
+   "block": 651,
+   "price": 0.000168,
+   "offered": 812734.082397,
+   "sold": 812734.082397,
+   "phase": "shallow"
+  },
+  {
+   "block": 652,
+   "price": 0.000168,
+   "offered": 813982.521848,
+   "sold": 813982.521848,
+   "phase": "shallow"
+  },
+  {
+   "block": 653,
+   "price": 0.000168,
+   "offered": 815230.961298,
+   "sold": 815230.961298,
+   "phase": "shallow"
+  },
+  {
+   "block": 654,
+   "price": 0.000168,
+   "offered": 816479.400749,
+   "sold": 816479.400749,
+   "phase": "shallow"
+  },
+  {
+   "block": 655,
+   "price": 0.000168,
+   "offered": 817727.8402,
+   "sold": 817727.8402,
+   "phase": "shallow"
+  },
+  {
+   "block": 656,
+   "price": 0.000168,
+   "offered": 818976.27965,
+   "sold": 818976.27965,
+   "phase": "shallow"
+  },
+  {
+   "block": 657,
+   "price": 0.000168,
+   "offered": 820224.719101,
+   "sold": 820224.719101,
+   "phase": "shallow"
+  },
+  {
+   "block": 658,
+   "price": 0.000168,
+   "offered": 821473.158552,
+   "sold": 821473.158552,
+   "phase": "shallow"
+  },
+  {
+   "block": 659,
+   "price": 0.000168,
+   "offered": 822721.598002,
+   "sold": 822721.598002,
+   "phase": "shallow"
+  },
+  {
+   "block": 660,
+   "price": 0.000168,
+   "offered": 823970.037453,
+   "sold": 823970.037453,
+   "phase": "shallow"
+  },
+  {
+   "block": 661,
+   "price": 0.000168,
+   "offered": 825218.476904,
+   "sold": 825218.476904,
+   "phase": "shallow"
+  },
+  {
+   "block": 662,
+   "price": 0.000168,
+   "offered": 826466.916355,
+   "sold": 826466.916355,
+   "phase": "shallow"
+  },
+  {
+   "block": 663,
+   "price": 0.000168,
+   "offered": 827715.355805,
+   "sold": 827715.355805,
+   "phase": "shallow"
+  },
+  {
+   "block": 664,
+   "price": 0.000168,
+   "offered": 828963.795256,
+   "sold": 828963.795256,
+   "phase": "shallow"
+  },
+  {
+   "block": 665,
+   "price": 0.000168,
+   "offered": 830212.234707,
+   "sold": 830212.234707,
+   "phase": "shallow"
+  },
+  {
+   "block": 666,
+   "price": 0.000168,
+   "offered": 831460.674157,
+   "sold": 831460.674157,
+   "phase": "shallow"
+  },
+  {
+   "block": 667,
+   "price": 0.000168,
+   "offered": 832709.113608,
+   "sold": 832709.113608,
+   "phase": "shallow"
+  },
+  {
+   "block": 668,
+   "price": 0.000168,
+   "offered": 833957.553059,
+   "sold": 833957.553059,
+   "phase": "shallow"
+  },
+  {
+   "block": 669,
+   "price": 0.000168,
+   "offered": 835205.992509,
+   "sold": 835205.992509,
+   "phase": "shallow"
+  },
+  {
+   "block": 670,
+   "price": 0.000168,
+   "offered": 836454.43196,
+   "sold": 836454.43196,
+   "phase": "shallow"
+  },
+  {
+   "block": 671,
+   "price": 0.000168,
+   "offered": 837702.871411,
+   "sold": 837702.871411,
+   "phase": "shallow"
+  },
+  {
+   "block": 672,
+   "price": 0.000168,
+   "offered": 838951.310861,
+   "sold": 838951.310861,
+   "phase": "shallow"
+  },
+  {
+   "block": 673,
+   "price": 0.000168,
+   "offered": 840199.750312,
+   "sold": 840199.750312,
+   "phase": "shallow"
+  },
+  {
+   "block": 674,
+   "price": 0.000168,
+   "offered": 841448.189763,
+   "sold": 841448.189763,
+   "phase": "shallow"
+  },
+  {
+   "block": 675,
+   "price": 0.000168,
+   "offered": 842696.629213,
+   "sold": 842696.629213,
+   "phase": "shallow"
+  },
+  {
+   "block": 676,
+   "price": 0.000168,
+   "offered": 843945.068664,
+   "sold": 843945.068664,
+   "phase": "shallow"
+  },
+  {
+   "block": 677,
+   "price": 0.000168,
+   "offered": 845193.508115,
+   "sold": 845193.508115,
+   "phase": "shallow"
+  },
+  {
+   "block": 678,
+   "price": 0.000168,
+   "offered": 846441.947566,
+   "sold": 846441.947566,
+   "phase": "shallow"
+  },
+  {
+   "block": 679,
+   "price": 0.000168,
+   "offered": 847690.387016,
+   "sold": 847690.387016,
+   "phase": "shallow"
+  },
+  {
+   "block": 680,
+   "price": 0.000168,
+   "offered": 848938.826467,
+   "sold": 848938.826467,
+   "phase": "shallow"
+  },
+  {
+   "block": 681,
+   "price": 0.000168,
+   "offered": 850187.265918,
+   "sold": 850187.265918,
+   "phase": "shallow"
+  },
+  {
+   "block": 682,
+   "price": 0.000168,
+   "offered": 851435.705368,
+   "sold": 851435.705368,
+   "phase": "shallow"
+  },
+  {
+   "block": 683,
+   "price": 0.000168,
+   "offered": 852684.144819,
+   "sold": 852684.144819,
+   "phase": "shallow"
+  },
+  {
+   "block": 684,
+   "price": 0.000168,
+   "offered": 853932.58427,
+   "sold": 853932.58427,
+   "phase": "shallow"
+  },
+  {
+   "block": 685,
+   "price": 0.000168,
+   "offered": 855181.02372,
+   "sold": 855181.02372,
+   "phase": "shallow"
+  },
+  {
+   "block": 686,
+   "price": 0.000168,
+   "offered": 856429.463171,
+   "sold": 856429.463171,
+   "phase": "shallow"
+  },
+  {
+   "block": 687,
+   "price": 0.000168,
+   "offered": 857677.902622,
+   "sold": 857677.902622,
+   "phase": "shallow"
+  },
+  {
+   "block": 688,
+   "price": 0.000168,
+   "offered": 858926.342072,
+   "sold": 858926.342072,
+   "phase": "shallow"
+  },
+  {
+   "block": 689,
+   "price": 0.000168,
+   "offered": 860174.781523,
+   "sold": 860174.781523,
+   "phase": "shallow"
+  },
+  {
+   "block": 690,
+   "price": 0.000168,
+   "offered": 861423.220974,
+   "sold": 861423.220974,
+   "phase": "shallow"
+  },
+  {
+   "block": 691,
+   "price": 0.000168,
+   "offered": 862671.660424,
+   "sold": 862671.660424,
+   "phase": "shallow"
+  },
+  {
+   "block": 692,
+   "price": 0.000168,
+   "offered": 863920.099875,
+   "sold": 863920.099875,
+   "phase": "shallow"
+  },
+  {
+   "block": 693,
+   "price": 0.000168,
+   "offered": 865168.539326,
+   "sold": 865168.539326,
+   "phase": "shallow"
+  },
+  {
+   "block": 694,
+   "price": 0.000168,
+   "offered": 866416.978777,
+   "sold": 866416.978777,
+   "phase": "shallow"
+  },
+  {
+   "block": 695,
+   "price": 0.000168,
+   "offered": 867665.418227,
+   "sold": 867665.418227,
+   "phase": "shallow"
+  },
+  {
+   "block": 696,
+   "price": 0.000168,
+   "offered": 868913.857678,
+   "sold": 868913.857678,
+   "phase": "shallow"
+  },
+  {
+   "block": 697,
+   "price": 0.000168,
+   "offered": 870162.297129,
+   "sold": 870162.297129,
+   "phase": "shallow"
+  },
+  {
+   "block": 698,
+   "price": 0.000168,
+   "offered": 871410.736579,
+   "sold": 871410.736579,
+   "phase": "shallow"
+  },
+  {
+   "block": 699,
+   "price": 0.000168,
+   "offered": 872659.17603,
+   "sold": 872659.17603,
+   "phase": "shallow"
+  },
+  {
+   "block": 700,
+   "price": 0.000168,
+   "offered": 873907.615481,
+   "sold": 873907.615481,
+   "phase": "shallow"
+  },
+  {
+   "block": 701,
+   "price": 0.000168,
+   "offered": 875156.054931,
+   "sold": 875156.054931,
+   "phase": "shallow"
+  },
+  {
+   "block": 702,
+   "price": 0.000168,
+   "offered": 876404.494382,
+   "sold": 876404.494382,
+   "phase": "shallow"
+  },
+  {
+   "block": 703,
+   "price": 0.000168,
+   "offered": 877652.933833,
+   "sold": 877652.933833,
+   "phase": "shallow"
+  },
+  {
+   "block": 704,
+   "price": 0.000168,
+   "offered": 878901.373283,
+   "sold": 878901.373283,
+   "phase": "shallow"
+  },
+  {
+   "block": 705,
+   "price": 0.000168,
+   "offered": 880149.812734,
+   "sold": 880149.812734,
+   "phase": "shallow"
+  },
+  {
+   "block": 706,
+   "price": 0.000168,
+   "offered": 881398.252185,
+   "sold": 881398.252185,
+   "phase": "shallow"
+  },
+  {
+   "block": 707,
+   "price": 0.000168,
+   "offered": 882646.691635,
+   "sold": 882646.691635,
+   "phase": "shallow"
+  },
+  {
+   "block": 708,
+   "price": 0.000168,
+   "offered": 883895.131086,
+   "sold": 883895.131086,
+   "phase": "shallow"
+  },
+  {
+   "block": 709,
+   "price": 0.000168,
+   "offered": 885143.570537,
+   "sold": 885143.570537,
+   "phase": "shallow"
+  },
+  {
+   "block": 710,
+   "price": 0.000168,
+   "offered": 886392.009988,
+   "sold": 886392.009988,
+   "phase": "shallow"
+  },
+  {
+   "block": 711,
+   "price": 0.000168,
+   "offered": 887640.449438,
+   "sold": 887640.449438,
+   "phase": "shallow"
+  },
+  {
+   "block": 712,
+   "price": 0.000168,
+   "offered": 888888.888889,
+   "sold": 888888.888889,
+   "phase": "shallow"
+  },
+  {
+   "block": 713,
+   "price": 0.000168,
+   "offered": 890137.32834,
+   "sold": 890137.32834,
+   "phase": "shallow"
+  },
+  {
+   "block": 714,
+   "price": 0.000168,
+   "offered": 891385.76779,
+   "sold": 891385.76779,
+   "phase": "shallow"
+  },
+  {
+   "block": 715,
+   "price": 0.000168,
+   "offered": 892634.207241,
+   "sold": 892634.207241,
+   "phase": "shallow"
+  },
+  {
+   "block": 716,
+   "price": 0.000168,
+   "offered": 893882.646692,
+   "sold": 893882.646692,
+   "phase": "shallow"
+  },
+  {
+   "block": 717,
+   "price": 0.000168,
+   "offered": 895131.086142,
+   "sold": 895131.086142,
+   "phase": "shallow"
+  },
+  {
+   "block": 718,
+   "price": 0.000168,
+   "offered": 896379.525593,
+   "sold": 896379.525593,
+   "phase": "shallow"
+  },
+  {
+   "block": 719,
+   "price": 0.000168,
+   "offered": 897627.965044,
+   "sold": 897627.965044,
+   "phase": "shallow"
+  },
+  {
+   "block": 720,
+   "price": 0.000168,
+   "offered": 898876.404494,
+   "sold": 898876.404494,
+   "phase": "shallow"
+  },
+  {
+   "block": 721,
+   "price": 0.000168,
+   "offered": 900124.843945,
+   "sold": 900124.843945,
+   "phase": "shallow"
+  },
+  {
+   "block": 722,
+   "price": 0.000168,
+   "offered": 901373.283396,
+   "sold": 901373.283396,
+   "phase": "shallow"
+  },
+  {
+   "block": 723,
+   "price": 0.000168,
+   "offered": 902621.722846,
+   "sold": 902621.722846,
+   "phase": "shallow"
+  },
+  {
+   "block": 724,
+   "price": 0.000168,
+   "offered": 903870.162297,
+   "sold": 903870.162297,
+   "phase": "shallow"
+  },
+  {
+   "block": 725,
+   "price": 0.000168,
+   "offered": 905118.601748,
+   "sold": 905118.601748,
+   "phase": "shallow"
+  },
+  {
+   "block": 726,
+   "price": 0.000168,
+   "offered": 906367.041199,
+   "sold": 906367.041199,
+   "phase": "shallow"
+  },
+  {
+   "block": 727,
+   "price": 0.000168,
+   "offered": 907615.480649,
+   "sold": 907615.480649,
+   "phase": "shallow"
+  },
+  {
+   "block": 728,
+   "price": 0.000168,
+   "offered": 908863.9201,
+   "sold": 908863.9201,
+   "phase": "shallow"
+  },
+  {
+   "block": 729,
+   "price": 0.000168,
+   "offered": 910112.359551,
+   "sold": 910112.359551,
+   "phase": "shallow"
+  },
+  {
+   "block": 730,
+   "price": 0.000168,
+   "offered": 911360.799001,
+   "sold": 911360.799001,
+   "phase": "shallow"
+  },
+  {
+   "block": 731,
+   "price": 0.000168,
+   "offered": 912609.238452,
+   "sold": 912609.238452,
+   "phase": "shallow"
+  },
+  {
+   "block": 732,
+   "price": 0.000168,
+   "offered": 913857.677903,
+   "sold": 913857.677903,
+   "phase": "shallow"
+  },
+  {
+   "block": 733,
+   "price": 0.000168,
+   "offered": 915106.117353,
+   "sold": 915106.117353,
+   "phase": "shallow"
+  },
+  {
+   "block": 734,
+   "price": 0.000168,
+   "offered": 916354.556804,
+   "sold": 916354.556804,
+   "phase": "shallow"
+  },
+  {
+   "block": 735,
+   "price": 0.000168,
+   "offered": 917602.996255,
+   "sold": 917602.996255,
+   "phase": "shallow"
+  },
+  {
+   "block": 736,
+   "price": 0.000168,
+   "offered": 918851.435705,
+   "sold": 918851.435705,
+   "phase": "shallow"
+  },
+  {
+   "block": 737,
+   "price": 0.000168,
+   "offered": 920099.875156,
+   "sold": 920099.875156,
+   "phase": "shallow"
+  },
+  {
+   "block": 738,
+   "price": 0.000168,
+   "offered": 921348.314607,
+   "sold": 921348.314607,
+   "phase": "shallow"
+  },
+  {
+   "block": 739,
+   "price": 0.000168,
+   "offered": 922596.754057,
+   "sold": 922596.754057,
+   "phase": "shallow"
+  },
+  {
+   "block": 740,
+   "price": 0.000168,
+   "offered": 923845.193508,
+   "sold": 923845.193508,
+   "phase": "shallow"
+  },
+  {
+   "block": 741,
+   "price": 0.000168,
+   "offered": 925093.632959,
+   "sold": 925093.632959,
+   "phase": "shallow"
+  },
+  {
+   "block": 742,
+   "price": 0.000168,
+   "offered": 926342.072409,
+   "sold": 926342.072409,
+   "phase": "shallow"
+  },
+  {
+   "block": 743,
+   "price": 0.000168,
+   "offered": 927590.51186,
+   "sold": 927590.51186,
+   "phase": "shallow"
+  },
+  {
+   "block": 744,
+   "price": 0.000168,
+   "offered": 928838.951311,
+   "sold": 67065.867212,
+   "phase": "shallow"
+  },
+  {
+   "block": 745,
+   "price": 0.000168,
+   "offered": 931312.949017,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 746,
+   "price": 0.000168,
+   "offered": 933891.153448,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 747,
+   "price": 0.000168,
+   "offered": 936478.504658,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 748,
+   "price": 0.000168,
+   "offered": 939075.056771,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 749,
+   "price": 0.000168,
+   "offered": 941680.86433,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 750,
+   "price": 0.000168,
+   "offered": 944295.982294,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 751,
+   "price": 0.000168,
+   "offered": 946920.466049,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 752,
+   "price": 0.000168,
+   "offered": 949554.37141,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 753,
+   "price": 0.000168,
+   "offered": 952197.754622,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 754,
+   "price": 0.000168,
+   "offered": 954850.67237,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 755,
+   "price": 0.000168,
+   "offered": 957513.181779,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 756,
+   "price": 0.000168,
+   "offered": 960185.340418,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 757,
+   "price": 0.000168,
+   "offered": 962867.206308,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 758,
+   "price": 0.000168,
+   "offered": 965558.837924,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 759,
+   "price": 0.000168,
+   "offered": 968260.2942,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 760,
+   "price": 0.000168,
+   "offered": 970971.634531,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 761,
+   "price": 0.000168,
+   "offered": 973692.918783,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 762,
+   "price": 0.000168,
+   "offered": 976424.207294,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 763,
+   "price": 0.000168,
+   "offered": 979165.560877,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 764,
+   "price": 0.000168,
+   "offered": 981917.040831,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 765,
+   "price": 0.000168,
+   "offered": 984678.708938,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 766,
+   "price": 0.000168,
+   "offered": 987450.627474,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 767,
+   "price": 0.000168,
+   "offered": 990232.859212,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 768,
+   "price": 0.000168,
+   "offered": 993025.467425,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 769,
+   "price": 0.000168,
+   "offered": 995828.515893,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 770,
+   "price": 0.000168,
+   "offered": 998642.06891,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 771,
+   "price": 0.000168,
+   "offered": 1001466.191284,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 772,
+   "price": 0.000168,
+   "offered": 1004300.948348,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 773,
+   "price": 0.000168,
+   "offered": 1007146.40596,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 774,
+   "price": 0.000168,
+   "offered": 1010002.630512,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 775,
+   "price": 0.000168,
+   "offered": 1012869.688936,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 776,
+   "price": 0.000168,
+   "offered": 1015747.648705,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 777,
+   "price": 0.000168,
+   "offered": 1018636.577844,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 778,
+   "price": 0.000168,
+   "offered": 1021536.544931,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 779,
+   "price": 0.000168,
+   "offered": 1024447.619106,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 780,
+   "price": 0.000168,
+   "offered": 1027369.870074,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 781,
+   "price": 0.000168,
+   "offered": 1030303.368115,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 782,
+   "price": 0.000168,
+   "offered": 1033248.184085,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 783,
+   "price": 0.000168,
+   "offered": 1036204.389424,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 784,
+   "price": 0.000168,
+   "offered": 1039172.056165,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 785,
+   "price": 0.000168,
+   "offered": 1042151.256935,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 786,
+   "price": 0.000168,
+   "offered": 1045142.064964,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 787,
+   "price": 0.000168,
+   "offered": 1048144.554093,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 788,
+   "price": 0.000168,
+   "offered": 1051158.798775,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 789,
+   "price": 0.000168,
+   "offered": 1054184.874087,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 790,
+   "price": 0.000168,
+   "offered": 1057222.855735,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 791,
+   "price": 0.000168,
+   "offered": 1060272.820057,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 792,
+   "price": 0.000168,
+   "offered": 1063334.844037,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 793,
+   "price": 0.000168,
+   "offered": 1066409.005303,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 794,
+   "price": 0.000168,
+   "offered": 1069495.382142,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 795,
+   "price": 0.000168,
+   "offered": 1072594.0535,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 796,
+   "price": 0.000168,
+   "offered": 1075705.098995,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 797,
+   "price": 0.000168,
+   "offered": 1078828.598919,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 798,
+   "price": 0.000168,
+   "offered": 1081964.634251,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 799,
+   "price": 0.000168,
+   "offered": 1085113.286657,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 800,
+   "price": 0.000168,
+   "offered": 1088274.638506,
+   "sold": 0,
+   "phase": "shallow"
+  },
+  {
+   "block": 801,
+   "price": 0.000168,
+   "offered": 1090086.165162,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 802,
+   "price": 0.000168,
+   "offered": 1102398.436865,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 803,
+   "price": 0.000168,
+   "offered": 1114870.768597,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 804,
+   "price": 0.000168,
+   "offered": 1127505.720134,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 805,
+   "price": 0.000168,
+   "offered": 1140305.903363,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 806,
+   "price": 0.000168,
+   "offered": 1153273.983616,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 807,
+   "price": 0.000168,
+   "offered": 1166412.681043,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 808,
+   "price": 0.000168,
+   "offered": 1179724.772022,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 809,
+   "price": 0.000168,
+   "offered": 1193213.090625,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 810,
+   "price": 0.000168,
+   "offered": 1206880.530117,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 811,
+   "price": 0.000168,
+   "offered": 1220730.044511,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 812,
+   "price": 0.000168,
+   "offered": 1234764.650169,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 813,
+   "price": 0.000168,
+   "offered": 1248987.427455,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 814,
+   "price": 0.000168,
+   "offered": 1263401.52244,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 815,
+   "price": 0.000168,
+   "offered": 1278010.148665,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 816,
+   "price": 0.000168,
+   "offered": 1292816.588954,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 817,
+   "price": 0.000168,
+   "offered": 1307824.197297,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 818,
+   "price": 0.000168,
+   "offered": 1323036.400785,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 819,
+   "price": 0.000168,
+   "offered": 1338456.701611,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 820,
+   "price": 0.000168,
+   "offered": 1354088.679143,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 821,
+   "price": 0.000168,
+   "offered": 1369935.99206,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 822,
+   "price": 0.000168,
+   "offered": 1386002.380561,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 823,
+   "price": 0.000168,
+   "offered": 1402291.668647,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 824,
+   "price": 0.000168,
+   "offered": 1418807.766488,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 825,
+   "price": 0.000168,
+   "offered": 1435554.672858,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 826,
+   "price": 0.000168,
+   "offered": 1452536.477666,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 827,
+   "price": 0.000168,
+   "offered": 1469757.364564,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 828,
+   "price": 0.000168,
+   "offered": 1487221.613654,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 829,
+   "price": 0.000168,
+   "offered": 1504933.604284,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 830,
+   "price": 0.000168,
+   "offered": 1522897.817941,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 831,
+   "price": 0.000168,
+   "offered": 1541118.841255,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 832,
+   "price": 0.000168,
+   "offered": 1559601.369095,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 833,
+   "price": 0.000168,
+   "offered": 1578350.207792,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 834,
+   "price": 0.000168,
+   "offered": 1597370.278464,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 835,
+   "price": 0.000168,
+   "offered": 1616666.620469,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 836,
+   "price": 0.000168,
+   "offered": 1636244.394982,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 837,
+   "price": 0.000168,
+   "offered": 1656108.888701,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 838,
+   "price": 0.000168,
+   "offered": 1676265.517689,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 839,
+   "price": 0.000168,
+   "offered": 1696719.831366,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 840,
+   "price": 0.000168,
+   "offered": 1717477.516637,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 841,
+   "price": 0.000168,
+   "offered": 1738544.402184,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 842,
+   "price": 0.000168,
+   "offered": 1759926.462919,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 843,
+   "price": 0.000168,
+   "offered": 1781629.824604,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 844,
+   "price": 0.000168,
+   "offered": 1803660.768644,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 845,
+   "price": 0.000168,
+   "offered": 1826025.737075,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 846,
+   "price": 0.000168,
+   "offered": 1848731.337734,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 847,
+   "price": 0.000168,
+   "offered": 1871784.349637,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 848,
+   "price": 0.000168,
+   "offered": 1895191.728564,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 849,
+   "price": 0.000168,
+   "offered": 1918960.612867,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 850,
+   "price": 0.000168,
+   "offered": 1943098.32951,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 851,
+   "price": 0.000168,
+   "offered": 1967612.400348,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 852,
+   "price": 0.000168,
+   "offered": 1992510.548655,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 853,
+   "price": 0.000168,
+   "offered": 2017800.705929,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 854,
+   "price": 0.000168,
+   "offered": 2043491.018961,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 855,
+   "price": 0.000168,
+   "offered": 2069589.857201,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 856,
+   "price": 0.000168,
+   "offered": 2096105.820432,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 857,
+   "price": 0.000168,
+   "offered": 2123047.746756,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 858,
+   "price": 0.000168,
+   "offered": 2150424.720921,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 859,
+   "price": 0.000168,
+   "offered": 2178246.082997,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 860,
+   "price": 0.000168,
+   "offered": 2206521.437424,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 861,
+   "price": 0.000168,
+   "offered": 2235260.662444,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 862,
+   "price": 0.000168,
+   "offered": 2264473.919942,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 863,
+   "price": 0.000168,
+   "offered": 2294171.665715,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 864,
+   "price": 0.000168,
+   "offered": 2324364.660193,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 865,
+   "price": 0.000168,
+   "offered": 2355063.979629,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 866,
+   "price": 0.000168,
+   "offered": 2386281.027785,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 867,
+   "price": 0.000168,
+   "offered": 2418027.54815,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 868,
+   "price": 0.000168,
+   "offered": 2450315.6367,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 869,
+   "price": 0.000168,
+   "offered": 2483157.755242,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 870,
+   "price": 0.000168,
+   "offered": 2516566.745368,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 871,
+   "price": 0.000168,
+   "offered": 2550555.843056,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 872,
+   "price": 0.000168,
+   "offered": 2585138.693944,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 873,
+   "price": 0.000168,
+   "offered": 2620329.36933,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 874,
+   "price": 0.000168,
+   "offered": 2656142.382914,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 875,
+   "price": 0.000168,
+   "offered": 2692592.708351,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 876,
+   "price": 0.000168,
+   "offered": 2729695.79764,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 877,
+   "price": 0.000168,
+   "offered": 2767467.600398,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 878,
+   "price": 0.000168,
+   "offered": 2805924.584088,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 879,
+   "price": 0.000168,
+   "offered": 2845083.755226,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 880,
+   "price": 0.000168,
+   "offered": 2884962.68165,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 881,
+   "price": 0.000168,
+   "offered": 2925579.515903,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 882,
+   "price": 0.000168,
+   "offered": 2966953.019785,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 883,
+   "price": 0.000168,
+   "offered": 3009102.590163,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 884,
+   "price": 0.000168,
+   "offered": 3052048.286105,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 885,
+   "price": 0.000168,
+   "offered": 3095810.857406,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 886,
+   "price": 0.000168,
+   "offered": 3140411.77462,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 887,
+   "price": 0.000168,
+   "offered": 3185873.260656,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 888,
+   "price": 0.000168,
+   "offered": 3232218.324061,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 889,
+   "price": 0.000168,
+   "offered": 3279470.794086,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 890,
+   "price": 0.000168,
+   "offered": 3327655.357641,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 891,
+   "price": 0.000168,
+   "offered": 3376797.598273,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 892,
+   "price": 0.000168,
+   "offered": 3426924.037289,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 893,
+   "price": 0.000168,
+   "offered": 3478062.177156,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 894,
+   "price": 0.000168,
+   "offered": 3530240.547343,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 895,
+   "price": 0.000168,
+   "offered": 3583488.752755,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 896,
+   "price": 0.000168,
+   "offered": 3637837.524935,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 897,
+   "price": 0.000168,
+   "offered": 3693318.776219,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 898,
+   "price": 0.000168,
+   "offered": 3749965.657045,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 899,
+   "price": 0.000168,
+   "offered": 3807812.616638,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 900,
+   "price": 0.000168,
+   "offered": 3866895.467293,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 901,
+   "price": 0.000168,
+   "offered": 3927251.45252,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 902,
+   "price": 0.000168,
+   "offered": 3988919.319319,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 903,
+   "price": 0.000168,
+   "offered": 4051939.394878,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 904,
+   "price": 0.000168,
+   "offered": 4116353.668014,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 905,
+   "price": 0.000168,
+   "offered": 4182205.875709,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 906,
+   "price": 0.000168,
+   "offered": 4249541.595108,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 907,
+   "price": 0.000168,
+   "offered": 4318408.341389,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 908,
+   "price": 0.000168,
+   "offered": 4388855.671948,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 909,
+   "price": 0.000168,
+   "offered": 4460935.29738,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 910,
+   "price": 0.000168,
+   "offered": 4534701.199777,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 911,
+   "price": 0.000168,
+   "offered": 4610209.758909,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 912,
+   "price": 0.000168,
+   "offered": 4687519.886919,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 913,
+   "price": 0.000168,
+   "offered": 4766693.172193,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 914,
+   "price": 0.000168,
+   "offered": 4847794.03316,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 915,
+   "price": 0.000168,
+   "offered": 4930889.882817,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 916,
+   "price": 0.000168,
+   "offered": 5016051.304872,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 917,
+   "price": 0.000168,
+   "offered": 5103352.242462,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 918,
+   "price": 0.000168,
+   "offered": 5192870.200524,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 919,
+   "price": 0.000168,
+   "offered": 5284686.462959,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 920,
+   "price": 0.000168,
+   "offered": 5378886.325899,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 921,
+   "price": 0.000168,
+   "offered": 5475559.348455,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 922,
+   "price": 0.000168,
+   "offered": 5574799.622518,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 923,
+   "price": 0.000168,
+   "offered": 5676706.06331,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 924,
+   "price": 0.000168,
+   "offered": 5781382.722577,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 925,
+   "price": 0.000168,
+   "offered": 5888939.126506,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 926,
+   "price": 0.000168,
+   "offered": 5999490.640679,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 927,
+   "price": 0.000168,
+   "offered": 6113158.864614,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 928,
+   "price": 0.000168,
+   "offered": 6230072.058735,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 929,
+   "price": 0.000168,
+   "offered": 6350365.606929,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 930,
+   "price": 0.000168,
+   "offered": 6474182.51818,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 931,
+   "price": 0.000168,
+   "offered": 6601673.971214,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 932,
+   "price": 0.000168,
+   "offered": 6732999.906493,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 933,
+   "price": 0.000168,
+   "offered": 6868329.670454,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 934,
+   "price": 0.000168,
+   "offered": 7007842.717432,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 935,
+   "price": 0.000168,
+   "offered": 7151729.375401,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 936,
+   "price": 0.000168,
+   "offered": 7300191.682397,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 937,
+   "price": 0.000168,
+   "offered": 7453444.301352,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 938,
+   "price": 0.000168,
+   "offered": 7611715.522062,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 939,
+   "price": 0.000168,
+   "offered": 7775248.360114,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 940,
+   "price": 0.000168,
+   "offered": 7944301.763908,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 941,
+   "price": 0.000168,
+   "offered": 8119151.942379,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 942,
+   "price": 0.000168,
+   "offered": 8300093.827742,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 943,
+   "price": 0.000168,
+   "offered": 8487442.68956,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 944,
+   "price": 0.000168,
+   "offered": 8681535.918704,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 945,
+   "price": 0.000168,
+   "offered": 8882735.002465,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 946,
+   "price": 0.000168,
+   "offered": 9091427.71512,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 947,
+   "price": 0.000168,
+   "offered": 9308030.551904,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 948,
+   "price": 0.000168,
+   "offered": 9532991.438522,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 949,
+   "price": 0.000168,
+   "offered": 9766792.753297,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 950,
+   "price": 0.000168,
+   "offered": 10009954.704867,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 951,
+   "price": 0.000168,
+   "offered": 10263039.115202,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 952,
+   "price": 0.000168,
+   "offered": 10526653.665854,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 953,
+   "price": 0.000168,
+   "offered": 10801456.674984,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 954,
+   "price": 0.000168,
+   "offered": 11088162.484219,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 955,
+   "price": 0.000168,
+   "offered": 11387547.548153,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 956,
+   "price": 0.000168,
+   "offered": 11700457.335773,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 957,
+   "price": 0.000168,
+   "offered": 12027814.172992,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 958,
+   "price": 0.000168,
+   "offered": 12370626.179487,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 959,
+   "price": 0.000168,
+   "offered": 12729997.482235,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 960,
+   "price": 0.000168,
+   "offered": 13107139.923701,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 961,
+   "price": 0.000168,
+   "offered": 13503386.526267,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 962,
+   "price": 0.000168,
+   "offered": 13920207.028105,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 963,
+   "price": 0.000168,
+   "offered": 14359225.872086,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 964,
+   "price": 0.000168,
+   "offered": 14822243.111804,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 965,
+   "price": 0.000168,
+   "offered": 15311258.801944,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 966,
+   "price": 0.000168,
+   "offered": 15828501.569855,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 967,
+   "price": 0.000168,
+   "offered": 16376462.229166,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 968,
+   "price": 0.000168,
+   "offered": 16957933.50496,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 969,
+   "price": 0.000168,
+   "offered": 17576057.207436,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 970,
+   "price": 0.000168,
+   "offered": 18234380.535938,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 971,
+   "price": 0.000168,
+   "offered": 18936923.643808,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 972,
+   "price": 0.000168,
+   "offered": 19688261.182159,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 973,
+   "price": 0.000168,
+   "offered": 20493621.317327,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 974,
+   "price": 0.000168,
+   "offered": 21359006.752193,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 975,
+   "price": 0.000168,
+   "offered": 22291343.675502,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 976,
+   "price": 0.000168,
+   "offered": 23298666.459032,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 977,
+   "price": 0.000168,
+   "offered": 24390348.529038,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 978,
+   "price": 0.000168,
+   "offered": 25577393.46504,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 979,
+   "price": 0.000168,
+   "offered": 26872805.489193,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 980,
+   "price": 0.000168,
+   "offered": 28292065.80975,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 981,
+   "price": 0.000168,
+   "offered": 29853751.86758,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 982,
+   "price": 0.000168,
+   "offered": 31580352.13421,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 983,
+   "price": 0.000168,
+   "offered": 33499352.509213,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 984,
+   "price": 0.000168,
+   "offered": 35644706.151976,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 985,
+   "price": 0.000168,
+   "offered": 38058854.500379,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 986,
+   "price": 0.000168,
+   "offered": 40795556.696941,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 987,
+   "price": 0.000168,
+   "offered": 43923931.62618,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 988,
+   "price": 0.000168,
+   "offered": 47534365.507677,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 989,
+   "price": 0.000168,
+   "offered": 51747373.285667,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 990,
+   "price": 0.000168,
+   "offered": 56727293.503869,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 991,
+   "price": 0.000168,
+   "offered": 62704200.105214,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 992,
+   "price": 0.000168,
+   "offered": 70010422.098057,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 993,
+   "price": 0.000168,
+   "offered": 79144452.972055,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 994,
+   "price": 0.000168,
+   "offered": 90889639.613358,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 995,
+   "price": 0.000168,
+   "offered": 106551560.135013,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 996,
+   "price": 0.000168,
+   "offered": 128480255.103836,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 997,
+   "price": 0.000168,
+   "offered": 161375805.607609,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 998,
+   "price": 0.000168,
+   "offered": 216205067.45666,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 999,
+   "price": 0.000168,
+   "offered": 325868607.990212,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  },
+  {
+   "block": 1000,
+   "price": 0.000168,
+   "offered": 654869263.720802,
+   "sold": 0,
+   "phase": "FINALE 🔥"
+  }
+ ],
+ "outputs": {
+  "graduated": true,
+  "failReasons": [],
+  "raised": 57293.6990257416,
+  "clearingPrice": 0.000168,
+  "mcapFDV": 168000,
+  "mcapCirculating": 168000,
+  "lockedTokens": 0,
+  "lpHealth": 0.3522788250907087,
+  "lpHealthFloor": 0.35,
+  "cashOverCircMcap": 0.31034086972276714,
+  "cashFloor": 0.175,
+  "committed": 57293.6990257416,
+  "entryBest": {
+   "wallet": "AJ",
+   "avgPrice": 0.00016406686835444443
+  },
+  "entryWorst": {
+   "wallet": "W",
+   "avgPrice": 0.00016665460615643258
+  },
+  "entryMean": 0.00016600578564348218,
+  "raiseSplit": {
+   "toLP": 52137.2661134249,
+   "toTreasury": 2291.7479610297,
+   "toCreator": 2864.6849512871
+  },
+  "sidePoolTokens": 32743463.18604,
+  "soldTokens": 345130736.279198,
+  "extraSoldFromReserve": 0,
+  "fills": [
+   {
+    "wallet": "A",
+    "committed": 1156.2595408579,
+    "spent": 1156.2595408579,
+    "tokens": 6965227.210814,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1156.259540857868,
+      "maxPrice": 1,
+      "spent": 1156.2595408579,
+      "tokens": 6965227.210814,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "B",
+    "committed": 1685.8603196991,
+    "spent": 1685.8603196991,
+    "tokens": 10122015.554396,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1685.860319699096,
+      "maxPrice": 1,
+      "spent": 1685.8603196991,
+      "tokens": 10122015.554396,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "C",
+    "committed": 548.8856506668,
+    "spent": 548.8856506668,
+    "tokens": 3341850.633751,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 548.885650666843,
+      "maxPrice": 1,
+      "spent": 548.8856506668,
+      "tokens": 3341850.633751,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "D",
+    "committed": 1637.2160773898,
+    "spent": 1637.2160773898,
+    "tokens": 9832116.408271,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1637.2160773897617,
+      "maxPrice": 1,
+      "spent": 1637.2160773898,
+      "tokens": 9832116.408271,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "E",
+    "committed": 964.058132397,
+    "spent": 964.058132397,
+    "tokens": 5819128.815697,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 964.058132397038,
+      "maxPrice": 1,
+      "spent": 964.058132397,
+      "tokens": 5819128.815697,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "F",
+    "committed": 1277.6278499503,
+    "spent": 1277.6278499503,
+    "tokens": 7688800.909614,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1277.6278499502819,
+      "maxPrice": 1,
+      "spent": 1277.6278499503,
+      "tokens": 7688800.909614,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "G",
+    "committed": 1766.8442350658,
+    "spent": 1766.8442350658,
+    "tokens": 10604626.626281,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1766.8442350657863,
+      "maxPrice": 1,
+      "spent": 1766.8442350658,
+      "tokens": 10604626.626281,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "H",
+    "committed": 1074.203625002,
+    "spent": 1074.203625002,
+    "tokens": 6475965.993725,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1074.2036250020394,
+      "maxPrice": 1,
+      "spent": 1074.203625002,
+      "tokens": 6475965.993725,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "I",
+    "committed": 918.6818506376,
+    "spent": 918.6818506376,
+    "tokens": 5548498.769021,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 918.6818506376267,
+      "maxPrice": 1,
+      "spent": 918.6818506376,
+      "tokens": 5548498.769021,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "J",
+    "committed": 698.0193902077,
+    "spent": 698.0193902077,
+    "tokens": 4232060.673419,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 698.0193902077244,
+      "maxPrice": 1,
+      "spent": 698.0193902077,
+      "tokens": 4232060.673419,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "K",
+    "committed": 527.8034448846,
+    "spent": 527.8034448846,
+    "tokens": 3215960.237883,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 527.803444884626,
+      "maxPrice": 1,
+      "spent": 527.8034448846,
+      "tokens": 3215960.237883,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "L",
+    "committed": 1049.1457846431,
+    "spent": 1049.1457846431,
+    "tokens": 6326546.814091,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1049.145784643081,
+      "maxPrice": 1,
+      "spent": 1049.1457846431,
+      "tokens": 6326546.814091,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "M",
+    "committed": 1528.6711983796,
+    "spent": 1528.6711983796,
+    "tokens": 9185201.207299,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1528.6711983795608,
+      "maxPrice": 1,
+      "spent": 1528.6711983796,
+      "tokens": 9185201.207299,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "N",
+    "committed": 1705.3982168182,
+    "spent": 1705.3982168182,
+    "tokens": 10238450.723756,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1705.3982168181792,
+      "maxPrice": 1,
+      "spent": 1705.3982168182,
+      "tokens": 10238450.723756,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "O",
+    "committed": 984.9958422151,
+    "spent": 984.9958422151,
+    "tokens": 5943996.774692,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 984.9958422151374,
+      "maxPrice": 1,
+      "spent": 984.9958422151,
+      "tokens": 5943996.774692,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "P",
+    "committed": 1006.5276720591,
+    "spent": 1006.5276720591,
+    "tokens": 6072403.414453,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1006.5276720591485,
+      "maxPrice": 1,
+      "spent": 1006.5276720591,
+      "tokens": 6072403.414453,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "Q",
+    "committed": 761.0752488491,
+    "spent": 761.0752488491,
+    "tokens": 4608316.51224,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 761.0752488491477,
+      "maxPrice": 1,
+      "spent": 761.0752488491,
+      "tokens": 4608316.51224,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "R",
+    "committed": 672.7767992917,
+    "spent": 672.7767992917,
+    "tokens": 4081417.233589,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 672.776799291734,
+      "maxPrice": 1,
+      "spent": 672.7767992917,
+      "tokens": 4081417.233589,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "S",
+    "committed": 1281.6808608927,
+    "spent": 1281.6808608927,
+    "tokens": 7712962.510431,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1281.6808608927208,
+      "maxPrice": 1,
+      "spent": 1281.6808608927,
+      "tokens": 7712962.510431,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "T",
+    "committed": 1767.8949743546,
+    "spent": 1767.8949743546,
+    "tokens": 10610888.1962,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1767.8949743546054,
+      "maxPrice": 1,
+      "spent": 1767.8949743546,
+      "tokens": 10610888.1962,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "U",
+    "committed": 1177.3963168531,
+    "spent": 1177.3963168531,
+    "tokens": 7091247.683163,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1177.3963168530709,
+      "maxPrice": 1,
+      "spent": 1177.3963168531,
+      "tokens": 7091247.683163,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "V",
+    "committed": 535.855178859,
+    "spent": 535.855178859,
+    "tokens": 3264042.008647,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 535.8551788590174,
+      "maxPrice": 1,
+      "spent": 535.855178859,
+      "tokens": 3264042.008647,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "W",
+    "committed": 1834.43371359,
+    "spent": 1834.43371359,
+    "tokens": 11007398.810616,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1834.433713589997,
+      "maxPrice": 1,
+      "spent": 1834.43371359,
+      "tokens": 11007398.810616,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "X",
+    "committed": 1312.5382808747,
+    "spent": 1312.5382808747,
+    "tokens": 7896912.570883,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1312.5382808747415,
+      "maxPrice": 1,
+      "spent": 1312.5382808747,
+      "tokens": 7896912.570883,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "Y",
+    "committed": 1203.5655787976,
+    "spent": 1203.5655787976,
+    "tokens": 7247268.173304,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1203.5655787976298,
+      "maxPrice": 1,
+      "spent": 1203.5655787976,
+      "tokens": 7247268.173304,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "Z",
+    "committed": 988.6269953235,
+    "spent": 988.6269953235,
+    "tokens": 5965651.737917,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 988.6269953235177,
+      "maxPrice": 1,
+      "spent": 988.6269953235,
+      "tokens": 5965651.737917,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AA",
+    "committed": 536.6885948445,
+    "spent": 536.6885948445,
+    "tokens": 3269018.724509,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 536.688594844513,
+      "maxPrice": 1,
+      "spent": 536.6885948445,
+      "tokens": 3269018.724509,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AB",
+    "committed": 1399.4264463891,
+    "spent": 1399.4264463891,
+    "tokens": 8414849.309104,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1399.4264463891398,
+      "maxPrice": 1,
+      "spent": 1399.4264463891,
+      "tokens": 8414849.309104,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AC",
+    "committed": 574.1387558422,
+    "spent": 574.1387558422,
+    "tokens": 3492630.029936,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 574.1387558421766,
+      "maxPrice": 1,
+      "spent": 574.1387558422,
+      "tokens": 3492630.029936,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AD",
+    "committed": 1448.8084463816,
+    "spent": 1448.8084463816,
+    "tokens": 8709195.739545,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1448.8084463816174,
+      "maxPrice": 1,
+      "spent": 1448.8084463816,
+      "tokens": 8709195.739545,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AE",
+    "committed": 1409.0521435295,
+    "spent": 1409.0521435295,
+    "tokens": 8472225.214317,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1409.0521435295477,
+      "maxPrice": 1,
+      "spent": 1409.0521435295,
+      "tokens": 8472225.214317,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AF",
+    "committed": 1707.3851972573,
+    "spent": 1707.3851972573,
+    "tokens": 10250291.962662,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1707.3851972573368,
+      "maxPrice": 1,
+      "spent": 1707.3851972573,
+      "tokens": 10250291.962662,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AG",
+    "committed": 670.1021004608,
+    "spent": 670.1021004608,
+    "tokens": 4065454.355127,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 670.1021004608376,
+      "maxPrice": 1,
+      "spent": 670.1021004608,
+      "tokens": 4065454.355127,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AH",
+    "committed": 1227.3774579667,
+    "spent": 1227.3774579667,
+    "tokens": 7389229.947306,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1227.3774579667381,
+      "maxPrice": 1,
+      "spent": 1227.3774579667,
+      "tokens": 7389229.947306,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AI",
+    "committed": 1131.5998080427,
+    "spent": 1131.5998080427,
+    "tokens": 6818198.215048,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1131.5998080426825,
+      "maxPrice": 1,
+      "spent": 1131.5998080427,
+      "tokens": 6818198.215048,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AJ",
+    "committed": 519.3482208435,
+    "spent": 519.3482208435,
+    "tokens": 3165466.776153,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 519.3482208435183,
+      "maxPrice": 1,
+      "spent": 519.3482208435,
+      "tokens": 3165466.776153,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AK",
+    "committed": 904.2377849409,
+    "spent": 904.2377849409,
+    "tokens": 5462347.714093,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 904.2377849408603,
+      "maxPrice": 1,
+      "spent": 904.2377849409,
+      "tokens": 5462347.714093,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AL",
+    "committed": 1689.2781835465,
+    "spent": 1689.2781835465,
+    "tokens": 10142384.250885,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1689.2781835465125,
+      "maxPrice": 1,
+      "spent": 1689.2781835465,
+      "tokens": 10142384.250885,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AM",
+    "committed": 1568.0879979432,
+    "spent": 1568.0879979432,
+    "tokens": 9420126.479853,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1568.0879979432036,
+      "maxPrice": 1,
+      "spent": 1568.0879979432,
+      "tokens": 9420126.479853,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AN",
+    "committed": 592.7327728796,
+    "spent": 592.7327728796,
+    "tokens": 3603638.721935,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 592.7327728796438,
+      "maxPrice": 1,
+      "spent": 592.7327728796,
+      "tokens": 3603638.721935,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AO",
+    "committed": 945.8883335376,
+    "spent": 945.8883335376,
+    "tokens": 5710764.424949,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 945.8883335375638,
+      "maxPrice": 1,
+      "spent": 945.8883335376,
+      "tokens": 5710764.424949,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AP",
+    "committed": 526.9512748937,
+    "spent": 526.9512748937,
+    "tokens": 3210871.296783,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 526.9512748936896,
+      "maxPrice": 1,
+      "spent": 526.9512748937,
+      "tokens": 3210871.296783,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AQ",
+    "committed": 1833.2538849456,
+    "spent": 1833.2538849456,
+    "tokens": 11000368.223195,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1833.2538849456485,
+      "maxPrice": 1,
+      "spent": 1833.2538849456,
+      "tokens": 11000368.223195,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AR",
+    "committed": 1137.6185992442,
+    "spent": 1137.6185992442,
+    "tokens": 6854084.541384,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1137.6185992442158,
+      "maxPrice": 1,
+      "spent": 1137.6185992442,
+      "tokens": 6854084.541384,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AS",
+    "committed": 1163.6191180552,
+    "spent": 1163.6191180552,
+    "tokens": 7009106.425899,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1163.6191180551514,
+      "maxPrice": 1,
+      "spent": 1163.6191180552,
+      "tokens": 7009106.425899,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AT",
+    "committed": 1716.0350423847,
+    "spent": 1716.0350423847,
+    "tokens": 10301839.807235,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1716.0350423846555,
+      "maxPrice": 1,
+      "spent": 1716.0350423847,
+      "tokens": 10301839.807235,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AU",
+    "committed": 790.5426408306,
+    "spent": 790.5426408306,
+    "tokens": 4784126.704597,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 790.5426408306429,
+      "maxPrice": 1,
+      "spent": 790.5426408306,
+      "tokens": 4784126.704597,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AV",
+    "committed": 1259.6053365523,
+    "spent": 1259.6053365523,
+    "tokens": 7581360.360479,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1259.605336552302,
+      "maxPrice": 1,
+      "spent": 1259.6053365523,
+      "tokens": 7581360.360479,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AW",
+    "committed": 1408.2178692372,
+    "spent": 1408.2178692372,
+    "tokens": 8467252.373188,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1408.217869237167,
+      "maxPrice": 1,
+      "spent": 1408.2178692372,
+      "tokens": 8467252.373188,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   },
+   {
+    "wallet": "AX",
+    "committed": 1067.6602366323,
+    "spent": 1067.6602366323,
+    "tokens": 6436948.47686,
+    "refund": 0,
+    "positions": [
+     {
+      "size": 1067.6602366322934,
+      "maxPrice": 1,
+      "spent": 1067.6602366323,
+      "tokens": 6436948.47686,
+      "status": "out_budget",
+      "placedBlock": 0
+     }
+    ]
+   }
+  ]
+ }
+}

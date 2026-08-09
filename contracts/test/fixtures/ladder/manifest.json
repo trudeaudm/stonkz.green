@@ -1,0 +1,75 @@
+{
+  "schema": "stonkz-ladder-fixture-manifest/1",
+  "files": [
+    {
+      "file": "01-thin-book-fails.json",
+      "tier": "god",
+      "graduated": false,
+      "bids": 6,
+      "pathRows": 1000
+    },
+    {
+      "file": "02-god-2p5k-at-bar.json",
+      "tier": "god",
+      "graduated": true,
+      "bids": 25,
+      "pathRows": 1000
+    },
+    {
+      "file": "03-god-5k-oversub.json",
+      "tier": "god",
+      "graduated": true,
+      "bids": 40,
+      "pathRows": 1000
+    },
+    {
+      "file": "04-4h-5k-at-bar.json",
+      "tier": "4h",
+      "graduated": true,
+      "bids": 35,
+      "pathRows": 1000
+    },
+    {
+      "file": "05-daily-10k-at-bar.json",
+      "tier": "daily",
+      "graduated": true,
+      "bids": 45,
+      "pathRows": 1000
+    },
+    {
+      "file": "06-daily-20k-heavy.json",
+      "tier": "daily",
+      "graduated": true,
+      "bids": 50,
+      "pathRows": 1000
+    },
+    {
+      "file": "07-road-40k-at-bar.json",
+      "tier": "road",
+      "graduated": true,
+      "bids": 52,
+      "pathRows": 1000
+    },
+    {
+      "file": "08-locked-holdback-60.json",
+      "tier": "daily",
+      "graduated": true,
+      "bids": 45,
+      "pathRows": 1000
+    },
+    {
+      "file": "09-vault-holdback-cashhb.json",
+      "tier": "daily",
+      "graduated": true,
+      "bids": 45,
+      "pathRows": 1000
+    },
+    {
+      "file": "10-wallet-cap-binding.json",
+      "tier": "daily",
+      "graduated": false,
+      "bids": 8,
+      "pathRows": 1000
+    }
+  ]
+}

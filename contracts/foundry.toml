@@ -11,12 +11,14 @@ via_ir = true
 # Bare `forge test` MemoryOOG without this — CI historically passed --gas-limit
 # 3000000000 on the unit/vector + fuzz buckets; pin it in-profile so a fresh
 # clone is green without remembering the flag.
-gas_limit = 3000000000
+# M5 ladder: road at-bar clearAll ~3.3B; Phase 4 gas@300 actives clearAll setup ~13.9B.
+gas_limit = 20000000000
 fuzz = { runs = 2048 }
 invariant = { runs = 512, depth = 64 }
 extra_output = ["storageLayout"]
 fs_permissions = [
-    { access = "read-write", path = "./test/vectors" }
+    { access = "read-write", path = "./test/vectors" },
+    { access = "read", path = "./test/fixtures" }
 ]
 # FEECHAIN Phase 1 — pinned Uniswap v4 (do not float):
 #   v4-core      @ 46c6834698c48bc4a463a86d8420f4eb1d7f3b75
