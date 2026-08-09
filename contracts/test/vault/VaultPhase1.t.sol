@@ -93,6 +93,37 @@ contract VaultPhase1 is LadderVectorLoader {
         assertEq(a.circFrac(), 0.4e18);
     }
 
+    function test_P1_setVaultRef_rejectsEOA() public {
+        vm.expectRevert(StonkzLadderFactory.VaultRefNotContract.selector);
+        factory.setVaultRef(address(0xBEEF));
+    }
+
+    /// @notice OBSTACLE (reported, not worked around): factory.file stamps vaultRef and sets
+    ///         auction.owner = address(factory). setSettlement is onlyOwner on the auction.
+    ///         Factory has no forwarding setter; factory.owner (EOA) cannot call through the
+    ///         factory contract. Therefore factory → file → settle cannot complete as deployed.
+    ///         Evidence: setSettlement from filer/creator/factory.owner all revert NotOwner.
+    function test_P1_factoryE2e_blocked_auctionOwnerIsFactory() public {
+        factory.setVaultRef(address(vault));
+        LadderTypes.Inputs memory inn = loadInputs(_loadRaw("08-locked-holdback-60.json"));
+        StonkzLadderAuction a = factory.file(_params(inn));
+        assertEq(a.vaultRef(), address(vault));
+        assertEq(a.owner(), address(factory), "filed auction owned by factory");
+
+        LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
+        // Filer / test contract is factory.owner but NOT auction.owner.
+        vm.expectRevert(StonkzLadderAuction.NotOwner.selector);
+        a.setSettlement(s);
+        // Creator also cannot wire settlement.
+        vm.prank(CREATOR);
+        vm.expectRevert(StonkzLadderAuction.NotOwner.selector);
+        a.setSettlement(s);
+        // Even pranking factory.owner fails — need msg.sender == address(factory).
+        vm.prank(factory.owner());
+        vm.expectRevert(StonkzLadderAuction.NotOwner.selector);
+        a.setSettlement(s);
+    }
+
     function test_P1_lockedBalance_excludesQueuedDirect_pathPendingCounts() public {
         VaultMockToken tok = new VaultMockToken();
         uint256 supply = 1_000_000_000 ether;

@@ -484,12 +484,9 @@ contract StonkzLadderAuction {
         if (vaultRef == address(0)) revert VaultUnsetAtSettlement();
         uint256 amt = FixedPointMathLib.fullMulDiv(supply, holdbackBps, 10_000);
         holdbackDeposited = true;
-        if (vaultRef.code.length > 0) {
-            _safeApprove(token, vaultRef, amt);
-            IStonkzVault(vaultRef).deposit(token, amt, creator);
-        } else {
-            _safeTransfer(token, vaultRef, amt);
-        }
+        if (vaultRef.code.length == 0) revert VaultUnsetAtSettlement();
+        _safeApprove(token, vaultRef, amt);
+        IStonkzVault(vaultRef).deposit(token, amt, creator);
         emit HoldbackDeposited(vaultRef, amt);
     }
 

@@ -27,5 +27,18 @@ Prompt vs docs/10: none requiring STOP. See docs/12 for non-blocking impl notes.
 ## Full write-up
 `docs/12-vault-report.md` (gitignored working doc; pattern verified).
 
+## Pre-merge fix (2026-08-09 ruling)
+- `setVaultRef` reverts `VaultRefNotContract` on EOA/empty; `address(0)` still clears.
+- Settlement vault leg: no EOA transfer fallback — `VaultNotContract` if no code.
+- Ladder EOA stubs rewritten as `test/ladder/MockVault.sol`.
+
+## OBSTACLE — factory → settle e2e (not worked around)
+`factory.file` sets `auction.owner = address(factory)`. `setSettlement` is
+`onlyOwner` on the auction. Factory has no forwarding setter. Therefore
+`factory.owner` (EOA), creator, and filer all revert `NotOwner` when calling
+`setSettlement`. Production cannot wire settlement on a factory-filed auction
+without a new factory method (or changing auction ownership at file).
+Evidence: `test_P1_factoryE2e_blocked_auctionOwnerIsFactory`.
+
 ## Request
 Merge ruling: `feat/vault` → `main`. Do not merge without David.

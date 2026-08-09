@@ -20,6 +20,7 @@ contract StonkzLadderFactory {
 
     error NotOwner();
     error VaultRequiredForHoldback();
+    error VaultRefNotContract();
     error HoldbackCeiling();
     error CarveBounds();
 
@@ -37,7 +38,9 @@ contract StonkzLadderFactory {
         owner = next;
     }
 
+    /// @notice Set the Management Vault ref. Target MUST have code (EOA/empty reverts).
     function setVaultRef(address vault) external onlyOwner {
+        if (vault != address(0) && vault.code.length == 0) revert VaultRefNotContract();
         vaultRef = vault;
         emit VaultRefSet(vault);
     }

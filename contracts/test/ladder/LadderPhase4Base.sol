@@ -12,19 +12,23 @@ import {MockPoolManager} from "../../src/mock/MockPoolManager.sol";
 import {StonkzFeeHook} from "../../src/StonkzFeeHook.sol";
 import {CTOGovernor} from "../../src/CTOGovernor.sol";
 import {ICTOGovernor} from "../../src/interfaces/IStonkzGovernance.sol";
+import {MockVault} from "./MockVault.sol";
 
 /// @dev Shared deploy helpers for Phase 4 adversarial / invariant / gas suites.
 abstract contract LadderPhase4Base is Test {
     uint256 internal constant WAD = 1e18;
     address internal constant TREASURY = address(0x7A5E);
     address internal constant CREATOR = address(0xCE0);
-    address internal constant VAULT = address(0xBEEF);
     address internal constant STONKZ = address(0x4663);
 
     MockPoolManager internal pm;
     StonkzFeeHook internal hook;
+    MockVault internal mockVault;
+    address internal VAULT;
 
     function setUp() public virtual {
+        mockVault = new MockVault();
+        VAULT = address(mockVault);
         pm = new MockPoolManager();
         CTOGovernor gov = new CTOGovernor();
         hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
@@ -131,13 +135,27 @@ abstract contract LadderPhase4Base is Test {
 
 contract MockTok {
     mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
 
     function mint(address to, uint256 amt) external {
         balanceOf[to] += amt;
     }
 
+    function approve(address spender, uint256 amt) external returns (bool) {
+        allowance[msg.sender][spender] = amt;
+        return true;
+    }
+
     function transfer(address to, uint256 amt) external returns (bool) {
         balanceOf[msg.sender] -= amt;
+        balanceOf[to] += amt;
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 amt) external returns (bool) {
+        uint256 a = allowance[from][msg.sender];
+        if (a != type(uint256).max) allowance[from][msg.sender] = a - amt;
+        balanceOf[from] -= amt;
         balanceOf[to] += amt;
         return true;
     }

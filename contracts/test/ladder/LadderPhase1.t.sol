@@ -8,12 +8,18 @@ import {LadderTypes} from "../../src/ladder/LadderTypes.sol";
 import {LadderConstants} from "../../src/ladder/LadderConstants.sol";
 import {StonkzLadderAuction} from "../../src/ladder/StonkzLadderAuction.sol";
 import {LadderConstants} from "../../src/ladder/LadderConstants.sol";
+import {MockVault} from "./MockVault.sol";
 
 /// @title LadderPhase1 — rungs, periods, liveBudget; A5 on at-bar vectors (docs/09)
 contract LadderPhase1 is LadderVectorLoader, LadderAsserts {
     using stdJson for string;
 
     StonkzLadderAuction internal auction;
+    MockVault internal mockVault;
+
+    function setUp() public {
+        mockVault = new MockVault();
+    }
 
     function _duration(LadderTypes.Tier t) internal pure returns (uint256) {
         if (t == LadderTypes.Tier.God) return LadderConstants.GOD_DURATION;
@@ -23,7 +29,7 @@ contract LadderPhase1 is LadderVectorLoader, LadderAsserts {
     }
 
     function _deploy(LadderTypes.Inputs memory inn) internal {
-        address vault = inn.holdbackBps > 0 ? address(0xBEEF) : address(0);
+        address vault = inn.holdbackBps > 0 ? address(mockVault) : address(0);
         auction = new StonkzLadderAuction(
             StonkzLadderAuction.Params({
                 supply: inn.supply,

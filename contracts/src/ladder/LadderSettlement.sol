@@ -64,6 +64,7 @@ contract LadderSettlement {
     error NotGraduated();
     error MinAsk();
     error VaultUnset();
+    error VaultNotContract();
     error TransferFailed();
     error SplitInvariant();
 
@@ -132,18 +133,14 @@ contract LadderSettlement {
             emit CreatorCashPaid(a.creator, toCreator);
         }
 
-        // ─── vault token holdback (docs/10 deposit hook when vaultRef is a contract)
+        // ─── vault token holdback (docs/10 deposit hook — no EOA transfer fallback)
         vaultHoldbackTokens = FixedPointMathLib.fullMulDiv(a.supply, a.holdbackBps, 10_000);
         if (vaultHoldbackTokens > 0) {
             if (a.vaultRef == address(0)) revert VaultUnset();
-            if (a.vaultRef.code.length > 0) {
-                // Pull-credit via vault.deposit — creator is beneficiary (docs/10 §1).
-                _safeApprove(a.userToken, a.vaultRef, vaultHoldbackTokens);
-                IStonkzVault(a.vaultRef).deposit(a.userToken, vaultHoldbackTokens, a.creator);
-            } else {
-                // EOA / test stub refs: plain transfer (availability-guard stubs).
-                _safeTransfer(a.userToken, a.vaultRef, vaultHoldbackTokens);
-            }
+            if (a.vaultRef.code.length == 0) revert VaultNotContract();
+            // Pull-credit via vault.deposit — creator is beneficiary (docs/10 §1).
+            _safeApprove(a.userToken, a.vaultRef, vaultHoldbackTokens);
+            IStonkzVault(a.vaultRef).deposit(a.userToken, vaultHoldbackTokens, a.creator);
             emit HoldbackToVault(a.vaultRef, vaultHoldbackTokens);
         }
 
