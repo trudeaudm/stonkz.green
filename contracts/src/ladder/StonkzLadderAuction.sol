@@ -216,7 +216,7 @@ contract StonkzLadderAuction {
         owner = msg.sender;
         if (p.settlement != address(0)) {
             if (p.settlement.code.length == 0) revert SettlementUnset();
-            settlement = LadderSettlement(p.settlement);
+            settlement = LadderSettlement(payable(p.settlement));
             emit SettlementWired(p.settlement);
         }
 

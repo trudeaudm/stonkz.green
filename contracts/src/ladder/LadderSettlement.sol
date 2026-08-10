@@ -96,6 +96,8 @@ contract LadderSettlement {
     error NotSettled();
     error RefPriceUnset();
 
+    receive() external payable {}
+
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
         _;
@@ -260,7 +262,10 @@ contract LadderSettlement {
         if (floorTick >= printTick) floorTick = printTick - TICK_SPACING;
 
         cashTickLower = floorTick;
-        cashTickUpper = printTick;
+        // Cash range must sit strictly below print so current price is above-range → pair-only.
+        // tickUpper == print left the position at the edge and forced token1 on real PM.
+        cashTickUpper = printTick - TICK_SPACING;
+        if (cashTickUpper <= cashTickLower) cashTickUpper = cashTickLower + TICK_SPACING;
         askTickLower = printTick;
         askTickUpper = maxTick;
 
@@ -280,7 +285,9 @@ contract LadderSettlement {
             if (liqCash == 0) liqCash = 1;
             cashLiquidity = liqCash;
             _approvePm(pairToken, cash);
-            poolManager.modifyLiquidity(
+            _approvePm(userToken, type(uint256).max);
+            uint256 ethVal = pairToken == address(0) ? cash : 0;
+            poolManager.modifyLiquidity{value: ethVal}(
                 mainPoolKey,
                 IPoolManager.ModifyLiquidityParams({
                     tickLower: cashTickLower,
@@ -314,6 +321,7 @@ contract LadderSettlement {
             if (liqAsk == 0) liqAsk = 1;
             askLiquidity = liqAsk;
             _approvePm(userToken, askTokens);
+            _approvePm(pairToken, type(uint256).max);
             poolManager.modifyLiquidity(
                 mainPoolKey,
                 IPoolManager.ModifyLiquidityParams({
