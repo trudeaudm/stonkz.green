@@ -145,10 +145,11 @@ contract MockPoolManager is IPoolManager {
         swapDelta = BalanceDeltaLibrary.from(int128(a0), int128(a1));
         emit Swap(id, msg.sender, a0, a1, s.sqrtPriceX96, s.tick);
 
-        // Fee-take + hook callback (FEECHAIN Phase 3):
+        // Fee-take + hook callback (FEECHAIN Phase 3 / V4-CANON):
+        //   Prefer PoolKey.hooks (production bind); fall back to setPoolHook mapping (legacy tests).
         //   key.fee == 0 (main, pips) → pair-currency fee from stamped hookFeeBps (bps).
         //   key.fee != 0 (side) → LP fee from key.fee (pips); no hook take for revenue.
-        address hook = hooks[id];
+        address hook = key.hooks != address(0) ? key.hooks : hooks[id];
         if (hook != address(0) && key.fee == 0) {
             uint256 absAmt = params.amountSpecified < 0
                 ? uint256(-params.amountSpecified)
