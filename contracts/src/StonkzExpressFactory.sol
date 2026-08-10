@@ -68,8 +68,10 @@ contract StonkzExpressFactory is DeployControls {
     /// @notice Deploy an Express listing. Gated by DeployControls (RIDER A birth = deployer-only).
     /// @dev Stamps side-pool + lock + ref-price factory defaults (docs/03; ruling B).
     /// @param userSalt Caller-chosen salt half; effective salt = listingSalt(msg.sender, userSalt).
+    /// @dev Native pair: pass msg.value as ETH settle buffer for real PM (adapter refunds dust).
     function list(StonkzDirectListing.ListingParams memory p, bytes32 userSalt)
         external
+        payable
         returns (StonkzDirectListing listing)
     {
         _requireDeployAllowed(msg.sender);
@@ -79,7 +81,7 @@ contract StonkzExpressFactory is DeployControls {
         // Ref: required when createSidePool; never a silent fallback (RefPriceUnset).
         p.stonkzRefPriceWad = p.createSidePool ? _requireRefPrice(pairToken) : 0;
         bytes32 salt = listingSalt(msg.sender, userSalt);
-        listing = new StonkzDirectListing{salt: salt}(
+        listing = new StonkzDirectListing{salt: salt, value: msg.value}(
             poolManager, feeLocker, hook, accumulator, ctoGovernor, pairToken, stonkzRef, p
         );
         emit ExpressListed(address(listing), address(listing.token()), p.creator, userSalt, salt);

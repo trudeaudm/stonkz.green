@@ -9,7 +9,7 @@ import {FeeLocker} from "../src/FeeLocker.sol";
 import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 import {CTOGovernor} from "../src/CTOGovernor.sol";
 import {ICTOGovernor} from "../src/interfaces/IStonkzGovernance.sol";
-import {StonkzLiquidityStrategy} from "../src/StonkzLiquidityStrategy.sol";
+import {StonkzLiquidityStrategy} from "../legacy/StonkzLiquidityStrategy.sol";
 
 /// @title SettlementConservation — C5 skeleton (spec §9 I1, 100% LP default)
 contract SettlementConservation is Test {

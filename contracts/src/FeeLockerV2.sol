@@ -12,6 +12,8 @@ import {StonkzFeeHook} from "./StonkzFeeHook.sol";
 ///         `lockPosition`. Withdraw of principal lives on Listing/Settlement (not here) —
 ///         this contract exposes gate views + `markWithdrawn` for registry integrity.
 /// @dev Mint path unchanged: callers still `modifyLiquidity` themselves; FeeLocker only registers.
+///      V4-CANON: side crank uses `pokeCollect` (0-delta → feesAccrued) then re-adds liquidity
+///      at the same ticks/salt.
 contract FeeLockerV2 {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
@@ -30,6 +32,9 @@ contract FeeLockerV2 {
         bool currency0IsPair;
         bool active;
         address registrar; // msg.sender at lockPosition (Listing/Settlement)
+        int24 tickLower;
+        int24 tickUpper;
+        bytes32 salt; // modifyLiquidity salt (not the hashed positionId)
     }
 
     IPoolManager public immutable poolManager;
@@ -72,6 +77,7 @@ contract FeeLockerV2 {
     }
 
     /// @notice Register a newly minted position and stamp lock terms on first lock for `userToken`.
+    /// @param salt The `ModifyLiquidityParams.salt` used at mint (needed for pokeCollect).
     function lockPosition(
         PoolKey memory key,
         bytes32 positionId,
@@ -79,7 +85,10 @@ contract FeeLockerV2 {
         address pairCurrency,
         address userToken,
         bool liquidityLocked_,
-        address unlockRecipient_
+        address unlockRecipient_,
+        int24 tickLower,
+        int24 tickUpper,
+        bytes32 salt
     ) external returns (uint256 lockId) {
         if (unlockRecipient_ == address(0)) revert ZeroRecipient();
         if (tokenStampSet[userToken]) {
@@ -101,7 +110,10 @@ contract FeeLockerV2 {
             userToken: userToken,
             currency0IsPair: c0Pair,
             active: true,
-            registrar: msg.sender
+            registrar: msg.sender,
+            tickLower: tickLower,
+            tickUpper: tickUpper,
+            salt: salt
         });
         _lockIdsOf[userToken].push(lockId);
         emit PositionLocked(lockId, key.toId(), kind, positionId, userToken, liquidityLocked_, unlockRecipient_);
@@ -134,28 +146,39 @@ contract FeeLockerV2 {
     }
 
     /// @notice Permissionless: collect side-pool fees and compound into the same position.
-    /// @dev UNCHANGED from FeeLocker v1 (§1.5 / spec §8.6 Side row).
+    /// @dev V4-CANON: pokeCollect (0-delta) then modifyLiquidity at stored ticks/salt.
     function crankSideCompound(uint256 lockId) external {
         LockedPosition storage lp = locks[lockId];
         if (!lp.active) revert Inactive();
         if (lp.kind != PoolKind.Side) revert NotSide();
-        PoolId id = lp.key.toId();
-        (uint256 fee0, uint256 fee1) = poolManager.collectFees(id, lp.positionId);
+
+        (uint256 fee0, uint256 fee1) =
+            poolManager.pokeCollect(lp.key, lp.tickLower, lp.tickUpper, lp.salt);
         if (fee0 == 0 && fee1 == 0) return;
 
+        // Re-add as liquidity delta (mock units: fee0+fee1; real path settles both currencies).
         int256 liqDelta = int256(fee0 + fee1);
         if (liqDelta > 0) {
+            // Approve adapter/PM to pull compounded fees from this locker when using V4Adapter.
+            _approveIfErc20(lp.key.currency0.toAddress(), fee0);
+            _approveIfErc20(lp.key.currency1.toAddress(), fee1);
             poolManager.modifyLiquidity(
                 lp.key,
                 IPoolManager.ModifyLiquidityParams({
-                    tickLower: -887220,
-                    tickUpper: 887220,
+                    tickLower: lp.tickLower,
+                    tickUpper: lp.tickUpper,
                     liquidityDelta: liqDelta,
-                    salt: lp.positionId
+                    salt: lp.salt
                 }),
                 ""
             );
         }
         emit SideFeesCompounded(lockId, fee0, fee1);
+    }
+
+    function _approveIfErc20(address token, uint256 amount) internal {
+        if (token == address(0) || amount == 0) return;
+        (bool ok,) = token.call(abi.encodeWithSignature("approve(address,uint256)", address(poolManager), amount));
+        ok; // best-effort; Mock ignores
     }
 }

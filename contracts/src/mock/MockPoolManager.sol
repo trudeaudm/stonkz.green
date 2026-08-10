@@ -239,6 +239,27 @@ contract MockPoolManager is IPoolManager {
         pos.feesOwed1 = 0;
     }
 
+    /// @inheritdoc IPoolManager
+    /// @dev Mock: position map key = keccak(owner, ticks, salt). Owner is msg.sender (FeeLocker/Listing).
+    function pokeCollect(PoolKey memory key, int24 tickLower, int24 tickUpper, bytes32 salt)
+        external
+        payable
+        returns (uint256 fee0, uint256 fee1)
+    {
+        PoolId id = key.toId();
+        bytes32 positionId = keccak256(abi.encode(msg.sender, tickLower, tickUpper, salt));
+        // Also try registry-style id (Listing computed keccak(listing, ticks, salt) then locked).
+        Position storage pos = positions[id][positionId];
+        if (pos.tickLower == 0 && pos.tickUpper == 0 && pos.liquidity == 0 && pos.feesOwed0 == 0 && pos.feesOwed1 == 0) {
+            // Fall back: salt may itself be the full positionId used by legacy lockPosition.
+            pos = positions[id][salt];
+        }
+        fee0 = pos.feesOwed0;
+        fee1 = pos.feesOwed1;
+        pos.feesOwed0 = 0;
+        pos.feesOwed1 = 0;
+    }
+
     function positionLiquidity(PoolId id, bytes32 positionId) external view returns (uint128) {
         return positions[id][positionId].liquidity;
     }

@@ -279,6 +279,7 @@ contract LadderSettlement {
             );
             if (liqCash == 0) liqCash = 1;
             cashLiquidity = liqCash;
+            _approvePm(pairToken, cash);
             poolManager.modifyLiquidity(
                 mainPoolKey,
                 IPoolManager.ModifyLiquidityParams({
@@ -294,7 +295,10 @@ contract LadderSettlement {
                 keccak256(abi.encode(address(this), cashTickLower, cashTickUpper, salt)),
                 FeeLockerV2.PoolKind.Main,
                 pairToken,
-                userToken
+                userToken,
+                cashTickLower,
+                cashTickUpper,
+                salt
             );
         }
 
@@ -309,6 +313,7 @@ contract LadderSettlement {
             );
             if (liqAsk == 0) liqAsk = 1;
             askLiquidity = liqAsk;
+            _approvePm(userToken, askTokens);
             poolManager.modifyLiquidity(
                 mainPoolKey,
                 IPoolManager.ModifyLiquidityParams({
@@ -324,7 +329,10 @@ contract LadderSettlement {
                 keccak256(abi.encode(address(this), askTickLower, askTickUpper, askSalt)),
                 FeeLockerV2.PoolKind.Main,
                 pairToken,
-                userToken
+                userToken,
+                askTickLower,
+                askTickUpper,
+                askSalt
             );
         }
 
@@ -357,6 +365,7 @@ contract LadderSettlement {
         sideLiquidity = liq;
         bytes32 sideSalt_ = bytes32(uint256(2));
         sideSalt = sideSalt_;
+        _approvePm(userToken, tokens);
         poolManager.modifyLiquidity(
             sidePoolKey,
             IPoolManager.ModifyLiquidityParams({
@@ -369,7 +378,10 @@ contract LadderSettlement {
             keccak256(abi.encode(address(this), lo, hi, sideSalt_)),
             FeeLockerV2.PoolKind.Side,
             stonkzRef,
-            userToken
+            userToken,
+            lo,
+            hi,
+            sideSalt_
         );
         emit SidePoolBuilt(sidePoolKey.toId(), tokens);
     }
@@ -379,11 +391,23 @@ contract LadderSettlement {
         bytes32 positionId,
         FeeLockerV2.PoolKind kind,
         address pairCurrency,
-        address userToken
+        address userToken,
+        int24 tickLower,
+        int24 tickUpper,
+        bytes32 salt
     ) internal returns (uint256 lockId) {
         if (address(feeLocker) == address(0)) return 0;
         lockId = feeLocker.lockPosition(
-            key, positionId, kind, pairCurrency, userToken, liquidityLocked, unlockRecipient
+            key,
+            positionId,
+            kind,
+            pairCurrency,
+            userToken,
+            liquidityLocked,
+            unlockRecipient,
+            tickLower,
+            tickUpper,
+            salt
         );
     }
 
@@ -451,6 +475,12 @@ contract LadderSettlement {
         if (address(feeLocker) != address(0)) {
             feeLocker.requireCanWithdraw(userTokenSettled, msg.sender);
         }
+    }
+
+    function _approvePm(address token_, uint256 amount) internal {
+        if (token_ == address(0) || amount == 0) return;
+        (bool ok,) = token_.call(abi.encodeWithSignature("approve(address,uint256)", address(poolManager), amount));
+        require(ok, "approve");
     }
 
     function _mainPoolKey(address a, address b) internal view returns (PoolKey memory key) {

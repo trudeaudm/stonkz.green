@@ -9,7 +9,7 @@ import {FeeLocker} from "../src/FeeLocker.sol";
 import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 import {CTOGovernor} from "../src/CTOGovernor.sol";
 import {ICTOGovernor} from "../src/interfaces/IStonkzGovernance.sol";
-import {StonkzLiquidityStrategy} from "../src/StonkzLiquidityStrategy.sol";
+import {StonkzLiquidityStrategy} from "../legacy/StonkzLiquidityStrategy.sol";
 import {PoolKey, PoolIdLibrary} from "../src/v4/types/PoolKey.sol";
 import {Currency} from "../src/v4/types/Currency.sol";
 import {TickMath} from "../src/v4/TickMath.sol";

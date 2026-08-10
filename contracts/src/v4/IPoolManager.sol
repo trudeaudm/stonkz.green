@@ -71,6 +71,13 @@ interface IPoolManager {
         external
         returns (uint256 fee0, uint256 fee1);
 
+    /// @notice Canonical fee collect: 0-delta modifyLiquidity → feesAccrued (V4-CANON).
+    /// @dev Mock maps this onto collectFees using the registry positionId convention.
+    function pokeCollect(PoolKey memory key, int24 tickLower, int24 tickUpper, bytes32 salt)
+        external
+        payable
+        returns (uint256 fee0, uint256 fee1);
+
     // ─── M4 hook seam (fees-and-governance.md §1) ────────────────────────────
 
     /// @notice Attach a swap hook to a pool (called at pool creation by the listing/strategy).
