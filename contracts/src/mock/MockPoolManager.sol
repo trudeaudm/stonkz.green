@@ -77,6 +77,9 @@ contract MockPoolManager is IPoolManager {
         s.tick = tick;
         s.lpFee = key.fee;
         s.initialized = true;
+        // Mirror PoolKey.hooks into the legacy poolHook map so invariant tests that still
+        // read poolHook(id) stay honest after setPoolHook was retired from the production path.
+        hooks[id] = key.hooks;
         emit Initialize(id, sqrtPriceX96, tick);
     }
 
