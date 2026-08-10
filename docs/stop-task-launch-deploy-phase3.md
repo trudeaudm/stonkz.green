@@ -30,9 +30,16 @@
 - [ ] Blockscout source verification (all address-book deploys)
 - [ ] Hook mined-address verification (`0x4663` + `0x088` + `validateHookAddress`)
 
+## Revision (runbook four additions)
+
+SECURITY.md accepted as-is. Runbook revised with: (1) abort/rollback, (2) independent
+`cast` verification checklist, (3) blocking ETH refprice gate + formula, (4) ownership
+gap **closed in `Deploy.s.sol`** — final step transfers Express/Ladder/Hook/Settlement/Vault
+`owner` → `CUSTODY_ADDRESS` (allowlist stays deployer-only for soft-launch file/list).
+
 ## Ruling requested
 
-**Accept Phase 3 runbook + SECURITY.md?**
+**Accept revised Phase 3 runbook?** (SECURITY.md already accepted.)
 
 - **YES** → Phase 4 mainnet execution (explicit GO still required per send)
 - **NO** → state gaps

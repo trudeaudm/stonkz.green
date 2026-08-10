@@ -39,6 +39,7 @@ abstract contract DeploySoftLaunchGuard is Script {
 ///   TREASURY_ADDRESS     — StonkzFeeHook protocolTreasury
 ///   HOOK_CREATE2_SALT    — from `node contracts/scripts/hook-vanity-mine.mjs --mode eoa …`
 /// Optional:
+///   ETH_REF_PRICE_WAD    — pair-wei/STONKZ; default 2.5e11. Formula: 0.001e18 / spotEthUsd
 ///   PAIR_TOKEN, USDG_ADDRESS, FORK, ADDRESS_BOOK_PATH, STONKZ_CREATE2_SALT
 ///
 /// Mine (after a dry predict, or use prepareHookInitCodeHash logs):
@@ -70,6 +71,7 @@ contract Deploy is DeploySoftLaunchGuard {
     error ExternalMissing(string what, address addr);
     error HookVanityBad(address predicted);
     error PredictMismatch(string what, address got, address want);
+    error OwnershipNotTransferred(string what, address owner, address want);
 
     struct Book {
         address stonkz;
@@ -256,9 +258,25 @@ contract Deploy is DeploySoftLaunchGuard {
             StonkzLadderFactory(book.ladder).setStonkzRefPrice(pairToken, REF_USDG);
         }
 
+        // ETH ref: operator-computed (0.001e18 / spotEthUsd). Set BEFORE ownership handoff
+        // so the hot deployer can still call setStonkzRefPrice; Safe owns afterward.
+        uint256 ethRef = vm.envOr("ETH_REF_PRICE_WAD", REF_ETH);
+        StonkzExpressFactory(book.express).setStonkzRefPrice(address(0), ethRef);
+        StonkzLadderFactory(book.ladder).setStonkzRefPrice(address(0), ethRef);
+        console2.log("ETH stonkzRefPriceWad", ethRef);
+
+        // 9) Ownership → custody Safe. Hot deployer EOA must not retain protocol ownership.
+        //    Soft-launch allowlist stays {deployer} (file/list). Admin powers move to custody.
+        DeployControls(book.express).transferOwnership(custody);
+        DeployControls(book.ladder).transferOwnership(custody);
+        StonkzFeeHook(payable(book.hook)).transferOwnership(custody);
+        LadderSettlement(payable(book.settlement)).transferOwnership(custody);
+        StonkzVault(book.vault).transferOwnership(custody);
+        console2.log("ownership transferred to custody", custody);
+
         vm.stopBroadcast();
 
-        _assertWiring(book, deployer, custody, pairToken, usdg);
+        _assertWiring(book, deployer, custody, pairToken, usdg, ethRef);
         _writeBook(bookPath, book, deployer, custody, treasury, pairToken, usdg);
 
         console2.log("=== DEPLOY COMPLETE ===");
@@ -421,6 +439,7 @@ contract Deploy is DeploySoftLaunchGuard {
         vm.serializeBool(wiring, "softLaunchLadder", true);
         vm.serializeBool(wiring, "hookFlagsValidated", true);
         vm.serializeBool(wiring, "canonManagerBound", true);
+        vm.serializeBool(wiring, "ownershipToCustody", true);
         string memory wiringJson = vm.serializeBool(wiring, "stonkzSupplyParked", true);
 
         string memory templates = "templates";
@@ -436,16 +455,21 @@ contract Deploy is DeploySoftLaunchGuard {
         vm.writeJson(finalJson, path);
     }
 
-    function _assertWiring(Book memory book, address deployer, address custody, address pairToken, address usdg)
-        internal
-        view
-    {
+    function _assertWiring(
+        Book memory book,
+        address deployer,
+        address custody,
+        address pairToken,
+        address usdg,
+        uint256 ethRef
+    ) internal view {
         if (book.poolManager != RH_POOL_MANAGER) revert WiringFailed("poolManager pin");
         if (!_hasCode(book.v4Adapter)) revert WiringFailed("v4Adapter");
         if (address(V4Adapter(payable(book.v4Adapter)).manager()) != RH_POOL_MANAGER) {
             revert WiringFailed("adapter.manager");
         }
 
+        // Soft-launch gate: allowlist still deployer-only; ownership already → custody.
         _assertSoftLaunchGate(DeployControls(book.express), deployer);
         _assertSoftLaunchGate(DeployControls(book.ladder), deployer);
 
@@ -470,8 +494,8 @@ contract Deploy is DeploySoftLaunchGuard {
 
         uint256 ethExpress = express.stonkzRefPriceWad(address(0));
         uint256 ethLadder = ladder.stonkzRefPriceWad(address(0));
-        if (ethExpress != REF_ETH) revert RefPriceMismatch(address(0), ethExpress, REF_ETH);
-        if (ethLadder != REF_ETH) revert RefPriceMismatch(address(0), ethLadder, REF_ETH);
+        if (ethExpress != ethRef) revert RefPriceMismatch(address(0), ethExpress, ethRef);
+        if (ethLadder != ethRef) revert RefPriceMismatch(address(0), ethLadder, ethRef);
 
         if (usdg != address(0)) {
             uint256 u = ladder.stonkzRefPriceWad(usdg);
@@ -487,5 +511,19 @@ contract Deploy is DeploySoftLaunchGuard {
 
         BuybackAccumulator acc = BuybackAccumulator(payable(book.accumulator));
         if (acc.stonkz4663() != book.stonkz) revert WiringFailed("accumulator.stonkz");
+
+        if (DeployControls(book.express).owner() != custody) {
+            revert OwnershipNotTransferred("express", DeployControls(book.express).owner(), custody);
+        }
+        if (DeployControls(book.ladder).owner() != custody) {
+            revert OwnershipNotTransferred("ladder", DeployControls(book.ladder).owner(), custody);
+        }
+        if (hook.owner() != custody) revert OwnershipNotTransferred("hook", hook.owner(), custody);
+        if (settlement.owner() != custody) {
+            revert OwnershipNotTransferred("settlement", settlement.owner(), custody);
+        }
+        if (StonkzVault(book.vault).owner() != custody) {
+            revert OwnershipNotTransferred("vault", StonkzVault(book.vault).owner(), custody);
+        }
     }
 }

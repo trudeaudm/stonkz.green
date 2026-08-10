@@ -36,6 +36,7 @@
     "softLaunchLadder": false,
     "hookFlagsValidated": false,
     "canonManagerBound": false,
+    "ownershipToCustody": false,
     "stonkzSupplyParked": false
   },
   "templates": {

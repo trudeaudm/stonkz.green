@@ -54,11 +54,23 @@ contract DeployPhase0 is Test {
         ladder.setVaultRef(address(vault));
         ladder.setStonkzRefPrice(USDG, 1e15);
 
+        // Mirror Deploy.s.sol final step: admin → custody; allowlist stays deployer-only.
+        express.transferOwnership(CUSTODY);
+        ladder.transferOwnership(CUSTODY);
+        hook.transferOwnership(CUSTODY);
+        settlement.transferOwnership(CUSTODY);
+        vault.transferOwnership(CUSTODY);
+
         express.assertSoftLaunchGate(address(this));
         ladder.assertSoftLaunchGate(address(this));
         assertTrue(express.deploysEnabled());
         assertEq(express.allowlistCount(), 1);
         assertTrue(express.isDeployerAllowed(address(this)));
+        assertEq(express.owner(), CUSTODY);
+        assertEq(ladder.owner(), CUSTODY);
+        assertEq(hook.owner(), CUSTODY);
+        assertEq(settlement.owner(), CUSTODY);
+        assertEq(vault.owner(), CUSTODY);
 
         assertEq(express.stonkzRef(), address(stonkz));
         assertEq(address(express.poolManager()), address(adapter));
