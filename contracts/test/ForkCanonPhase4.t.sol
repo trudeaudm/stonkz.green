@@ -33,6 +33,8 @@ import {StonkzVault} from "../src/vault/StonkzVault.sol";
 import {VaultConstants} from "../src/vault/VaultConstants.sol";
 import {DeployControls} from "../src/DeployControls.sol";
 import {StonkzLaunchToken} from "../src/StonkzLaunchToken.sol";
+import {VanityHelpers} from "./VanityHelpers.sol";
+import {Vanity} from "../src/Vanity.sol";
 
 /// @dev Reverting ETH receiver - flush must not brick treasury path (hostile probe).
 contract ForkHostileReceiver {
@@ -298,7 +300,7 @@ contract ForkCanonPhase4 is Test {
         StonkzLadderAuction.Params memory p = _ladderParams();
         p.floorMcap = 40_000e18;
         p.auctionSupply = (SUPPLY * 60) / 100;
-        StonkzLadderAuction a = ladder.file(p);
+        StonkzLadderAuction a = _fileLadder(p);
         a.start();
         vm.deal(bidder, 100 ether);
         vm.prank(bidder);
@@ -329,12 +331,15 @@ contract ForkCanonPhase4 is Test {
         settleInst.setStonkzRef(address(stonkz));
         settleInst.setFeeLocker(locker);
 
+        // Mine OFF the gas meter — report pure file() gas vs Orbit / Phase4.
+        (bytes32 userSalt,) = VanityHelpers.mineLadder(ladder, address(this), p);
         uint256 g0 = gasleft();
-        StonkzLadderAuction a = ladder.file(p);
+        StonkzLadderAuction a = ladder.file(p, userSalt);
         fileGasUsed = g0 - gasleft();
-        console2.log("observed file() gas (no vanity mine on this branch)", fileGasUsed);
+        console2.log("observed file() gas (excl. vanity mine)", fileGasUsed);
         console2.log("compare mock Phase2 file()", MOCK_FILE_GAS_REF);
         console2.log("expected file() gas < 32_000_000 Orbit");
+        assertTrue(Vanity.matches(address(a)), "ladder vanity");
 
         vm.prank(address(ladder));
         a.setSettlement(settleInst);
@@ -433,11 +438,11 @@ contract ForkCanonPhase4 is Test {
         assertEq(hook.hookFeeBps(tokenCustom), 300);
         console2.log("custom-fee 300bps: OK");
 
-        StonkzLadderAuction a = ladder.file(_ladderParamsCarve(type(uint16).max));
+        StonkzLadderAuction a = _fileLadder(_ladderParamsCarve(type(uint16).max));
         uint16 stamped = a.carveBps();
         ladder.setDefaultCarveBps(700);
         assertEq(a.carveBps(), stamped, "carve stamp survives");
-        StonkzLadderAuction b = ladder.file(_ladderParamsCarve(type(uint16).max));
+        StonkzLadderAuction b = _fileLadder(_ladderParamsCarve(type(uint16).max));
         assertEq(b.carveBps(), 700);
         console2.log("carve stamp: OK");
 
@@ -624,13 +629,20 @@ contract ForkCanonPhase4 is Test {
         return rem == 0 ? tick : tick - rem;
     }
 
+    function _fileLadder(StonkzLadderAuction.Params memory p) internal returns (StonkzLadderAuction auction) {
+        (bytes32 userSalt,) = VanityHelpers.mineLadder(ladder, address(this), p);
+        auction = ladder.file(p, userSalt);
+        assertTrue(Vanity.matches(address(auction)), "ladder vanity");
+    }
+
     function _list(StonkzExpressFactory factory, StonkzDirectListing.ListingParams memory p)
         internal
         returns (StonkzDirectListing listing)
     {
         vm.deal(address(this), address(this).balance + ETH_LIST_BUFFER);
-        // Plain userSalt - factories on this branch do not enforce vanity prefix.
-        listing = factory.list{value: ETH_LIST_BUFFER}(p, bytes32(++listSaltNonce));
+        (bytes32 userSalt,) = VanityHelpers.mineExpress(factory, address(this), p);
+        listing = factory.list{value: ETH_LIST_BUFFER}(p, userSalt);
+        assertTrue(Vanity.matches(address(listing)), "express vanity");
     }
 
     function _listAs(StonkzExpressFactory factory, address who, StonkzDirectListing.ListingParams memory p)
@@ -638,9 +650,10 @@ contract ForkCanonPhase4 is Test {
         returns (StonkzDirectListing listing)
     {
         vm.deal(who, ETH_LIST_BUFFER + 0.1 ether);
-        bytes32 salt = bytes32(++listSaltNonce);
+        (bytes32 userSalt,) = VanityHelpers.mineExpress(factory, who, p);
         vm.prank(who);
-        listing = factory.list{value: ETH_LIST_BUFFER}(p, salt);
+        listing = factory.list{value: ETH_LIST_BUFFER}(p, userSalt);
+        assertTrue(Vanity.matches(address(listing)), "express vanity");
     }
 
     receive() external payable {}

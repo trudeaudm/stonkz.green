@@ -3,13 +3,16 @@ pragma solidity ^0.8.26;
 
 import {Script, console2} from "forge-std/Script.sol";
 import {stdJson} from "forge-std/StdJson.sol";
+import {IPoolManager as ICanonPM} from "@v4-core/src/interfaces/IPoolManager.sol";
+
 import {DeployControls} from "../src/DeployControls.sol";
 import {StonkzToken} from "../src/StonkzToken.sol";
-import {MockPoolManager} from "../src/mock/MockPoolManager.sol";
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
+import {V4Adapter} from "../src/v4/V4Adapter.sol";
 import {CTOGovernor} from "../src/CTOGovernor.sol";
 import {ICTOGovernor} from "../src/interfaces/IStonkzGovernance.sol";
 import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
+import {HookVanity} from "../src/HookVanity.sol";
 import {FeeLockerV2} from "../src/FeeLockerV2.sol";
 import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
 import {LadderSettlement} from "../src/ladder/LadderSettlement.sol";
@@ -20,30 +23,29 @@ import {StonkzLadderFactory} from "../src/ladder/StonkzLadderFactory.sol";
 
 /// @title DeploySoftLaunchGuard — RIDER A soft-launch assertion shared by deploy paths
 abstract contract DeploySoftLaunchGuard is Script {
-    /// @dev Call after each factory construct (or after intentional allowlist config).
     function _assertSoftLaunchGate(DeployControls factory, address expectedDeployer) internal view {
         factory.assertSoftLaunchGate(expectedDeployer);
         console2.log("soft-launch gate OK", address(factory), expectedDeployer);
     }
 }
 
-/// @title Deploy — official full-manifest deploy (docs/03 ONE DEPLOY 2026-08-10)
-/// @notice Deploys STONKZ token + factories + settlement + hook + vault + wiring.
-///         Keys NEVER on disk: PRIVATE_KEY / RPC from env only. David executes mainnet sends.
+/// @title Deploy — official full-manifest deploy (docs/03 ONE DEPLOY + V4-CANON)
+/// @notice Binds to Robinhood PoolManager singleton via V4Adapter. Hook CREATE2-mined
+///         to 0x4663 top + 0x088 flags. NO MockPoolManager in the official address book.
 ///
 /// ENV (required for live/fork broadcast):
 ///   PRIVATE_KEY          — deployer key (env only; never a file)
 ///   CUSTODY_ADDRESS      — receives full 100M STONKZ supply
 ///   TREASURY_ADDRESS     — StonkzFeeHook protocolTreasury
+///   HOOK_CREATE2_SALT    — from `node contracts/scripts/hook-vanity-mine.mjs --mode eoa …`
 /// Optional:
-///   PAIR_TOKEN           — default address(0) = native ETH
-///   USDG_ADDRESS         — if set, seeds Ladder factory USDG ref @ 1e15
-///   FORK                 — "true" required when chainid is 31337; never for wrong live chains
-///   ADDRESS_BOOK_PATH    — default ../deploys/official/addresses.json (from contracts/)
+///   PAIR_TOKEN, USDG_ADDRESS, FORK, ADDRESS_BOOK_PATH, STONKZ_CREATE2_SALT
 ///
-/// Gas (100ms Robinhood blocks): forge --gas-price 60000000 --priority-gas-price 0
+/// Mine (after a dry predict, or use prepareHookInitCodeHash logs):
+///   node contracts/scripts/hook-vanity-mine.mjs --mode eoa \
+///     --deployer $DEPLOYER --initCodeHash $HASH
 ///
-/// RUN (fork proof, no mainnet key in chat):
+/// RUN (fork proof):
 ///   $env:FORK="true"; forge script script/Deploy.s.sol:Deploy --rpc-url $env:ROBINHOOD_RPC_URL \
 ///     --broadcast --gas-price 60000000 --priority-gas-price 0
 contract Deploy is DeploySoftLaunchGuard {
@@ -52,21 +54,27 @@ contract Deploy is DeploySoftLaunchGuard {
     uint256 internal constant CHAIN_ROBINHOOD = 4663;
     uint256 internal constant CHAIN_ANVIL = 31337;
 
-    /// @dev Pair-wei per STONKZ, WAD — must match DeployControls birth defaults.
+    /// @dev Robinhood Chain Uniswap v4 PoolManager singleton (recorded, not deployed).
+    address internal constant RH_POOL_MANAGER = 0x8366a39CC670B4001A1121B8F6A443A643e40951;
+    address internal constant UNIVERSAL_ROUTER = 0x06AfBA43Fd06227fA663b0DAecF536f6EaA6bf99;
+    address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+
     uint256 internal constant REF_ETH = 2.5e11;
     uint256 internal constant REF_USDG = 1e15;
 
     error WrongChain(uint256 chainId);
     error MissingEnv(string name);
-    error SoftLaunchBroken(string which);
     error RefPriceMismatch(address pair, uint256 got, uint256 want);
     error StonkzNotParked(address custody, uint256 bal);
     error WiringFailed(string what);
-    error AddressBookMissing();
+    error ExternalMissing(string what, address addr);
+    error HookVanityBad(address predicted);
+    error PredictMismatch(string what, address got, address want);
 
     struct Book {
         address stonkz;
-        address poolManager;
+        address poolManager; // always RH singleton
+        address v4Adapter;
         address governor;
         address hook;
         address feeLocker;
@@ -75,19 +83,18 @@ contract Deploy is DeploySoftLaunchGuard {
         address vault;
         address express;
         address ladder;
+        address universalRouter;
+        address permit2;
     }
 
     function run() external {
         _assertChainAllowed();
-
-        // ─── gas posture for ~100ms Orbit blocks (priority fee buys nothing) ──
-        vm.txGasPrice(60_000_000); // 0.06 gwei
+        vm.txGasPrice(60_000_000);
 
         address custody = vm.envAddress("CUSTODY_ADDRESS");
         address treasury = vm.envAddress("TREASURY_ADDRESS");
         address pairToken = vm.envOr("PAIR_TOKEN", address(0));
         address usdg = vm.envOr("USDG_ADDRESS", address(0));
-
         if (custody == address(0)) revert MissingEnv("CUSTODY_ADDRESS");
         if (treasury == address(0)) revert MissingEnv("TREASURY_ADDRESS");
 
@@ -96,25 +103,48 @@ contract Deploy is DeploySoftLaunchGuard {
 
         string memory bookPath = vm.envOr("ADDRESS_BOOK_PATH", string("../deploys/official/addresses.json"));
         Book memory book = _loadBook(bookPath);
+        book.poolManager = RH_POOL_MANAGER;
+        book.universalRouter = UNIVERSAL_ROUTER;
+        book.permit2 = PERMIT2;
+
+        _assertExternals();
 
         console2.log("Deploy chainId", block.chainid);
         console2.log("Deployer", deployer);
         console2.log("Custody", custody);
         console2.log("Treasury", treasury);
+        console2.log("RH PoolManager", RH_POOL_MANAGER);
+
+        // Predict adapter/gov (and thus hook init hash) when first-time hook deploy.
+        bool deployToken = !_hasCode(book.stonkz);
+        bool deployAdapter = !_hasCode(book.v4Adapter);
+        bool deployGov = !_hasCode(book.governor);
+        bool deployHook = !_hasCode(book.hook);
+
+        bytes32 hookSalt;
+        address hookPredicted;
+        if (deployHook) {
+            hookSalt = vm.envBytes32("HOOK_CREATE2_SALT");
+            if (hookSalt == bytes32(0)) revert MissingEnv("HOOK_CREATE2_SALT");
+
+            (address adapterPred, address govPred) =
+                _predictAdapterGov(deployer, deployToken, deployAdapter, deployGov, book);
+            bytes32 initHash = _hookInitCodeHash(adapterPred, treasury, govPred);
+            hookPredicted = HookVanity.predict(deployer, hookSalt, initHash);
+            if (!HookVanity.matches(hookPredicted)) revert HookVanityBad(hookPredicted);
+            console2.log("hook initCodeHash");
+            console2.logBytes32(initHash);
+            console2.log("hook predicted", hookPredicted);
+        }
 
         vm.startBroadcast(pk);
 
-        // 1) Protocol token — full supply to custody; no pools; no approvals.
-        //    Optional CREATE2: set STONKZ_CREATE2_SALT (bytes32 hex) from vanity-mine --mode eoa.
-        //    Decision (Phase 1): YES mine 0x4663 for the protocol token; 0x46634663 remains OPEN.
-        if (!_hasCode(book.stonkz)) {
+        // 1) Protocol token
+        if (deployToken) {
             bytes32 tokenSalt = vm.envOr("STONKZ_CREATE2_SALT", bytes32(0));
             if (tokenSalt != bytes32(0)) {
                 book.stonkz = address(new StonkzToken{salt: tokenSalt}(custody));
-                require(
-                    uint16(uint160(book.stonkz) >> 144) == 0x4663,
-                    "STONKZ vanity: salt does not yield 0x4663 prefix"
-                );
+                require(uint16(uint160(book.stonkz) >> 144) == 0x4663, "STONKZ vanity prefix");
             } else {
                 book.stonkz = address(new StonkzToken(custody));
             }
@@ -123,38 +153,46 @@ contract Deploy is DeploySoftLaunchGuard {
             console2.log("skip StonkzToken", book.stonkz);
         }
 
-        // 2) Settlement venue — MockPoolManager until M3.5 real-v4 wiring.
-        if (!_hasCode(book.poolManager)) {
-            book.poolManager = address(new MockPoolManager());
-            console2.log("deployed MockPoolManager", book.poolManager);
+        // 2) V4Adapter around RH singleton — never deploy MockPoolManager
+        if (deployAdapter) {
+            book.v4Adapter = address(new V4Adapter(ICanonPM(RH_POOL_MANAGER)));
+            console2.log("deployed V4Adapter", book.v4Adapter);
         } else {
-            console2.log("skip MockPoolManager", book.poolManager);
+            console2.log("skip V4Adapter", book.v4Adapter);
         }
+        IPoolManager pm = IPoolManager(book.v4Adapter);
 
         // 3) CTO + hook + registry
-        if (!_hasCode(book.governor)) {
+        if (deployGov) {
             book.governor = address(new CTOGovernor());
             console2.log("deployed CTOGovernor", book.governor);
         } else {
             console2.log("skip CTOGovernor", book.governor);
         }
 
-        if (!_hasCode(book.hook)) {
+        if (deployHook) {
             book.hook = address(
-                new StonkzFeeHook(IPoolManager(book.poolManager), treasury, ICTOGovernor(book.governor))
+                new StonkzFeeHook{salt: hookSalt}(pm, treasury, ICTOGovernor(book.governor))
             );
+            if (book.hook != hookPredicted) revert PredictMismatch("hook", book.hook, hookPredicted);
+            StonkzFeeHook(payable(book.hook)).validateHookAddress(book.hook);
+            StonkzFeeHook(payable(book.hook)).bindCanonManager(ICanonPM(RH_POOL_MANAGER));
             console2.log("deployed StonkzFeeHook", book.hook);
         } else {
             console2.log("skip StonkzFeeHook", book.hook);
+            // Idempotent: ensure canon manager bound for adapter path.
+            if (address(StonkzFeeHook(payable(book.hook)).canonManager()) != RH_POOL_MANAGER) {
+                StonkzFeeHook(payable(book.hook)).bindCanonManager(ICanonPM(RH_POOL_MANAGER));
+            }
         }
 
         if (address(CTOGovernor(book.governor).registry()) == address(0)) {
             CTOGovernor(book.governor).setRegistry(StonkzFeeHook(payable(book.hook)));
         }
 
-        // 4) Fee locker + buyback accumulator (stonkzRef = REAL token)
+        // 4) Fee locker + buyback accumulator
         if (!_hasCode(book.feeLocker)) {
-            book.feeLocker = address(new FeeLockerV2(IPoolManager(book.poolManager), StonkzFeeHook(payable(book.hook))));
+            book.feeLocker = address(new FeeLockerV2(pm, StonkzFeeHook(payable(book.hook))));
             console2.log("deployed FeeLockerV2", book.feeLocker);
         } else {
             console2.log("skip FeeLockerV2", book.feeLocker);
@@ -169,30 +207,27 @@ contract Deploy is DeploySoftLaunchGuard {
 
         // 5) Ladder settlement + stamps
         if (!_hasCode(book.settlement)) {
-            book.settlement =
-                address(new LadderSettlement(IPoolManager(book.poolManager), StonkzFeeHook(payable(book.hook)), pairToken));
+            book.settlement = address(new LadderSettlement(pm, StonkzFeeHook(payable(book.hook)), pairToken));
             console2.log("deployed LadderSettlement", book.settlement);
         } else {
             console2.log("skip LadderSettlement", book.settlement);
         }
-        LadderSettlement(book.settlement).setStonkzRef(book.stonkz);
-        LadderSettlement(book.settlement).setFeeLocker(FeeLockerV2(book.feeLocker));
+        LadderSettlement(payable(book.settlement)).setStonkzRef(book.stonkz);
+        LadderSettlement(payable(book.settlement)).setFeeLocker(FeeLockerV2(book.feeLocker));
 
         // 6) Vault
         if (!_hasCode(book.vault)) {
-            book.vault = address(
-                new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000)
-            );
+            book.vault = address(new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000));
             console2.log("deployed StonkzVault", book.vault);
         } else {
             console2.log("skip StonkzVault", book.vault);
         }
 
-        // 7) Express factory (DeployControls birth; stonkzRef = REAL token)
+        // 7) Express factory
         if (!_hasCode(book.express)) {
             book.express = address(
                 new StonkzExpressFactory(
-                    IPoolManager(book.poolManager),
+                    pm,
                     FeeLockerV2(book.feeLocker),
                     StonkzFeeHook(payable(book.hook)),
                     BuybackAccumulator(payable(book.accumulator)),
@@ -206,7 +241,7 @@ contract Deploy is DeploySoftLaunchGuard {
             console2.log("skip StonkzExpressFactory", book.express);
         }
 
-        // 8) Ladder factory + vaultRef + optional USDG ref seed
+        // 8) Ladder factory + vaultRef + optional USDG ref
         if (!_hasCode(book.ladder)) {
             book.ladder = address(new StonkzLadderFactory());
             console2.log("deployed StonkzLadderFactory", book.ladder);
@@ -217,28 +252,80 @@ contract Deploy is DeploySoftLaunchGuard {
         if (usdg != address(0)) {
             StonkzLadderFactory(book.ladder).setStonkzRefPrice(usdg, REF_USDG);
         }
-        // ETH ref is birth-default on DeployControls; assert + leave. Optional runbook re-check.
         if (pairToken != address(0) && pairToken != usdg) {
-            // Express already seeds its pairToken in ctor; Ladder needs explicit seed for non-ETH pairs used at file.
             StonkzLadderFactory(book.ladder).setStonkzRefPrice(pairToken, REF_USDG);
         }
 
         vm.stopBroadcast();
 
-        // ─── post-deploy assertions (read-only; no key) ───────────────────────
         _assertWiring(book, deployer, custody, pairToken, usdg);
         _writeBook(bookPath, book, deployer, custody, treasury, pairToken, usdg);
 
         console2.log("=== DEPLOY COMPLETE ===");
         console2.log("StonkzToken", book.stonkz);
+        console2.log("V4Adapter", book.v4Adapter);
+        console2.log("StonkzFeeHook", book.hook);
         console2.log("ExpressFactory", book.express);
         console2.log("LadderFactory", book.ladder);
         console2.log("address book", bookPath);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // chain gate
-    // ═══════════════════════════════════════════════════════════════════════
+    /// @notice Offline helper: log hook initCodeHash for the miner without broadcasting.
+    /// @dev forge script script/Deploy.s.sol:Deploy --sig "prepareHookInitCodeHash()" --rpc-url …
+    function prepareHookInitCodeHash() external {
+        _assertChainAllowed();
+        address custody = vm.envAddress("CUSTODY_ADDRESS");
+        address treasury = vm.envAddress("TREASURY_ADDRESS");
+        uint256 pk = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.addr(pk);
+        string memory bookPath = vm.envOr("ADDRESS_BOOK_PATH", string("../deploys/official/addresses.json"));
+        Book memory book = _loadBook(bookPath);
+
+        bool deployToken = !_hasCode(book.stonkz);
+        bool deployAdapter = !_hasCode(book.v4Adapter);
+        bool deployGov = !_hasCode(book.governor);
+        (address adapterPred, address govPred) =
+            _predictAdapterGov(deployer, deployToken, deployAdapter, deployGov, book);
+
+        bytes32 initHash = _hookInitCodeHash(adapterPred, treasury, govPred);
+        console2.log("deployer", deployer);
+        console2.log("adapterPred", adapterPred);
+        console2.log("govPred", govPred);
+        console2.log("custody (unused for hash)", custody);
+        console2.logBytes32(initHash);
+        console2.log("mine: node contracts/scripts/hook-vanity-mine.mjs --mode eoa --deployer", deployer);
+    }
+
+    function _hookInitCodeHash(address adapter, address treasury, address gov) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encodePacked(
+                type(StonkzFeeHook).creationCode, abi.encode(IPoolManager(adapter), treasury, ICTOGovernor(gov))
+            )
+        );
+    }
+
+    /// @dev CREATE/CREATE2 both bump nonce. Order: token → adapter → governor → hook(CREATE2).
+    function _predictAdapterGov(
+        address deployer,
+        bool deployToken,
+        bool deployAdapter,
+        bool deployGov,
+        Book memory book
+    ) internal view returns (address adapterPred, address govPred) {
+        uint64 nonce = uint64(vm.getNonce(deployer));
+        if (deployToken) nonce += 1; // token CREATE or CREATE2
+        if (deployAdapter) {
+            adapterPred = vm.computeCreateAddress(deployer, nonce);
+            nonce += 1;
+        } else {
+            adapterPred = book.v4Adapter;
+        }
+        if (deployGov) {
+            govPred = vm.computeCreateAddress(deployer, nonce);
+        } else {
+            govPred = book.governor;
+        }
+    }
 
     function _assertChainAllowed() internal view {
         uint256 id = block.chainid;
@@ -248,23 +335,25 @@ contract Deploy is DeploySoftLaunchGuard {
         revert WrongChain(id);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // idempotency helpers
-    // ═══════════════════════════════════════════════════════════════════════
+    function _assertExternals() internal view {
+        if (RH_POOL_MANAGER.code.length == 0) revert ExternalMissing("PoolManager", RH_POOL_MANAGER);
+        if (UNIVERSAL_ROUTER.code.length == 0) revert ExternalMissing("UniversalRouter", UNIVERSAL_ROUTER);
+        if (PERMIT2.code.length == 0) revert ExternalMissing("Permit2", PERMIT2);
+    }
 
     function _hasCode(address a) internal view returns (bool) {
         return a != address(0) && a.code.length > 0;
     }
 
     function _loadBook(string memory path) internal view returns (Book memory b) {
-        if (!vm.exists(path)) {
-            // First run: empty book (placeholder may exist with zero addresses).
-            return b;
-        }
+        b.poolManager = RH_POOL_MANAGER;
+        b.universalRouter = UNIVERSAL_ROUTER;
+        b.permit2 = PERMIT2;
+        if (!vm.exists(path)) return b;
         string memory raw = vm.readFile(path);
-        // Tolerate placeholder zeros / missing keys via try-style reads.
         b.stonkz = _readAddr(raw, ".contracts.StonkzToken");
-        b.poolManager = _readAddr(raw, ".contracts.MockPoolManager");
+        // Prefer V4Adapter; never read MockPoolManager into the book.
+        b.v4Adapter = _readAddr(raw, ".contracts.V4Adapter");
         b.governor = _readAddr(raw, ".contracts.CTOGovernor");
         b.hook = _readAddr(raw, ".contracts.StonkzFeeHook");
         b.feeLocker = _readAddr(raw, ".contracts.FeeLockerV2");
@@ -276,7 +365,6 @@ contract Deploy is DeploySoftLaunchGuard {
     }
 
     function _readAddr(string memory raw, string memory key) internal view returns (address a) {
-        // stdJson reverts on missing key — catch via empty/zero placeholder file always having keys.
         bytes memory data = vm.parseJson(raw, key);
         if (data.length == 0) return address(0);
         a = abi.decode(data, (address));
@@ -298,7 +386,10 @@ contract Deploy is DeploySoftLaunchGuard {
 
         string memory contracts = "contracts";
         vm.serializeAddress(contracts, "StonkzToken", book.stonkz);
-        vm.serializeAddress(contracts, "MockPoolManager", book.poolManager);
+        vm.serializeAddress(contracts, "PoolManager", RH_POOL_MANAGER);
+        vm.serializeAddress(contracts, "V4Adapter", book.v4Adapter);
+        vm.serializeAddress(contracts, "UniversalRouter", UNIVERSAL_ROUTER);
+        vm.serializeAddress(contracts, "Permit2", PERMIT2);
         vm.serializeAddress(contracts, "CTOGovernor", book.governor);
         vm.serializeAddress(contracts, "StonkzFeeHook", book.hook);
         vm.serializeAddress(contracts, "FeeLockerV2", book.feeLocker);
@@ -306,8 +397,7 @@ contract Deploy is DeploySoftLaunchGuard {
         vm.serializeAddress(contracts, "LadderSettlement", book.settlement);
         vm.serializeAddress(contracts, "StonkzVault", book.vault);
         vm.serializeAddress(contracts, "StonkzExpressFactory", book.express);
-        string memory contractsJson =
-            vm.serializeAddress(contracts, "StonkzLadderFactory", book.ladder);
+        string memory contractsJson = vm.serializeAddress(contracts, "StonkzLadderFactory", book.ladder);
 
         string memory config = "config";
         vm.serializeAddress(config, "custody", custody);
@@ -319,7 +409,7 @@ contract Deploy is DeploySoftLaunchGuard {
         string memory configJson = vm.serializeString(
             config,
             "poolManagerNote",
-            "MockPoolManager - M3.5 real Uniswap v4 PoolManager wiring NOT STARTED"
+            "Robinhood PoolManager singleton 0x8366a39C via V4Adapter; MockPoolManager not in official manifest"
         );
 
         string memory wiring = "wiring";
@@ -329,6 +419,8 @@ contract Deploy is DeploySoftLaunchGuard {
         vm.serializeBool(wiring, "govRegistry", true);
         vm.serializeBool(wiring, "softLaunchExpress", true);
         vm.serializeBool(wiring, "softLaunchLadder", true);
+        vm.serializeBool(wiring, "hookFlagsValidated", true);
+        vm.serializeBool(wiring, "canonManagerBound", true);
         string memory wiringJson = vm.serializeBool(wiring, "stonkzSupplyParked", true);
 
         string memory templates = "templates";
@@ -344,32 +436,38 @@ contract Deploy is DeploySoftLaunchGuard {
         vm.writeJson(finalJson, path);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // wiring assertions
-    // ═══════════════════════════════════════════════════════════════════════
-
     function _assertWiring(Book memory book, address deployer, address custody, address pairToken, address usdg)
         internal
         view
     {
-        // Soft-launch: closed + deployer-only on BOTH DeployControls instances.
+        if (book.poolManager != RH_POOL_MANAGER) revert WiringFailed("poolManager pin");
+        if (!_hasCode(book.v4Adapter)) revert WiringFailed("v4Adapter");
+        if (address(V4Adapter(payable(book.v4Adapter)).manager()) != RH_POOL_MANAGER) {
+            revert WiringFailed("adapter.manager");
+        }
+
         _assertSoftLaunchGate(DeployControls(book.express), deployer);
         _assertSoftLaunchGate(DeployControls(book.ladder), deployer);
 
         StonkzExpressFactory express = StonkzExpressFactory(book.express);
         if (express.stonkzRef() != book.stonkz) revert WiringFailed("express.stonkzRef");
         if (address(express.hook()) != book.hook) revert WiringFailed("express.hook");
+        if (address(express.poolManager()) != book.v4Adapter) revert WiringFailed("express.pm=adapter");
 
         StonkzLadderFactory ladder = StonkzLadderFactory(book.ladder);
         if (ladder.vaultRef() != book.vault) revert WiringFailed("ladder.vaultRef");
 
-        LadderSettlement settlement = LadderSettlement(book.settlement);
+        LadderSettlement settlement = LadderSettlement(payable(book.settlement));
         if (settlement.stonkzRef() != book.stonkz) revert WiringFailed("settlement.stonkzRef");
         if (address(settlement.feeLocker()) != book.feeLocker) revert WiringFailed("settlement.feeLocker");
 
         if (address(CTOGovernor(book.governor).registry()) != book.hook) revert WiringFailed("gov.registry");
 
-        // Ref prices: ETH 2.5e11 on both factories; USDG 1e15 when configured.
+        StonkzFeeHook hook = StonkzFeeHook(payable(book.hook));
+        if (!HookVanity.matches(book.hook)) revert HookVanityBad(book.hook);
+        if (address(hook.canonManager()) != RH_POOL_MANAGER) revert WiringFailed("hook.canonManager");
+        if (address(hook.poolManager()) != book.v4Adapter) revert WiringFailed("hook.poolManager");
+
         uint256 ethExpress = express.stonkzRefPriceWad(address(0));
         uint256 ethLadder = ladder.stonkzRefPriceWad(address(0));
         if (ethExpress != REF_ETH) revert RefPriceMismatch(address(0), ethExpress, REF_ETH);
@@ -384,7 +482,6 @@ contract Deploy is DeploySoftLaunchGuard {
             if (p != REF_USDG) revert RefPriceMismatch(pairToken, p, REF_USDG);
         }
 
-        // Supply parked at custody; zero circulating intent (no pools in this script).
         uint256 bal = StonkzToken(book.stonkz).balanceOf(custody);
         if (bal != StonkzToken(book.stonkz).TOTAL_SUPPLY()) revert StonkzNotParked(custody, bal);
 
