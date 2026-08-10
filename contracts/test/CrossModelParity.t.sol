@@ -53,7 +53,9 @@ contract CrossModelParity is Test {
             name: "Direct",
             symbol: "DIR",
             createSidePool: true,
-            sidePoolBps: 500
+            sidePoolBps: 500,
+            liquidityLocked: true,
+            stonkzRefPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
         });
         l = new StonkzDirectListing(IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0), p);
     }

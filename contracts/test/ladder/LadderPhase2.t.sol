@@ -51,6 +51,7 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
             tier: inn.tier,
             createSidePool: true,
             sidePoolBps: inn.sidePoolBps,
+            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: inn.walletCapBps,
             sizeBonusBps: inn.sizeBonusBps,
             maxUniqueActives: 300,
@@ -199,6 +200,7 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
             tier: LadderTypes.Tier.God,
             createSidePool: true,
             sidePoolBps: 500,
+            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: 1000,
             sizeBonusBps: 1000,
             maxUniqueActives: 300,

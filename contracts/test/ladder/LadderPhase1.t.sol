@@ -47,6 +47,7 @@ contract LadderPhase1 is LadderVectorLoader, LadderAsserts {
                 tier: inn.tier,
                 createSidePool: true,
                 sidePoolBps: inn.sidePoolBps,
+                stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
                 walletCapBps: inn.walletCapBps,
                 sizeBonusBps: inn.sizeBonusBps,
                 maxUniqueActives: 300,

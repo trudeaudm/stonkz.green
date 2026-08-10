@@ -8,12 +8,14 @@ import {Currency} from "../v4/types/Currency.sol";
 import {TickMath} from "../v4/TickMath.sol";
 import {LiquidityAmounts} from "../v4/LiquidityAmounts.sol";
 import {StonkzFeeHook} from "../StonkzFeeHook.sol";
+import {FeeLockerV2} from "../FeeLockerV2.sol";
 import {LadderConstants} from "./LadderConstants.sol";
 import {IStonkzVault} from "../vault/IStonkzVault.sol";
 
 /// @title LadderSettlement — docs/09 §7 pool construction + raise split
-/// @notice Three-leg raise split; cash [floor,print] + tokens [print,inf); side pool 5% vs STONKZ;
+/// @notice Three-leg raise split; cash [floor,print] + tokens [print,inf); side pool vs STONKZ;
 ///         unsold → thicker LP; MIN_ASK_BPS; hook.registerPool exactly as Express.
+///         FeeLockerV2 registration optional (setFeeLocker) — vectors keep 3-arg ctor (RIDER B).
 contract LadderSettlement {
     using FixedPointMathLib for uint256;
     using PoolIdLibrary for PoolKey;
@@ -29,6 +31,8 @@ contract LadderSettlement {
 
     /// @notice Owner-settable STONKZ reference for side pool (modularity). address(0) ⇒ park.
     address public stonkzRef;
+    /// @notice Optional FeeLockerV2 registry. address(0) ⇒ skip lock registration (vector path).
+    FeeLockerV2 public feeLocker;
     address public owner;
 
     bool public settled;
@@ -47,9 +51,27 @@ contract LadderSettlement {
     int24 public cashTickUpper;
     int24 public askTickLower;
     int24 public askTickUpper;
+    uint128 public cashLiquidity;
+    uint128 public askLiquidity;
+    uint128 public sideLiquidity;
+    uint256 public cashLockId;
+    uint256 public askLockId;
+    uint256 public sideLockId;
+    bytes32 public cashSalt;
+    bytes32 public askSalt;
+    bytes32 public sideSalt;
+    int24 public sideTickLower;
+    int24 public sideTickUpper;
+    /// @notice Stamped from settle args (auction).
+    bool public liquidityLocked;
+    address public unlockRecipient;
+    address public userTokenSettled;
+    /// @notice Stamped from settle. Unit: pair-wei per STONKZ token, WAD.
+    uint256 public stonkzRefPriceWad;
 
     event OwnershipTransferred(address indexed prev, address indexed next);
     event StonkzRefSet(address indexed stonkz);
+    event FeeLockerSet(address indexed feeLocker);
     event RaiseSplit(uint256 toLP, uint256 toTreasury, uint256 toCreator);
     event HoldbackToVault(address indexed vault, uint256 amount);
     event CreatorCashPaid(address indexed creator, uint256 amount);
@@ -58,6 +80,7 @@ contract LadderSettlement {
     event SidePoolBuilt(PoolId id, uint256 tokens);
     event SidePoolParked(uint256 tokens);
     event SettlementComplete(uint256 printPrice, uint256 raised, bool graduated);
+    event LiquidityWithdrawn(address indexed token, address indexed to, bytes32 leg, uint128 liquidity);
 
     error NotOwner();
     error AlreadySettled();
@@ -67,6 +90,11 @@ contract LadderSettlement {
     error VaultNotContract();
     error TransferFailed();
     error SplitInvariant();
+    error LiquidityIsLocked();
+    error NotUnlockRecipient();
+    error NothingToWithdraw();
+    error NotSettled();
+    error RefPriceUnset();
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
@@ -90,19 +118,29 @@ contract LadderSettlement {
         emit StonkzRefSet(stonkz);
     }
 
+    /// @notice Wire FeeLockerV2 for lock registry (production / rehearsal). Vectors leave unset.
+    function setFeeLocker(FeeLockerV2 fl) external onlyOwner {
+        feeLocker = fl;
+        emit FeeLockerSet(address(fl));
+    }
+
     struct SettleArgs {
         bool graduated;
         uint256 raised;
         uint256 supply;
         uint256 auctionSupply;
         uint256 soldTokens;
-        uint256 printPrice; // WAD
-        uint256 floorPrice; // WAD
+        uint256 printPrice; // pair-wei per token, WAD
+        uint256 floorPrice; // pair-wei per token, WAD
         uint16 carveBps; // stamped
         uint16 cashHoldbackBps;
         uint16 holdbackBps; // token vault holdback
         bool createSidePool; // stamped — docs/03 switch 2
         uint16 sidePoolBps; // stamped — bps of LP-destined tokens
+        /// @dev Unit: pair-wei per STONKZ token, WAD. Required when createSidePool && sideAmt>0.
+        uint256 stonkzRefPriceWad;
+        bool liquidityLocked; // stamped — docs/03 switch 1
+        address unlockRecipient; // stamped — creator
         address vaultRef;
         address creator;
         address treasury;
@@ -116,6 +154,10 @@ contract LadderSettlement {
         settled = true;
         printPrice = a.printPrice;
         floorPrice = a.floorPrice;
+        liquidityLocked = a.liquidityLocked;
+        unlockRecipient = a.unlockRecipient;
+        userTokenSettled = a.userToken;
+        stonkzRefPriceWad = a.stonkzRefPriceWad;
 
         // ─── three-leg raise split (docs/09 §7) ───────────────────────────
         toTreasury = FixedPointMathLib.fullMulDiv(a.raised, a.carveBps, 10_000);
@@ -167,7 +209,8 @@ contract LadderSettlement {
         // ─── side pool vs STONKZ ref (absent when createSidePool=false or sideAmt=0)
         if (sideAmt > 0) {
             if (stonkzRef != address(0)) {
-                _buildSidePool(a.userToken, sideAmt, a.printPrice);
+                if (a.stonkzRefPriceWad == 0) revert RefPriceUnset();
+                _buildSidePool(a.userToken, sideAmt, a.printPrice, a.stonkzRefPriceWad);
             } else {
                 emit SidePoolParked(sideAmt);
             }
@@ -222,6 +265,8 @@ contract LadderSettlement {
         askTickUpper = maxTick;
 
         bytes32 salt = bytes32(uint256(uint160(address(this))));
+        cashSalt = salt;
+        askSalt = bytes32(uint256(salt) + 1);
 
         // Cash leg: pair in [floor, print]
         if (cash > 0 && cashTickLower < cashTickUpper) {
@@ -233,6 +278,7 @@ contract LadderSettlement {
                 pairIs0 ? 0 : cash
             );
             if (liqCash == 0) liqCash = 1;
+            cashLiquidity = liqCash;
             poolManager.modifyLiquidity(
                 mainPoolKey,
                 IPoolManager.ModifyLiquidityParams({
@@ -242,6 +288,13 @@ contract LadderSettlement {
                     salt: salt
                 }),
                 ""
+            );
+            cashLockId = _registerLock(
+                mainPoolKey,
+                keccak256(abi.encode(address(this), cashTickLower, cashTickUpper, salt)),
+                FeeLockerV2.PoolKind.Main,
+                pairToken,
+                userToken
             );
         }
 
@@ -255,25 +308,35 @@ contract LadderSettlement {
                 pairIs0 ? askTokens : 0
             );
             if (liqAsk == 0) liqAsk = 1;
+            askLiquidity = liqAsk;
             poolManager.modifyLiquidity(
                 mainPoolKey,
                 IPoolManager.ModifyLiquidityParams({
                     tickLower: askTickLower,
                     tickUpper: askTickUpper,
                     liquidityDelta: int256(uint256(liqAsk)),
-                    salt: bytes32(uint256(salt) + 1)
+                    salt: askSalt
                 }),
                 ""
+            );
+            askLockId = _registerLock(
+                mainPoolKey,
+                keccak256(abi.encode(address(this), askTickLower, askTickUpper, askSalt)),
+                FeeLockerV2.PoolKind.Main,
+                pairToken,
+                userToken
             );
         }
 
         emit MainPoolBuilt(mainPoolKey.toId(), cashTickLower, cashTickUpper, askTickLower, askTickUpper);
     }
 
-    function _buildSidePool(address userToken, uint256 tokens, uint256 printP) internal {
+    function _buildSidePool(address userToken, uint256 tokens, uint256 printP, uint256 refPriceWad) internal {
+        // priceInStonkz = printP / refPriceWad (both pair-wei per token, WAD). Ruling B: no USD leg.
+        uint256 priceInStonkz = FixedPointMathLib.fullMulDiv(printP, WAD, refPriceWad);
         sidePoolKey = _sidePoolKey(userToken, stonkzRef);
         bool tokIs0 = userToken < stonkzRef;
-        uint160 sqrtP = _sqrtPriceFromPriceWad(printP, !tokIs0);
+        uint160 sqrtP = _sqrtPriceFromPriceWad(priceInStonkz, !tokIs0);
         if (!poolManager.isInitialized(sidePoolKey.toId())) {
             poolManager.initialize(sidePoolKey, sqrtP);
         }
@@ -281,6 +344,8 @@ contract LadderSettlement {
         int24 lo = tick;
         int24 hi = _alignDown(TickMath.MAX_TICK, TICK_SPACING);
         if (lo >= hi) lo = hi - TICK_SPACING;
+        sideTickLower = lo;
+        sideTickUpper = hi;
         uint128 liq = LiquidityAmounts.getLiquidityForAmounts(
             sqrtP,
             TickMath.getSqrtRatioAtTick(lo),
@@ -289,14 +354,103 @@ contract LadderSettlement {
             tokIs0 ? 0 : tokens
         );
         if (liq == 0) liq = 1;
+        sideLiquidity = liq;
+        bytes32 sideSalt_ = bytes32(uint256(2));
+        sideSalt = sideSalt_;
         poolManager.modifyLiquidity(
             sidePoolKey,
             IPoolManager.ModifyLiquidityParams({
-                tickLower: lo, tickUpper: hi, liquidityDelta: int256(uint256(liq)), salt: bytes32(uint256(2))
+                tickLower: lo, tickUpper: hi, liquidityDelta: int256(uint256(liq)), salt: sideSalt_
             }),
             ""
         );
+        sideLockId = _registerLock(
+            sidePoolKey,
+            keccak256(abi.encode(address(this), lo, hi, sideSalt_)),
+            FeeLockerV2.PoolKind.Side,
+            stonkzRef,
+            userToken
+        );
         emit SidePoolBuilt(sidePoolKey.toId(), tokens);
+    }
+
+    function _registerLock(
+        PoolKey memory key,
+        bytes32 positionId,
+        FeeLockerV2.PoolKind kind,
+        address pairCurrency,
+        address userToken
+    ) internal returns (uint256 lockId) {
+        if (address(feeLocker) == address(0)) return 0;
+        lockId = feeLocker.lockPosition(
+            key, positionId, kind, pairCurrency, userToken, liquidityLocked, unlockRecipient
+        );
+    }
+
+    /// @notice Withdraw main cash+ask LP. Unlocked stamp + unlockRecipient only.
+    function withdrawMainLiquidity() external {
+        _requireUnlockedCaller();
+        if (cashLiquidity == 0 && askLiquidity == 0) revert NothingToWithdraw();
+        if (cashLiquidity > 0) {
+            uint128 liq = cashLiquidity;
+            cashLiquidity = 0;
+            poolManager.modifyLiquidity(
+                mainPoolKey,
+                IPoolManager.ModifyLiquidityParams({
+                    tickLower: cashTickLower,
+                    tickUpper: cashTickUpper,
+                    liquidityDelta: -int256(uint256(liq)),
+                    salt: cashSalt
+                }),
+                ""
+            );
+            if (cashLockId != 0) feeLocker.markWithdrawn(cashLockId);
+            emit LiquidityWithdrawn(userTokenSettled, unlockRecipient, bytes32("cash"), liq);
+        }
+        if (askLiquidity > 0) {
+            uint128 liq = askLiquidity;
+            askLiquidity = 0;
+            poolManager.modifyLiquidity(
+                mainPoolKey,
+                IPoolManager.ModifyLiquidityParams({
+                    tickLower: askTickLower,
+                    tickUpper: askTickUpper,
+                    liquidityDelta: -int256(uint256(liq)),
+                    salt: askSalt
+                }),
+                ""
+            );
+            if (askLockId != 0) feeLocker.markWithdrawn(askLockId);
+            emit LiquidityWithdrawn(userTokenSettled, unlockRecipient, bytes32("ask"), liq);
+        }
+    }
+
+    function withdrawSideLiquidity() external {
+        _requireUnlockedCaller();
+        if (sideLiquidity == 0) revert NothingToWithdraw();
+        uint128 liq = sideLiquidity;
+        sideLiquidity = 0;
+        poolManager.modifyLiquidity(
+            sidePoolKey,
+            IPoolManager.ModifyLiquidityParams({
+                tickLower: sideTickLower,
+                tickUpper: sideTickUpper,
+                liquidityDelta: -int256(uint256(liq)),
+                salt: sideSalt
+            }),
+            ""
+        );
+        if (sideLockId != 0) feeLocker.markWithdrawn(sideLockId);
+        emit LiquidityWithdrawn(userTokenSettled, unlockRecipient, bytes32("side"), liq);
+    }
+
+    function _requireUnlockedCaller() internal view {
+        if (!settled) revert NotSettled();
+        if (liquidityLocked) revert LiquidityIsLocked();
+        if (msg.sender != unlockRecipient) revert NotUnlockRecipient();
+        if (address(feeLocker) != address(0)) {
+            feeLocker.requireCanWithdraw(userTokenSettled, msg.sender);
+        }
     }
 
     function _mainPoolKey(address a, address b) internal view returns (PoolKey memory key) {

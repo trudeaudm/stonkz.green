@@ -179,6 +179,9 @@ contract SidePoolSwitchesPhase2 is Test {
                 holdbackBps: 0,
                 createSidePool: false,
                 sidePoolBps: 500, // stamped but unused
+                stonkzRefPriceWad: 0,
+                liquidityLocked: true,
+                unlockRecipient: CREATOR,
                 vaultRef: address(0),
                 creator: CREATOR,
                 treasury: TREASURY,
@@ -216,6 +219,9 @@ contract SidePoolSwitchesPhase2 is Test {
                 holdbackBps: 0,
                 createSidePool: true,
                 sidePoolBps: 500,
+                stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+                liquidityLocked: true,
+                unlockRecipient: CREATOR,
                 vaultRef: address(0),
                 creator: CREATOR,
                 treasury: TREASURY,
@@ -250,7 +256,9 @@ contract SidePoolSwitchesPhase2 is Test {
             name: "Stonk",
             symbol: "STK",
             createSidePool: true, // overwritten by factory stamp
-            sidePoolBps: 500
+            sidePoolBps: 500,
+            liquidityLocked: true,
+            stonkzRefPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
         });
     }
 
@@ -273,6 +281,7 @@ contract SidePoolSwitchesPhase2 is Test {
             tier: LadderTypes.Tier.God,
             createSidePool: createSide, // overwritten by factory
             sidePoolBps: sideBps, // overwritten by factory
+            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD; overwritten by factory
             walletCapBps: 500,
             sizeBonusBps: 1000,
             maxUniqueActives: 64,

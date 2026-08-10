@@ -19,7 +19,7 @@ library LadderTolerance {
     uint256 internal constant MONEY_WALLET_REL_DEN = 1e5; // 1e-5 relative
 
     /// @dev Absolute floor for near-zero money comparisons (1 wei of WAD-scale dust).
-    uint256 internal constant MONEY_ABS_FLOOR = 1e9; // 1e-9 WAD dollars
+    uint256 internal constant MONEY_ABS_FLOOR = 1e9; // 1e-9 pair-currency WAD
 
     /// @dev Token amounts: water-fill order vs float64 sim drifts up to ~1e-2 on heavy books
     ///      (vector 06). Money legs stay at 1e-9. Documented Phase 2 — under 1e-6 STOP (money only).

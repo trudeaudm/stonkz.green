@@ -259,7 +259,9 @@ contract DeployControlsPhase1 is Test {
             name: "Stonk",
             symbol: "STK",
             createSidePool: true,
-            sidePoolBps: 500
+            sidePoolBps: 500,
+            liquidityLocked: true,
+            stonkzRefPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
         });
     }
 
@@ -279,6 +281,7 @@ contract DeployControlsPhase1 is Test {
             tier: LadderTypes.Tier.God,
             createSidePool: true,
             sidePoolBps: 500,
+            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: 500,
             sizeBonusBps: 1000,
             maxUniqueActives: 64,

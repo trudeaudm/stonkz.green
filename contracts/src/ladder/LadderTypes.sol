@@ -16,7 +16,7 @@ library LadderTypes {
         uint256 auctionSupply; // token wei
         uint16 cashHoldbackBps; // bps of raised
         uint64 epochSeconds; // 0 = derive from tier
-        uint256 floorMcap; // WAD dollars
+        uint256 floorMcap; // pair currency (WAD)
         uint256 floorPrice; // WAD pair/token
         bytes32 holdbackDelivery; // keccak of "none"|"vest"|"lock"|…
         uint16 holdbackBps; // bps of supply (display; circFrac=1 until vault)
@@ -29,11 +29,11 @@ library LadderTypes {
         uint16 raiseRatioBps; // bps of startMcap
         uint256 raiseRatio; // WAD fraction
         uint256 reserve; // token wei
-        uint256 rungIntervalUsd; // WAD dollars
+        uint256 rungIntervalUsd; // pair currency (WAD)
         uint16 sidePoolBps; // bps of LP-destined tokens
         uint16 sizeBonusBps; // bps
         uint256 supply; // token wei
-        uint256 threshold; // WAD dollars
+        uint256 threshold; // pair currency (WAD)
         Tier tier;
         uint16 walletCapBps; // bps of auction supply
     }

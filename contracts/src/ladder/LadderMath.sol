@@ -35,7 +35,7 @@ library LadderMath {
         return FixedPointMathLib.fullMulDiv(mcap, WAD, supply);
     }
 
-    /// @notice Mmax mcap (WAD dollars).
+    /// @notice Mmax mcap (pair currency, WAD).
     /// Mmax = startMcap + lpShare * (raised + liveBudget) / (lpHealthTarget * circFrac)
     function mmax(
         uint256 startMcap,

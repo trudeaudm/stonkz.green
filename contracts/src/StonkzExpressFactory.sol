@@ -43,6 +43,8 @@ contract StonkzExpressFactory is DeployControls {
         ctoGovernor = ctoGovernor_;
         pairToken = pairToken_;
         stonkzRef = stonkzRef_;
+        // USDG (or other non-ETH quote): seed mid-band default. ETH already set in DeployControls.
+        _seedUsdgRefDefault(pairToken_);
     }
 
     /// @notice CREATE2 salt binding deployer → prevents salt grief across allowlisted callers.
@@ -64,7 +66,7 @@ contract StonkzExpressFactory is DeployControls {
     }
 
     /// @notice Deploy an Express listing. Gated by DeployControls (RIDER A birth = deployer-only).
-    /// @dev Stamps current side-pool factory defaults onto the listing (docs/03 switches 2–3).
+    /// @dev Stamps side-pool + lock + ref-price factory defaults (docs/03; ruling B).
     /// @param userSalt Caller-chosen salt half; effective salt = listingSalt(msg.sender, userSalt).
     function list(StonkzDirectListing.ListingParams memory p, bytes32 userSalt)
         external
@@ -73,6 +75,9 @@ contract StonkzExpressFactory is DeployControls {
         _requireDeployAllowed(msg.sender);
         p.createSidePool = defaultCreateSidePool;
         p.sidePoolBps = defaultSidePoolBps;
+        p.liquidityLocked = defaultLiquidityLocked;
+        // Ref: required when createSidePool; never a silent fallback (RefPriceUnset).
+        p.stonkzRefPriceWad = p.createSidePool ? _requireRefPrice(pairToken) : 0;
         bytes32 salt = listingSalt(msg.sender, userSalt);
         listing = new StonkzDirectListing{salt: salt}(
             poolManager, feeLocker, hook, accumulator, ctoGovernor, pairToken, stonkzRef, p

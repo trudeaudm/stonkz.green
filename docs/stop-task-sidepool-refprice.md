@@ -1,88 +1,42 @@
 # STOP — Side-pool init price / `stonkzRefPriceWad` denomination
 **Branch:** `feat/factory-switches`  
 **Scope:** Phase-3 ADDENDUM — stamped `stonkzRefPriceWad` for Express + Ladder side-pool init.  
-**Status:** STOPPED pending denomination ruling. **No conversion code landed.**  
-**Trigger:** Prompt gate — *"IF printP or startPriceWad is denominated in ETH rather than USD, the conversion needs the pair leg too — STOP and report the actual denomination rather than guessing."*
+**Status:** RESOLVED — ruling **B** (refined). Implemented with Phase 3 lock stamp.
 
 ---
 
-## Verdict
+## Ruling (David)
 
-`startPriceWad` / `printPrice` are **pair-currency per token (WAD)**, not a USD oracle unit.
-Pair may be USDG **or** native ETH (`address(0)`). Dividing by a USD-labeled
-`stonkzRefPriceWad` ($0.001 = `1e15`) is dimensionally sound only when pair ≈ USD.
-ETH-pair paths need an explicit ruling before the stamp lands.
+**B — ref is PAIR-PER-STONKZ**, same WAD unit as `startPriceWad` / `printPrice`.
+No USD in the conversion; one multiplication, zero unit crossings.
 
----
-
-## Code evidence (operands)
-
-| Site | What the unit actually is |
-|---|---|
-| `StonkzDirectListing.startPriceWad` | Comment: `// pair per token`. Set as `startMcap * WAD / totalSupply`. |
-| `StonkzDirectListing` tiers | `TIER_4K = 4000e18`, `TIER_8K = 8000e18` — dollar *labels*, but pair is constructor arg. |
-| `DirectListing.t.sol` | `PAIR = address(0) // native pair` with those same $4k/$8k tiers. |
-| `LadderConstants` | `Money = pair-currency wei (WAD dollars when pair is 18-dec USDG/ETH quote). Prices = pair-per-token in WAD.` |
-| `StonkzLadderAuction.floorMcap` | Comment `// WAD dollars`; `floorPrice = floorMcap * WAD / supply`; `pairToken` may be `address(0)`. |
-| Ladder phase tests | Native pair + `floorMcap: 2_500 ether` / `5_000 ether` (dollar fiction in ETH wei). |
-| `LadderSettlement._buildSidePool` | Passes `printP` straight into `_sqrtPriceFromPriceWad` as if pair == STONKZ (bug this addendum fixes) — no USD conversion today. |
-| Express `_deploySidePool` | `spot = WAD` ($1 mock); `priceInStonkz = startPriceWad * WAD / spot` — assumes startPriceWad shares the mock's dollar unit. |
-| Mechanism / ledger | Spec §0: dollars (USDG). docs/03: genesis ~$100k FDV ⇒ **$0.001/token** (aligns with mid-band `1e15`). |
-
-**Bottom line:** semantic money is "WAD dollars" when the quote is treated as dollar-like; the stored type is always **pair/token**. Production + tests both allow ETH as pair.
-
----
-
-## Why the proposed formula is unsafe without a ruling
-
-Proposed:
-```
-priceInStonkz = startPriceWad * WAD / stonkzRefPriceWad
-```
-with `stonkzRefPriceWad` launch default `1e15` // **$0.001**.
-
-| Pair | `startPriceWad` / `printP` | `stonkzRefPriceWad` as $ | Result |
+| Pair key | Launch default | Bounds | Unit |
 |---|---|---|---|
-| USDG | ≈ USD/token | USD/STONKZ | STONKZ/token ✓ |
-| Native ETH | ETH/token | USD/STONKZ | **wrong units** — needs ETH/USD (or ref stamped in ETH) |
+| ETH `address(0)` | `2.5e11` | `[1e8, 1e17]` | pair-wei per STONKZ token, WAD |
+| USDG (non-zero) | `1e15` | `[1e12, 1e21]` | pair-wei per STONKZ token, WAD |
 
-Mispricing low still drains the side pool; guessing an ETH/USD leg here would be mechanism invention.
-
----
-
-## Ruling options (pick one)
-
-**A. USDG-only for side-pool price math (recommended if genesis quote is USDG)**  
-- Assert / document: side-pool init assumes pair is dollar-stable (USDG).  
-- ETH-pair listings: either disallow side pool, or park until a pair-leg exists.  
-- Stamp `stonkzRefPriceWad` as WAD **USD** (= pair units under A). Formula as written. Launch `1e15`.
-
-**B. Ref is pair-per-STONKZ (unit-matched to prices)**  
-- Rename semantics: `stonkzRefPriceWad` = **pair currency per STONKZ**, not an independent USD oracle.  
-- Launch `1e15` valid when pair is USDG (0.001 USDG/STONKZ ≈ $0.001).  
-- ETH-pair: owner sets a different default in ETH/STONKZ before those deploys (or ETH factories carry their own default).  
-- Same formula; no second leg. Closest to existing "WAD dollars when quote is dollar-like" discipline.
-
-**C. Dual-leg for ETH pairs**  
-- Keep USD ref + require `pairRefPriceWad` (ETH/USD) when `pairToken == address(0)`.  
-- `priceInStonkz = startPriceWad * pairRefPriceWad / stonkzRefPriceWad`.  
-- Larger surface; overlaps the queued post-genesis TWAP upgrade.
+- Per-pair mapping on `DeployControls`; owner-settable; `RefPriceChanged`; stamped per deploy.
+- `createSidePool=true` + unset pair ⇒ `RefPriceUnset` (never a fallback constant).
+- ETH figure is a **deploy-runbook** line (re-check vs spot); see `Deploy.s.sol` + docs/04.
+- docs/04 TWAP queue stands (post-genesis).
 
 ---
 
-## Already ruled (not in dispute)
+## Delivered
 
-- Stamp pattern (5th application): factory mutable default → immutable per deploy.  
-- Launch default mid-band `1e15` ($0.001), bounds `[1e12, 1e21]`, `RefPriceChanged`.  
-- Err high, never low (asymmetric drain).  
-- QUEUE (docs/04, local): post-genesis TWAP from live STONKZ/ETH — not this chain.
+| Artifact | Change |
+|---|---|
+| `DeployControls` | Per-pair `stonkzRefPriceWad` / `Configured`; ETH birth default; USDG seed helper; bounds; clear; events |
+| `StonkzExpressFactory` | Seeds USDG default for non-ETH `pairToken`; stamps ref on `list` |
+| `StonkzLadderFactory` | Stamps ref on `file` from `p.pairToken` |
+| `StonkzDirectListing` | Immutable stamp; `priceInStonkz = startPriceWad * WAD / ref` |
+| `StonkzLadderAuction` / `LadderSettlement` | Params/SettleArgs stamp; convert `printP` before sqrt |
+| Phase 3 lock | Folded in (liquidityLocked + FeeLocker withdraw) |
+| Unit comments | "WAD dollars" → "pair currency (WAD)" on ladder money fields |
+| Tests | `SidePoolRefPrice.t.sol` + `LockStampPhase3.t.sol` |
 
-## Not done (blocked)
-
-- DeployControls / Express / Ladder stamp + conversion.  
-- Known-value init-tick tests; stamp-survives-default-change.  
-- WIP Phase 3 lock-stamp work on this branch is **unrelated** and left uncommitted.
-
-## Ask
-
-Which option **A / B / C** (or amend)? After ruling, implement stamp + conversion + tests on this branch without guessing an ETH/USD leg.
+## Conversion (both paths)
+```
+priceInStonkz = pairPerTokenWad * WAD / stonkzRefPriceWad
+// both numerator price and ref: pair-wei per token, WAD
+```

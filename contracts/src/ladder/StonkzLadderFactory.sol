@@ -52,6 +52,9 @@ contract StonkzLadderFactory is DeployControls {
         // docs/03 switches 2–3 — stamp factory defaults (mutable → immutable per auction).
         p.createSidePool = defaultCreateSidePool;
         p.sidePoolBps = defaultSidePoolBps;
+        // Switch 1 stamped via auction constructor reading DeployControls(msg.sender).
+        // Ref price (ruling B): pair-wei per STONKZ token, WAD — required iff createSidePool.
+        p.stonkzRefPriceWad = p.createSidePool ? _requireRefPrice(p.pairToken) : 0;
 
         if (p.holdbackBps > 0) {
             if (vaultRef == address(0)) revert VaultRequiredForHoldback();
