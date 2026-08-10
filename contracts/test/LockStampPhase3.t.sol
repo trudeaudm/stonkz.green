@@ -17,6 +17,7 @@ import {LadderConstants} from "../src/ladder/LadderConstants.sol";
 import {LadderTypes} from "../src/ladder/LadderTypes.sol";
 import {LadderSettlement} from "../src/ladder/LadderSettlement.sol";
 import {DeployControls} from "../src/DeployControls.sol";
+import {StonkzLaunchToken} from "../src/StonkzLaunchToken.sol";
 import {PoolIdLibrary} from "../src/v4/types/PoolKey.sol";
 
 /// @title LockStampPhase3 — liquidityLocked stamp + unlock withdraw (docs/03 switch 1)
@@ -116,6 +117,37 @@ contract LockStampPhase3 is Test {
         assertFalse(second.liquidityLocked());
     }
 
+    /// @notice PHASE-4-GO item 2: read-once at construction — factory flip must not unlock.
+    function test_P3_express_readOnce_lockedSurvivesFactoryUnlock() public {
+        StonkzDirectListing locked = express.list(_params(), bytes32(uint256(30)));
+        assertTrue(locked.liquidityLocked());
+        assertGt(locked.mainLiquidity(), 0);
+
+        express.setDefaultLiquidityLocked(false);
+        assertFalse(express.defaultLiquidityLocked());
+        assertTrue(locked.liquidityLocked()); // stamp immutable
+
+        vm.prank(CREATOR);
+        vm.expectRevert(StonkzDirectListing.LiquidityIsLocked.selector);
+        locked.withdrawMainLiquidity();
+        assertGt(locked.mainLiquidity(), 0);
+    }
+
+    /// @notice Inverse: unlocked stamp still withdraws after factory flips back to locked.
+    function test_P3_express_readOnce_unlockedSurvivesFactoryRelock() public {
+        express.setDefaultLiquidityLocked(false);
+        StonkzDirectListing unlocked = express.list(_params(), bytes32(uint256(31)));
+        assertFalse(unlocked.liquidityLocked());
+
+        express.setDefaultLiquidityLocked(true);
+        assertTrue(express.defaultLiquidityLocked());
+        assertFalse(unlocked.liquidityLocked());
+
+        vm.prank(CREATOR);
+        unlocked.withdrawMainLiquidity();
+        assertEq(unlocked.mainLiquidity(), 0);
+    }
+
     function test_P3_ladder_factoryStampsLockedFromControls() public {
         StonkzLadderAuction a = ladder.file(_ladderParams());
         assertTrue(a.liquidityLocked());
@@ -127,6 +159,36 @@ contract LockStampPhase3 is Test {
         assertTrue(a.liquidityLocked()); // first unchanged
     }
 
+    /// @notice Ladder msg.sender path: auction stamp survives factory flip (read-once).
+    function test_P3_ladder_readOnce_lockedSurvivesFactoryUnlock() public {
+        StonkzLadderAuction a = ladder.file(_ladderParams());
+        assertTrue(a.liquidityLocked());
+        ladder.setDefaultLiquidityLocked(false);
+        assertFalse(ladder.defaultLiquidityLocked());
+        assertTrue(a.liquidityLocked());
+        assertEq(a.unlockRecipient(), CREATOR);
+    }
+
+    /// @notice Settlement withdraw gated on SettleArgs stamp, not live factory default.
+    function test_P3_ladder_settlement_readOnce_lockedSurvivesFactoryUnlock() public {
+        LadderSettlement s = _settleMinimal(true);
+        assertTrue(s.liquidityLocked());
+        ladder.setDefaultLiquidityLocked(false); // irrelevant to already-settled stamp
+        vm.prank(CREATOR);
+        vm.expectRevert(LadderSettlement.LiquidityIsLocked.selector);
+        s.withdrawMainLiquidity();
+        assertGt(s.cashLiquidity() + s.askLiquidity(), 0);
+    }
+
+    function test_P3_ladder_settlement_readOnce_unlockedSurvivesFactoryRelock() public {
+        LadderSettlement s = _settleMinimal(false);
+        assertFalse(s.liquidityLocked());
+        ladder.setDefaultLiquidityLocked(true);
+        vm.prank(CREATOR);
+        s.withdrawMainLiquidity();
+        assertEq(s.cashLiquidity() + s.askLiquidity(), 0);
+    }
+
     function test_P3_ladder_directDeployDefaultsLocked() public {
         // Vector path: new auction from test contract → no defaultLiquidityLocked() → true
         StonkzLadderAuction.Params memory p = _ladderParams();
@@ -136,38 +198,41 @@ contract LockStampPhase3 is Test {
         assertEq(a.unlockRecipient(), CREATOR);
     }
 
-    function test_P3_ladder_settlement_withdrawGate() public {
+    function test_P3_ladder_settlement_withdrawGate_notSettled() public {
         LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, PAIR);
+        vm.expectRevert(LadderSettlement.NotSettled.selector);
+        s.withdrawMainLiquidity();
+    }
+
+    function _settleMinimal(bool locked) internal returns (LadderSettlement s) {
+        s = new LadderSettlement(IPoolManager(address(pm)), hook, PAIR);
         s.setFeeLocker(locker);
         s.setStonkzRef(STONKZ);
         vm.deal(address(this), 50 ether);
-
-        address tok = address(uint160(uint256(keccak256("tok"))));
-        // Minimal settle with unlocked stamp — build pools via settle
-        // Use a real token for registration
-        // Skip full auction: call settle with createSidePool false, unlocked
-        // Need a token address that works with hook register — use LaunchToken
-        // Import via inline deploy in helper already in other tests
-
-        // Use Express unlocked listing as the "token" owner path instead for settlement withdraw:
-        // Focus: settlement with feeLocker + unlocked withdraw on cash/ask after settle.
-        express.setDefaultLiquidityLocked(false);
-        // settlement unit already covered for side; lock gate:
-        s.liquidityLocked; // compile check fields exist after settle
-
-        // Direct settle with unlocked
-        // Build SettleArgs with a fresh token from express listing's token
-        StonkzDirectListing listing = express.list(_params(), bytes32(uint256(99)));
-        // Separate settlement instance for ladder-shaped settle
-        LadderSettlement s2 = new LadderSettlement(IPoolManager(address(pm)), hook, PAIR);
-        s2.setFeeLocker(locker);
-        // Cannot re-register same token on hook — use unique params via different listing
-        // Simpler negative: locked settlement rejects withdraw without full settle
-        LadderSettlement s3 = new LadderSettlement(IPoolManager(address(pm)), hook, PAIR);
-        vm.expectRevert(LadderSettlement.NotSettled.selector);
-        s3.withdrawMainLiquidity();
-
-        tok; listing; s2; // silence
+        uint256 supply = 1_000_000 ether;
+        s.settle{value: 10 ether}(
+            LadderSettlement.SettleArgs({
+                graduated: true,
+                raised: 10 ether,
+                supply: supply,
+                auctionSupply: supply,
+                soldTokens: 100_000 ether,
+                printPrice: 1 ether,
+                floorPrice: 0.1 ether,
+                carveBps: 400,
+                cashHoldbackBps: 0,
+                holdbackBps: 0,
+                createSidePool: false,
+                sidePoolBps: 500,
+                stonkzRefPriceWad: 0,
+                liquidityLocked: locked,
+                unlockRecipient: CREATOR,
+                vaultRef: address(0),
+                creator: CREATOR,
+                treasury: TREASURY,
+                userToken: address(new StonkzLaunchToken("T", "T", supply, address(this)))
+            })
+        );
     }
 
     function test_P3_invariantFuzz_lockedNeverWithdraws(uint8 saltSeed, bool trySide) public {
