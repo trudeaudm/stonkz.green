@@ -82,6 +82,7 @@ contract MockPoolManager is IPoolManager {
 
     function modifyLiquidity(PoolKey memory key, ModifyLiquidityParams memory params, bytes calldata)
         external
+        payable
         returns (BalanceDelta callerDelta, BalanceDelta feesAccrued)
     {
         PoolId id = key.toId();
@@ -118,6 +119,7 @@ contract MockPoolManager is IPoolManager {
 
     function swap(PoolKey memory key, SwapParams memory params, bytes calldata)
         external
+        payable
         returns (BalanceDelta swapDelta)
     {
         PoolId id = key.toId();
@@ -188,6 +190,7 @@ contract MockPoolManager is IPoolManager {
 
     function syncToPrice(PoolKey memory key, uint160 targetSqrtPriceX96, uint256 maxBudget)
         external
+        payable
         returns (uint256 spent)
     {
         PoolId id = key.toId();

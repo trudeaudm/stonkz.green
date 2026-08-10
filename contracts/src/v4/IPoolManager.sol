@@ -41,15 +41,18 @@ interface IPoolManager {
 
     function modifyLiquidity(PoolKey memory key, ModifyLiquidityParams memory params, bytes calldata hookData)
         external
+        payable
         returns (BalanceDelta callerDelta, BalanceDelta feesAccrued);
 
     function swap(PoolKey memory key, SwapParams memory params, bytes calldata hookData)
         external
+        payable
         returns (BalanceDelta swapDelta);
 
     /// @notice Sync spot toward targetSqrt with a bounded pair-currency budget. Overrun → SyncBudgetExceeded.
     function syncToPrice(PoolKey memory key, uint160 targetSqrtPriceX96, uint256 maxBudget)
         external
+        payable
         returns (uint256 spent);
 
     function getSlot0(PoolId id)
