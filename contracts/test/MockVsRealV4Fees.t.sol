@@ -88,7 +88,7 @@ contract MockVsRealV4Fees is Test, Deployers {
             currency1: MockCurrency.wrap(c1),
             fee: 0,
             tickSpacing: 60,
-            hooks: address(0)
+            hooks: address(sh)
         });
         mpm.initialize(mkey, MockTickMath.getSqrtRatioAtTick(0));
         sh.registerPool(tokenAddr, pairAddr, CREATOR, mkey);

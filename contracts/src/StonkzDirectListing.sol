@@ -141,6 +141,8 @@ contract StonkzDirectListing {
     error RefPriceUnset();
     error RefPriceOutOfBounds(uint256 price);
 
+    receive() external payable {}
+
     constructor(
         IPoolManager poolManager_,
         FeeLockerV2 feeLocker_,
@@ -150,7 +152,7 @@ contract StonkzDirectListing {
         address pairToken_,
         address stonkz4663_,
         ListingParams memory p
-    ) {
+    ) payable {
         if (p.startMcap != TIER_4K && p.startMcap != TIER_8K) revert BadTier();
         if (p.totalSupply == 0) revert BadSupply();
         if (p.sidePoolBps > SIDE_POOL_BPS_MAX) revert SidePoolBpsOutOfBounds(p.sidePoolBps);
@@ -251,9 +253,10 @@ contract StonkzDirectListing {
             poolManager.initialize(mainPoolKey, startSqrtPriceX96);
         }
 
-        // Range from start to the top usable tick — start mcap → infinity.
+        // Range strictly ABOVE opening tick — single-sided token only (docs/02 §2.2).
+        // tickLower == currentTick would be in-range and demand both currencies (real PM).
         int24 topTick = _alignDown(TickMath.MAX_TICK, TICK_SPACING);
-        int24 lowerTick = startTick;
+        int24 lowerTick = startTick + TICK_SPACING;
         if (lowerTick >= topTick) lowerTick = topTick - TICK_SPACING;
         mainTickLower = lowerTick;
         mainTickUpper = topTick;
@@ -265,7 +268,10 @@ contract StonkzDirectListing {
         mainLiquidity = liq;
 
         bytes32 salt = bytes32(uint256(uint160(address(this))));
-        poolManager.modifyLiquidity(
+        _approvePm(address(token), listed);
+        // Native pair: forward ETH for any amount0 settle dust (real PM); adapter refunds remainder.
+        uint256 ethVal = pairToken == address(0) ? address(this).balance : 0;
+        poolManager.modifyLiquidity{value: ethVal}(
             mainPoolKey,
             IPoolManager.ModifyLiquidityParams({
                 tickLower: lowerTick,
@@ -283,7 +289,10 @@ contract StonkzDirectListing {
             pairToken,
             address(token),
             liquidityLocked,
-            unlockRecipient
+            unlockRecipient,
+            lowerTick,
+            topTick,
+            salt
         );
         emit MainPoolCreated(mainPoolKey.toId(), lowerTick, topTick, liq);
     }
@@ -329,6 +338,7 @@ contract StonkzDirectListing {
         sideLiquidity = liq;
 
         bytes32 salt = bytes32("directside");
+        _approvePm(address(token), tokens);
         poolManager.modifyLiquidity(
             sidePoolKey,
             IPoolManager.ModifyLiquidityParams({
@@ -347,7 +357,10 @@ contract StonkzDirectListing {
             stonkz4663,
             address(token),
             liquidityLocked,
-            unlockRecipient
+            unlockRecipient,
+            bottom,
+            top,
+            salt
         );
         sidePoolDeployed = true;
         emit SidePoolDeployed(sidePoolKey.toId(), bottom, top, tokens);
@@ -457,6 +470,13 @@ contract StonkzDirectListing {
     }
 
     // ─── internal helpers (mirror StonkzLiquidityStrategy) ───────────────────
+
+    /// @dev Approve V4Adapter/Mock to pull ERC20 when settling modifyLiquidity debts.
+    function _approvePm(address token_, uint256 amount) internal {
+        if (token_ == address(0) || amount == 0) return;
+        (bool ok,) = token_.call(abi.encodeWithSignature("approve(address,uint256)", address(poolManager), amount));
+        require(ok, "approve");
+    }
 
     /// @dev docs/06: fee 0, hook attached (StonkzFeeHook). Shared `_poolKey` removed in FEECHAIN Phase 2.
     function _mainPoolKey(address a, address b) internal view returns (PoolKey memory key) {

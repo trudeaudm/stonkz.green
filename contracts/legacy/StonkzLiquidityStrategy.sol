@@ -2,20 +2,20 @@
 pragma solidity ^0.8.26;
 
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
-import {IPoolManager} from "./v4/IPoolManager.sol";
-import {PoolKey, PoolId, PoolIdLibrary} from "./v4/types/PoolKey.sol";
-import {Currency, CurrencyLibrary} from "./v4/types/Currency.sol";
-import {TickMath} from "./v4/TickMath.sol";
-import {LiquidityAmounts} from "./v4/LiquidityAmounts.sol";
-import {BuybackAccumulator} from "./BuybackAccumulator.sol";
-import {FeeLocker} from "./FeeLocker.sol";
-import {StonkzFeeHook} from "./StonkzFeeHook.sol";
+import {IPoolManager} from "../src/v4/IPoolManager.sol";
+import {PoolKey, PoolId, PoolIdLibrary} from "../src/v4/types/PoolKey.sol";
+import {Currency, CurrencyLibrary} from "../src/v4/types/Currency.sol";
+import {TickMath} from "../src/v4/TickMath.sol";
+import {LiquidityAmounts} from "../src/v4/LiquidityAmounts.sol";
+import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
+import {FeeLocker} from "../src/FeeLocker.sol";
+import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 
-/// @title StonkzLiquidityStrategy — post-auction settlement into Uniswap v4 (spec §8)
-/// @notice Price-setting main pool + surplus + 95/5 carve + side pool + FeeLocker custody.
-/// @dev Dual-backend: constructor-injected IPoolManager (mock now, real v4 in M3.5).
-///      FEECHAIN: `_mainPoolKey` / `_sidePoolKey` (Phase 2); hook register on settle; FeeLocker
-///      main→BuybackAccumulator route retired (Phase 4). Accumulator kept for carve + side park.
+/// @title StonkzLiquidityStrategy — LEGACY (V4-CANON Phase 2)
+/// @notice Retired from the official deploy manifest. Not imported by live Express/Ladder
+///         factories. Kept for historical FEECHAIN / seam tests only. Prefer
+///         StonkzDirectListing + LadderSettlement.
+/// @dev Post-auction settlement into Uniswap v4 (spec §8). Dual-backend mock-era.
 contract StonkzLiquidityStrategy {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
