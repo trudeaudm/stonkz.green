@@ -18,7 +18,8 @@ invariant = { runs = 512, depth = 64 }
 extra_output = ["storageLayout"]
 fs_permissions = [
     { access = "read-write", path = "./test/vectors" },
-    { access = "read", path = "./test/fixtures" }
+    { access = "read", path = "./test/fixtures" },
+    { access = "read-write", path = "../deploys/official" }
 ]
 # FEECHAIN Phase 1 — pinned Uniswap v4 (do not float):
 #   v4-core      @ 46c6834698c48bc4a463a86d8420f4eb1d7f3b75

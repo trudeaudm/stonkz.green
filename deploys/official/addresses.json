@@ -1,0 +1,41 @@
+{
+  "chainId": 0,
+  "mode": "placeholder",
+  "note": "Official address book. Populated by contracts/script/Deploy.s.sol on successful deploy. Addresses are public. Do not store keys here.",
+  "deployer": "0x0000000000000000000000000000000000000000",
+  "contracts": {
+    "StonkzToken": "0x0000000000000000000000000000000000000000",
+    "MockPoolManager": "0x0000000000000000000000000000000000000000",
+    "CTOGovernor": "0x0000000000000000000000000000000000000000",
+    "StonkzFeeHook": "0x0000000000000000000000000000000000000000",
+    "FeeLockerV2": "0x0000000000000000000000000000000000000000",
+    "BuybackAccumulator": "0x0000000000000000000000000000000000000000",
+    "LadderSettlement": "0x0000000000000000000000000000000000000000",
+    "StonkzVault": "0x0000000000000000000000000000000000000000",
+    "StonkzExpressFactory": "0x0000000000000000000000000000000000000000",
+    "StonkzLadderFactory": "0x0000000000000000000000000000000000000000"
+  },
+  "config": {
+    "custody": "0x0000000000000000000000000000000000000000",
+    "treasury": "0x0000000000000000000000000000000000000000",
+    "pairToken": "0x0000000000000000000000000000000000000000",
+    "usdg": "0x0000000000000000000000000000000000000000",
+    "refPriceEthWad": "250000000000",
+    "refPriceUsdgWad": "1000000000000000",
+    "poolManagerNote": "MockPoolManager — M3.5 real Uniswap v4 PoolManager wiring NOT STARTED; launch stack settles against this minimal IPoolManager."
+  },
+  "wiring": {
+    "vaultRef": false,
+    "settlementStonkzRef": false,
+    "settlementFeeLocker": false,
+    "govRegistry": false,
+    "softLaunchExpress": false,
+    "softLaunchLadder": false,
+    "stonkzSupplyParked": false
+  },
+  "templates": {
+    "StonkzDirectListing": "factory-CREATE2-via-StonkzExpressFactory",
+    "StonkzLadderAuction": "factory-via-StonkzLadderFactory",
+    "DeployControls": "inherited-by-both-factories"
+  }
+}
