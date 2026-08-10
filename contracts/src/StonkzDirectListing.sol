@@ -34,12 +34,12 @@ contract StonkzDirectListing {
     uint256 internal constant WAD = 1e18;
     uint256 internal constant TIER_4K = 4000e18;
     uint256 internal constant TIER_8K = 8000e18;
-    uint16 internal constant MAIN_BPS = 9500; // 95% of listing supply → main pool (§2.2)
-    uint16 internal constant SIDE_BPS = 500; // 5% of listing supply → side pool (§2.2)
     int24 internal constant TICK_SPACING = 60;
     /// @dev PoolKey.fee is in PIPS (never mix with hookFeeBps). docs/06 rates.
     uint24 internal constant MAIN_LP_FEE = 0; // pips = 0%
     uint24 internal constant SIDE_LP_FEE = 3000; // pips = 0.3%
+    /// @dev Side-pool share bounds (docs/03 switch 3). Unit: bps of listing supply.
+    uint16 internal constant SIDE_POOL_BPS_MAX = 2000; // bps (20%)
 
     // ─── immutable wiring ────────────────────────────────────────────────────
     IPoolManager public immutable poolManager;
@@ -51,6 +51,11 @@ contract StonkzDirectListing {
     address public immutable stonkz4663; // address(0) until genesis
     address public immutable creator;
     StonkzLaunchToken public immutable token;
+
+    /// @notice Stamped at deploy (docs/03 switch 2). False ⇒ all listing supply to main, no park.
+    bool public immutable createSidePool;
+    /// @notice Stamped at deploy (docs/03 switch 3). Unit: bps of listing supply. Recorded even if createSidePool=false.
+    uint16 public immutable sidePoolBps;
 
     uint256 public immutable startMcap;
     uint256 public immutable totalSupply;
@@ -89,6 +94,10 @@ contract StonkzDirectListing {
         address creator;
         string name;
         string symbol;
+        /// @dev Factory path overwrites from DeployControls defaults. Direct tests set explicitly.
+        bool createSidePool;
+        /// @dev Unit: bps of listing supply (after creatorReserve). Bounds [0, 2000].
+        uint16 sidePoolBps;
     }
 
     event DirectListed(
@@ -98,7 +107,9 @@ contract StonkzDirectListing {
         uint256 listed,
         uint256 sidePoolTokens,
         uint256 creatorReserve,
-        bool instant
+        bool instant,
+        bool createSidePool,
+        uint16 sidePoolBps
     );
     event MainPoolCreated(PoolId indexed id, int24 startTick, int24 topTick, uint128 liquidity);
     event SidePoolParked(uint256 tokens);
@@ -109,6 +120,8 @@ contract StonkzDirectListing {
     error BadSupply();
     error GenesisUnavailable();
     error SideAlreadyDeployed();
+    error SidePoolBpsOutOfBounds(uint16 bps);
+    error SidePoolDisabled();
 
     constructor(
         IPoolManager poolManager_,
@@ -122,6 +135,7 @@ contract StonkzDirectListing {
     ) {
         if (p.startMcap != TIER_4K && p.startMcap != TIER_8K) revert BadTier();
         if (p.totalSupply == 0) revert BadSupply();
+        if (p.sidePoolBps > SIDE_POOL_BPS_MAX) revert SidePoolBpsOutOfBounds(p.sidePoolBps);
 
         poolManager = poolManager_;
         feeLocker = feeLocker_;
@@ -131,6 +145,8 @@ contract StonkzDirectListing {
         pairToken = pairToken_;
         stonkz4663 = stonkz4663_;
         creator = p.creator;
+        createSidePool = p.createSidePool;
+        sidePoolBps = p.sidePoolBps;
         startMcap = p.startMcap;
         totalSupply = p.totalSupply;
 
@@ -154,9 +170,14 @@ contract StonkzDirectListing {
                 : uint64(block.timestamp);
         }
 
-        // Split listing supply 95/5 (§2.2).
-        sidePoolTokens = FixedPointMathLib.mulDiv(listingSupply, SIDE_BPS, 10_000);
-        listed = listingSupply - sidePoolTokens; // 95% (remainder-exact)
+        // Side split from stamped switch (docs/03). createSidePool=false ⇒ all mass to main, no park.
+        if (p.createSidePool) {
+            sidePoolTokens = FixedPointMathLib.mulDiv(listingSupply, p.sidePoolBps, 10_000);
+            listed = listingSupply - sidePoolTokens; // remainder-exact
+        } else {
+            sidePoolTokens = 0;
+            listed = listingSupply;
+        }
 
         // Start price = mcap / supply (pair per token), WAD.
         startPriceWad = FixedPointMathLib.mulDiv(p.startMcap, WAD, p.totalSupply);
@@ -166,7 +187,8 @@ contract StonkzDirectListing {
 
         _createMainPool(pairIsToken0);
 
-        // Side pool: park pre-genesis, else deploy (§2.2 / §8.2a).
+        // Side pool: only when stamped createSidePool and sideAmt > 0.
+        // Pre-genesis (stonkz unset): park. Genesis createSidePool=false: nothing to park.
         if (sidePoolTokens > 0) {
             if (stonkz4663_ != address(0)) {
                 _deploySidePool(sidePoolTokens);
@@ -182,7 +204,17 @@ contract StonkzDirectListing {
         uint256 lpHeld = sidePoolDeployed ? listed + sidePoolTokens : listed;
         ctoGovernor.registerToken(address(token), lpHeld, 0, parked);
 
-        emit DirectListed(address(token), p.creator, p.startMcap, listed, sidePoolTokens, creatorReserve, instant);
+        emit DirectListed(
+            address(token),
+            p.creator,
+            p.startMcap,
+            listed,
+            sidePoolTokens,
+            creatorReserve,
+            instant,
+            p.createSidePool,
+            p.sidePoolBps
+        );
     }
 
     // ─── main pool: single-sided [startTick, MAX_TICK] (§2.2) ────────────────
@@ -227,6 +259,7 @@ contract StonkzDirectListing {
 
     /// @notice Permissionless: deploy the side pool once STONKZ4663 genesis spot is readable.
     function deploySidePool() external {
+        if (!createSidePool) revert SidePoolDisabled();
         if (sidePoolDeployed) revert SideAlreadyDeployed();
         if (stonkz4663 == address(0)) revert GenesisUnavailable();
         uint256 amt = sidePoolTokens;

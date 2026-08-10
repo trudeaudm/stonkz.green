@@ -49,6 +49,7 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
                 ? LadderConstants.HoldbackDelivery.Vault
                 : LadderConstants.HoldbackDelivery.None,
             tier: inn.tier,
+            createSidePool: true,
             sidePoolBps: inn.sidePoolBps,
             walletCapBps: inn.walletCapBps,
             sizeBonusBps: inn.sizeBonusBps,
@@ -196,6 +197,7 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
             holdbackBps: 4000,
             holdbackDelivery: LadderConstants.HoldbackDelivery.Vault,
             tier: LadderTypes.Tier.God,
+            createSidePool: true,
             sidePoolBps: 500,
             walletCapBps: 1000,
             sizeBonusBps: 1000,

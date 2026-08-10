@@ -33,7 +33,9 @@ contract StonkzLadderAuction {
     uint16 public immutable carveBps; // stamped — bps of raised
     uint16 public immutable cashHoldbackBps; // bps of raised
     uint16 public immutable holdbackBps; // bps of total supply → vault
-    uint16 public immutable sidePoolBps; // bps of LP-destined tokens
+    uint16 public immutable sidePoolBps; // stamped — bps of LP-destined tokens
+    /// @notice Stamped at filing (docs/03 switch 2). False ⇒ settlement puts all LP tokens on main.
+    bool public immutable createSidePool;
     uint16 public immutable walletCapBps; // bps of auction supply
     uint16 public immutable sizeBonusBps; // bps
     int256 public immutable alphaWad; // log2(1+beta) WAD
@@ -138,7 +140,8 @@ contract StonkzLadderAuction {
         uint16 holdbackBps; // bps of total supply
         LadderConstants.HoldbackDelivery holdbackDelivery;
         LadderTypes.Tier tier;
-        uint16 sidePoolBps;
+        bool createSidePool; // stamped — docs/03 switch 2
+        uint16 sidePoolBps; // stamped — bps of LP-destined tokens; bounds [0, 2000]
         uint16 walletCapBps;
         uint16 sizeBonusBps;
         uint16 maxUniqueActives;
@@ -153,6 +156,7 @@ contract StonkzLadderAuction {
         require(p.supply > 0 && p.auctionSupply > 0, "supply");
         require(p.duration > 0, "duration");
         require(p.carveBps <= LadderConstants.CARVE_BPS_MAX, "carve");
+        require(p.sidePoolBps <= LadderConstants.SIDE_POOL_BPS_MAX, "sideBps");
         require(
             p.walletCapBps >= LadderConstants.WALLET_CAP_BPS_MIN && p.walletCapBps <= LadderConstants.WALLET_CAP_BPS_MAX,
             "cap"
@@ -183,6 +187,7 @@ contract StonkzLadderAuction {
         threshold = FixedPointMathLib.fullMulDiv(p.floorMcap, LadderConstants.RAISE_RATIO_BPS, 10_000);
         carveBps = p.carveBps;
         cashHoldbackBps = p.cashHoldbackBps;
+        createSidePool = p.createSidePool;
         sidePoolBps = p.sidePoolBps;
         walletCapBps = p.walletCapBps;
         sizeBonusBps = p.sizeBonusBps;
@@ -473,6 +478,7 @@ contract StonkzLadderAuction {
             carveBps: carveBps,
             cashHoldbackBps: cashHoldbackBps,
             holdbackBps: holdbackBps,
+            createSidePool: createSidePool,
             sidePoolBps: sidePoolBps,
             vaultRef: vaultRef,
             creator: creator,

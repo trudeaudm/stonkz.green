@@ -79,7 +79,9 @@ contract PoolKeyInvariants is Test {
             declaredUse: bytes32("ops"),
             creator: CREATOR,
             name: "Stonk",
-            symbol: "STK"
+            symbol: "STK",
+            createSidePool: true,
+            sidePoolBps: 500
         });
         return new StonkzDirectListing(
             IPoolManager(address(pm)), lockerV2, hook, acc, gov, PAIR, STONKZ, p

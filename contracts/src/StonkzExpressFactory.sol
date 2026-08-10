@@ -64,12 +64,15 @@ contract StonkzExpressFactory is DeployControls {
     }
 
     /// @notice Deploy an Express listing. Gated by DeployControls (RIDER A birth = deployer-only).
+    /// @dev Stamps current side-pool factory defaults onto the listing (docs/03 switches 2–3).
     /// @param userSalt Caller-chosen salt half; effective salt = listingSalt(msg.sender, userSalt).
     function list(StonkzDirectListing.ListingParams memory p, bytes32 userSalt)
         external
         returns (StonkzDirectListing listing)
     {
         _requireDeployAllowed(msg.sender);
+        p.createSidePool = defaultCreateSidePool;
+        p.sidePoolBps = defaultSidePoolBps;
         bytes32 salt = listingSalt(msg.sender, userSalt);
         listing = new StonkzDirectListing{salt: salt}(
             poolManager, feeLocker, hook, accumulator, ctoGovernor, pairToken, stonkzRef, p

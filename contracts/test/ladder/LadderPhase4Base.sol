@@ -99,6 +99,7 @@ abstract contract LadderPhase4Base is Test {
                     ? LadderConstants.HoldbackDelivery.Vault
                     : LadderConstants.HoldbackDelivery.None,
                 tier: c.tier,
+                createSidePool: true,
                 sidePoolBps: LadderConstants.SIDE_POOL_BPS,
                 walletCapBps: c.walletCapBps,
                 sizeBonusBps: c.sizeBonusBps,

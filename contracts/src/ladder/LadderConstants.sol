@@ -18,7 +18,9 @@ library LadderConstants {
     uint16 internal constant DEFAULT_CARVE_BPS = 400; // bps of raised (4%)
     uint16 internal constant CARVE_BPS_MAX = 1000; // bps of raised (10%)
     /// @dev Side pool share of LP-destined tokens. Unit: bps of LP-destined token amount.
+    ///      Factory switch bounds [0, SIDE_POOL_BPS_MAX]; launch grid default = SIDE_POOL_BPS.
     uint16 internal constant SIDE_POOL_BPS = 500; // bps of LP-destined tokens (5%)
+    uint16 internal constant SIDE_POOL_BPS_MAX = 2000; // bps of LP-destined tokens (20%)
     /// @dev Minimum bid notional. Unit: pair-currency wei.
     uint256 internal constant MIN_BID = 5 * WAD; // $5
     /// @dev Default wallet cap. Unit: bps of auction supply.

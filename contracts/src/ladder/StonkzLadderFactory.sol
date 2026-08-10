@@ -40,6 +40,7 @@ contract StonkzLadderFactory is DeployControls {
 
     /// @notice File a ladder auction. Stamps current defaultCarveBps (or explicit p.carveBps if set).
     /// @dev Pass carveBps=type(uint16).max to mean "use factory default".
+    ///      Side-pool switches (createSidePool, sidePoolBps) are ALWAYS stamped from factory defaults.
     function file(StonkzLadderAuction.Params memory p) external returns (StonkzLadderAuction auction) {
         _requireDeployAllowed(msg.sender);
 
@@ -47,6 +48,10 @@ contract StonkzLadderFactory is DeployControls {
             p.carveBps = defaultCarveBps;
         }
         if (p.carveBps > LadderConstants.CARVE_BPS_MAX) revert CarveBounds();
+
+        // docs/03 switches 2–3 — stamp factory defaults (mutable → immutable per auction).
+        p.createSidePool = defaultCreateSidePool;
+        p.sidePoolBps = defaultSidePoolBps;
 
         if (p.holdbackBps > 0) {
             if (vaultRef == address(0)) revert VaultRequiredForHoldback();

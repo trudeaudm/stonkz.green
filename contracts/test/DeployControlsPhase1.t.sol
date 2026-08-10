@@ -257,7 +257,9 @@ contract DeployControlsPhase1 is Test {
             declaredUse: bytes32("ops"),
             creator: CREATOR,
             name: "Stonk",
-            symbol: "STK"
+            symbol: "STK",
+            createSidePool: true,
+            sidePoolBps: 500
         });
     }
 
@@ -275,6 +277,7 @@ contract DeployControlsPhase1 is Test {
             holdbackBps: 0,
             holdbackDelivery: LadderConstants.HoldbackDelivery.None,
             tier: LadderTypes.Tier.God,
+            createSidePool: true,
             sidePoolBps: 500,
             walletCapBps: 500,
             sizeBonusBps: 1000,

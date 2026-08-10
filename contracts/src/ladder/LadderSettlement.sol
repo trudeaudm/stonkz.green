@@ -101,7 +101,8 @@ contract LadderSettlement {
         uint16 carveBps; // stamped
         uint16 cashHoldbackBps;
         uint16 holdbackBps; // token vault holdback
-        uint16 sidePoolBps;
+        bool createSidePool; // stamped — docs/03 switch 2
+        uint16 sidePoolBps; // stamped — bps of LP-destined tokens
         address vaultRef;
         address creator;
         address treasury;
@@ -145,10 +146,12 @@ contract LadderSettlement {
         }
 
         // ─── LP-destined tokens: unsold auction + (no reserve) ────────────
-        // auctionSupply - sold = unsold → thicker LP. Side pool = 5% of LP-destined.
+        // auctionSupply - sold = unsold → thicker LP.
+        // createSidePool=false ⇒ sideAmt=0, all mass to main (no park). docs/03 switch 2.
         uint256 unsold = a.auctionSupply > a.soldTokens ? a.auctionSupply - a.soldTokens : 0;
         uint256 lpDestined = unsold; // docs/09: ALL unsold → thicker LP
-        uint256 sideAmt = FixedPointMathLib.fullMulDiv(lpDestined, a.sidePoolBps, 10_000);
+        uint256 sideAmt =
+            a.createSidePool ? FixedPointMathLib.fullMulDiv(lpDestined, a.sidePoolBps, 10_000) : 0;
         uint256 mainTokens = lpDestined - sideAmt;
         sidePoolTokens = sideAmt;
 
@@ -161,7 +164,7 @@ contract LadderSettlement {
         // ─── pool geometry: cash [floor,print], tokens [print,inf) ────────
         _buildMainPool(a.userToken, a.creator, a.floorPrice, a.printPrice, toLP, mainTokens);
 
-        // ─── side pool 5% vs STONKZ ref ───────────────────────────────────
+        // ─── side pool vs STONKZ ref (absent when createSidePool=false or sideAmt=0)
         if (sideAmt > 0) {
             if (stonkzRef != address(0)) {
                 _buildSidePool(a.userToken, sideAmt, a.printPrice);

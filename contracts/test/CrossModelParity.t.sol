@@ -51,7 +51,9 @@ contract CrossModelParity is Test {
             declaredUse: bytes32("ops"),
             creator: CREATOR,
             name: "Direct",
-            symbol: "DIR"
+            symbol: "DIR",
+            createSidePool: true,
+            sidePoolBps: 500
         });
         l = new StonkzDirectListing(IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0), p);
     }

@@ -67,6 +67,7 @@ contract VaultPhase1 is LadderVectorLoader {
                 ? LadderConstants.HoldbackDelivery.Vault
                 : LadderConstants.HoldbackDelivery.None,
             tier: inn.tier,
+            createSidePool: true,
             sidePoolBps: inn.sidePoolBps,
             walletCapBps: inn.walletCapBps,
             sizeBonusBps: inn.sizeBonusBps,
