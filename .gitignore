@@ -16,3 +16,6 @@ contracts/test/vectors/fuzz/scan-report-summary.json
 docs/00-START-HERE.md
 docs/[0-9][0-9]-*.md
 docs/stonkz-*.html
+forge-build-out.txt
+forge-quick.txt
+fork-reproof.txt
