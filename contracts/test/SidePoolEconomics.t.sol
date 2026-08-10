@@ -9,7 +9,7 @@ import {FeeLocker} from "../src/FeeLocker.sol";
 import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 import {CTOGovernor} from "../src/CTOGovernor.sol";
 import {ICTOGovernor} from "../src/interfaces/IStonkzGovernance.sol";
-import {StonkzLiquidityStrategy} from "../src/StonkzLiquidityStrategy.sol";
+import {StonkzLiquidityStrategy} from "../legacy/StonkzLiquidityStrategy.sol";
 import {TickMath} from "../src/v4/TickMath.sol";
 
 /// @title SidePoolEconomics — C2 provisional (green on mock ≠ green on real v4)

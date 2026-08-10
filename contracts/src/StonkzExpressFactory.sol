@@ -79,13 +79,16 @@ contract StonkzExpressFactory is DeployControls {
     /// @dev Stamps side-pool + lock + ref-price factory defaults (docs/03; ruling B).
     ///      Reverts VanityPrefixMismatch if predicted address top bytes != 0x4663.
     /// @param userSalt Caller-chosen salt half; effective salt = listingSalt(msg.sender, userSalt).
+    /// @dev Native pair: pass msg.value as ETH settle buffer for real PM (adapter refunds dust).
     function list(StonkzDirectListing.ListingParams memory p, bytes32 userSalt)
         external
+        payable
         returns (StonkzDirectListing listing)
     {
         _requireDeployAllowed(msg.sender);
         _stampListingParams(p);
         bytes32 salt = listingSalt(msg.sender, userSalt);
+        // launch-deploy vanity (0x4663) + v4-canon ETH settle buffer (msg.value → adapter).
         bytes32 initHash = keccak256(
             abi.encodePacked(
                 type(StonkzDirectListing).creationCode,
@@ -95,7 +98,7 @@ contract StonkzExpressFactory is DeployControls {
         address predicted = Vanity.predict(address(this), salt, initHash);
         Vanity.requirePrefix(predicted);
 
-        listing = new StonkzDirectListing{salt: salt}(
+        listing = new StonkzDirectListing{salt: salt, value: msg.value}(
             poolManager, feeLocker, hook, accumulator, ctoGovernor, pairToken, stonkzRef, p
         );
         assert(address(listing) == predicted);

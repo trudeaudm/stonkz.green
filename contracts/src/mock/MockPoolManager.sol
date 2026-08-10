@@ -82,6 +82,7 @@ contract MockPoolManager is IPoolManager {
 
     function modifyLiquidity(PoolKey memory key, ModifyLiquidityParams memory params, bytes calldata)
         external
+        payable
         returns (BalanceDelta callerDelta, BalanceDelta feesAccrued)
     {
         PoolId id = key.toId();
@@ -118,6 +119,7 @@ contract MockPoolManager is IPoolManager {
 
     function swap(PoolKey memory key, SwapParams memory params, bytes calldata)
         external
+        payable
         returns (BalanceDelta swapDelta)
     {
         PoolId id = key.toId();
@@ -143,10 +145,11 @@ contract MockPoolManager is IPoolManager {
         swapDelta = BalanceDeltaLibrary.from(int128(a0), int128(a1));
         emit Swap(id, msg.sender, a0, a1, s.sqrtPriceX96, s.tick);
 
-        // Fee-take + hook callback (FEECHAIN Phase 3):
+        // Fee-take + hook callback (FEECHAIN Phase 3 / V4-CANON):
+        //   Prefer PoolKey.hooks (production bind); fall back to setPoolHook mapping (legacy tests).
         //   key.fee == 0 (main, pips) → pair-currency fee from stamped hookFeeBps (bps).
         //   key.fee != 0 (side) → LP fee from key.fee (pips); no hook take for revenue.
-        address hook = hooks[id];
+        address hook = key.hooks != address(0) ? key.hooks : hooks[id];
         if (hook != address(0) && key.fee == 0) {
             uint256 absAmt = params.amountSpecified < 0
                 ? uint256(-params.amountSpecified)
@@ -188,6 +191,7 @@ contract MockPoolManager is IPoolManager {
 
     function syncToPrice(PoolKey memory key, uint160 targetSqrtPriceX96, uint256 maxBudget)
         external
+        payable
         returns (uint256 spent)
     {
         PoolId id = key.toId();
@@ -229,6 +233,27 @@ contract MockPoolManager is IPoolManager {
 
     function collectFees(PoolId id, bytes32 positionId) external returns (uint256 fee0, uint256 fee1) {
         Position storage pos = positions[id][positionId];
+        fee0 = pos.feesOwed0;
+        fee1 = pos.feesOwed1;
+        pos.feesOwed0 = 0;
+        pos.feesOwed1 = 0;
+    }
+
+    /// @inheritdoc IPoolManager
+    /// @dev Mock: position map key = keccak(owner, ticks, salt). Owner is msg.sender (FeeLocker/Listing).
+    function pokeCollect(PoolKey memory key, int24 tickLower, int24 tickUpper, bytes32 salt)
+        external
+        payable
+        returns (uint256 fee0, uint256 fee1)
+    {
+        PoolId id = key.toId();
+        bytes32 positionId = keccak256(abi.encode(msg.sender, tickLower, tickUpper, salt));
+        // Also try registry-style id (Listing computed keccak(listing, ticks, salt) then locked).
+        Position storage pos = positions[id][positionId];
+        if (pos.tickLower == 0 && pos.tickUpper == 0 && pos.liquidity == 0 && pos.feesOwed0 == 0 && pos.feesOwed1 == 0) {
+            // Fall back: salt may itself be the full positionId used by legacy lockPosition.
+            pos = positions[id][salt];
+        }
         fee0 = pos.feesOwed0;
         fee1 = pos.feesOwed1;
         pos.feesOwed0 = 0;

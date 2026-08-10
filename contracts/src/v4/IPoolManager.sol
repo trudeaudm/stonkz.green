@@ -41,15 +41,18 @@ interface IPoolManager {
 
     function modifyLiquidity(PoolKey memory key, ModifyLiquidityParams memory params, bytes calldata hookData)
         external
+        payable
         returns (BalanceDelta callerDelta, BalanceDelta feesAccrued);
 
     function swap(PoolKey memory key, SwapParams memory params, bytes calldata hookData)
         external
+        payable
         returns (BalanceDelta swapDelta);
 
     /// @notice Sync spot toward targetSqrt with a bounded pair-currency budget. Overrun → SyncBudgetExceeded.
     function syncToPrice(PoolKey memory key, uint160 targetSqrtPriceX96, uint256 maxBudget)
         external
+        payable
         returns (uint256 spent);
 
     function getSlot0(PoolId id)
@@ -66,6 +69,13 @@ interface IPoolManager {
 
     function collectFees(PoolId id, bytes32 positionId)
         external
+        returns (uint256 fee0, uint256 fee1);
+
+    /// @notice Canonical fee collect: 0-delta modifyLiquidity → feesAccrued (V4-CANON).
+    /// @dev Mock maps this onto collectFees using the registry positionId convention.
+    function pokeCollect(PoolKey memory key, int24 tickLower, int24 tickUpper, bytes32 salt)
+        external
+        payable
         returns (uint256 fee0, uint256 fee1);
 
     // ─── M4 hook seam (fees-and-governance.md §1) ────────────────────────────
