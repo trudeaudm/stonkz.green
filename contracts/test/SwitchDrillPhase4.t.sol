@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
+import {FactoryVanity} from "./FactoryVanity.sol";
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {MockPoolManager} from "../src/mock/MockPoolManager.sol";
 import {PoolKey, PoolIdLibrary} from "../src/v4/types/PoolKey.sol";
@@ -24,7 +25,7 @@ import {DeployControls} from "../src/DeployControls.sol";
 /// @title SwitchDrillPhase4 — rehearsal-style drill of all four factory switches + fee/carve stamps
 /// @notice Mirrors Phase 4 reconciliation checklist: off/on, allowlist, side-pool toggle,
 ///         lock coexistence, custom-fee 300 bps, carve stamp.
-contract SwitchDrillPhase4 is Test {
+contract SwitchDrillPhase4 is Test, FactoryVanity {
     using PoolIdLibrary for PoolKey;
 
     MockPoolManager internal pm;
@@ -72,31 +73,21 @@ contract SwitchDrillPhase4 is Test {
         vm.prank(STRANGER);
         vm.expectRevert(DeployControls.DeployerNotAllowed.selector);
         express.list(_params(), bytes32(uint256(2)));
-        vm.prank(FRIEND);
-        StonkzDirectListing listed = express.list(_params(), bytes32(uint256(3)));
-        assertTrue(listed.liquidityLocked());
+        StonkzDirectListing listed  = _listAs(express, FRIEND, _params());        assertTrue(listed.liquidityLocked());
 
         // 3) side-pool toggle stamp
         express.setDefaultCreateSidePool(false);
-        vm.prank(FRIEND);
-        StonkzDirectListing noSide = express.list(_params(), bytes32(uint256(4)));
-        assertFalse(noSide.createSidePool());
+        StonkzDirectListing noSide  = _listAs(express, FRIEND, _params());        assertFalse(noSide.createSidePool());
         assertFalse(noSide.sidePoolDeployed());
         express.setDefaultCreateSidePool(true);
         express.setDefaultSidePoolBps(1000); // bps of LP-destined (10%)
-        vm.prank(FRIEND);
-        StonkzDirectListing withSide = express.list(_params(), bytes32(uint256(5)));
-        assertTrue(withSide.createSidePool());
+        StonkzDirectListing withSide  = _listAs(express, FRIEND, _params());        assertTrue(withSide.createSidePool());
         assertEq(withSide.sidePoolBps(), 1000);
 
         // 4) lock coexistence (locked stamp still refuses after factory unlock)
         express.setDefaultLiquidityLocked(true);
-        vm.prank(FRIEND);
-        StonkzDirectListing locked = express.list(_params(), bytes32(uint256(6)));
-        express.setDefaultLiquidityLocked(false);
-        vm.prank(FRIEND);
-        StonkzDirectListing unlocked = express.list(_params(), bytes32(uint256(7)));
-        assertTrue(locked.liquidityLocked());
+        StonkzDirectListing locked  = _listAs(express, FRIEND, _params());        express.setDefaultLiquidityLocked(false);
+        StonkzDirectListing unlocked  = _listAs(express, FRIEND, _params());        assertTrue(locked.liquidityLocked());
         assertFalse(unlocked.liquidityLocked());
         vm.prank(CREATOR);
         vm.expectRevert(StonkzDirectListing.LiquidityIsLocked.selector);
@@ -117,19 +108,17 @@ contract SwitchDrillPhase4 is Test {
         assertEq(hook.hookFeeBps(tokenStd), 100);
 
         // 6) carve stamp survives factory default change
-        StonkzLadderAuction a = ladder.file(_ladderParams(type(uint16).max));
+        StonkzLadderAuction a = _file(ladder, _ladderParams(type(uint16).max));
         assertEq(a.carveBps(), LadderConstants.DEFAULT_CARVE_BPS);
         ladder.setDefaultCarveBps(700);
         assertEq(a.carveBps(), LadderConstants.DEFAULT_CARVE_BPS);
-        StonkzLadderAuction b = ladder.file(_ladderParams(type(uint16).max));
+        StonkzLadderAuction b = _file(ladder, _ladderParams(type(uint16).max));
         assertEq(b.carveBps(), 700);
 
         // 7) refprice stamp (pair-wei per STONKZ, WAD) survives default change
         assertEq(withSide.stonkzRefPriceWad(), express.REF_PRICE_ETH_DEFAULT());
         express.setStonkzRefPrice(PAIR, 5e11); // pair-wei per STONKZ token, WAD
-        vm.prank(FRIEND);
-        StonkzDirectListing later = express.list(_params(), bytes32(uint256(8)));
-        assertEq(later.stonkzRefPriceWad(), 5e11);
+        StonkzDirectListing later  = _listAs(express, FRIEND, _params());        assertEq(later.stonkzRefPriceWad(), 5e11);
         assertEq(withSide.stonkzRefPriceWad(), 2.5e11); // prior ETH stamp intact
     }
 

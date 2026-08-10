@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {stdJson} from "forge-std/StdJson.sol";
+import {FactoryVanity} from "../FactoryVanity.sol";
 import {LadderVectorLoader} from "./LadderVectorLoader.sol";
 import {LadderAsserts} from "./LadderAsserts.sol";
 import {LadderTypes} from "../../src/ladder/LadderTypes.sol";
@@ -12,7 +13,7 @@ import {StonkzLadderFactory} from "../../src/ladder/StonkzLadderFactory.sol";
 import {MockVault} from "./MockVault.sol";
 
 /// @title LadderPhase2 — bids/fills A2; vault-only holdback guards (docs/09 + circFrac ruling)
-contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
+contract LadderPhase2 is LadderVectorLoader, LadderAsserts, FactoryVanity {
     using stdJson for string;
 
     StonkzLadderAuction internal auction;
@@ -147,10 +148,10 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
         p.vaultRef = address(0);
 
         vm.expectRevert(StonkzLadderFactory.VaultRequiredForHoldback.selector);
-        factory.file(p);
+        factory.file(p, bytes32(0));
 
         factory.setVaultRef(address(mockVault));
-        StonkzLadderAuction a = factory.file(p);
+        StonkzLadderAuction a = _file(factory, p);
         assertEq(a.vaultRef(), address(mockVault));
         assertEq(a.holdbackBps(), 6000);
         assertEq(a.circFrac(), 0.4e18);
@@ -173,11 +174,11 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
         p.auctionSupply = (inn.supply * 5900) / 10_000;
 
         vm.expectRevert(StonkzLadderFactory.HoldbackCeiling.selector);
-        factory.file(p);
+        factory.file(p, bytes32(0));
 
         p.holdbackBps = 4000;
         p.auctionSupply = (inn.supply * 6000) / 10_000;
-        StonkzLadderAuction a = factory.file(p);
+        StonkzLadderAuction a = _file(factory, p);
         assertEq(a.holdbackBps(), 4000);
     }
 
@@ -210,7 +211,7 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
             vaultRef: address(0),
             settlement: address(0)
         });
-        auction = factory.file(p);
+        auction = _file(factory, p);
         auction.start();
 
         for (uint256 i; i < 10; i++) {

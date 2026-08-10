@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
+import {FactoryVanity} from "./FactoryVanity.sol";
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {MockPoolManager} from "../src/mock/MockPoolManager.sol";
 import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
@@ -20,7 +21,7 @@ import {DeployControls} from "../src/DeployControls.sol";
 import {StonkzLaunchToken} from "../src/StonkzLaunchToken.sol";
 
 /// @title SidePoolSwitchesPhase2 — createSidePool + sidePoolBps stamps (docs/03 switches 2–3)
-contract SidePoolSwitchesPhase2 is Test {
+contract SidePoolSwitchesPhase2 is Test, FactoryVanity {
     MockPoolManager internal pm;
     BuybackAccumulator internal acc;
     StonkzFeeHook internal hook;
@@ -82,7 +83,7 @@ contract SidePoolSwitchesPhase2 is Test {
     // ─── Express stamps ────────────────────────────────────────────────────
 
     function test_P2_express_stampsFactoryDefaults() public {
-        StonkzDirectListing l = express.list(_baseParams(), bytes32(uint256(1)));
+        StonkzDirectListing l = _list(express, _baseParams());
         assertTrue(l.createSidePool());
         assertEq(l.sidePoolBps(), 500);
         assertTrue(l.sidePoolDeployed());
@@ -94,7 +95,7 @@ contract SidePoolSwitchesPhase2 is Test {
     function test_P2_express_genesis_createSidePoolFalse_allMassToMain() public {
         // Genesis case: no side pool, mass on main, no park.
         express.setDefaultCreateSidePool(false);
-        StonkzDirectListing l = express.list(_baseParams(), bytes32(uint256(2)));
+        StonkzDirectListing l = _list(express, _baseParams());
         assertFalse(l.createSidePool());
         assertEq(l.sidePoolBps(), 500); // stamp recorded even when unused
         assertEq(l.sidePoolTokens(), 0);
@@ -109,14 +110,14 @@ contract SidePoolSwitchesPhase2 is Test {
     }
 
     function test_P2_express_stampSurvivesDefaultChange() public {
-        StonkzDirectListing first = express.list(_baseParams(), bytes32(uint256(3)));
+        StonkzDirectListing first = _list(express, _baseParams());
         assertTrue(first.createSidePool());
         assertEq(first.sidePoolBps(), 500);
 
         express.setDefaultCreateSidePool(false);
         express.setDefaultSidePoolBps(1000);
 
-        StonkzDirectListing second = express.list(_baseParams(), bytes32(uint256(4)));
+        StonkzDirectListing second = _list(express, _baseParams());
         assertFalse(second.createSidePool());
         assertEq(second.sidePoolBps(), 1000);
 
@@ -127,7 +128,7 @@ contract SidePoolSwitchesPhase2 is Test {
 
     function test_P2_express_customRatio1000() public {
         express.setDefaultSidePoolBps(1000); // 10%
-        StonkzDirectListing l = express.list(_baseParams(), bytes32(uint256(5)));
+        StonkzDirectListing l = _list(express, _baseParams());
         assertEq(l.sidePoolBps(), 1000);
         (, uint256 side,) = l.conservationBuckets();
         assertEq(side, (SUPPLY * 1000) / 10_000);
@@ -136,19 +137,19 @@ contract SidePoolSwitchesPhase2 is Test {
     // ─── Ladder stamps + settlement absence ────────────────────────────────
 
     function test_P2_ladder_factoryStampsDefaults() public {
-        StonkzLadderAuction a = ladder.file(_ladderParams(true, 500));
+        StonkzLadderAuction a = _file(ladder, _ladderParams(true, 500));
         assertTrue(a.createSidePool());
         assertEq(a.sidePoolBps(), 500);
     }
 
     function test_P2_ladder_stampSurvivesDefaultChange() public {
-        StonkzLadderAuction first = ladder.file(_ladderParams(true, 999)); // overwritten by factory
+        StonkzLadderAuction first = _file(ladder, _ladderParams(true, 999)); // overwritten by factory
         assertTrue(first.createSidePool());
         assertEq(first.sidePoolBps(), 500);
 
         ladder.setDefaultCreateSidePool(false);
         ladder.setDefaultSidePoolBps(750);
-        StonkzLadderAuction second = ladder.file(_ladderParams(true, 999));
+        StonkzLadderAuction second = _file(ladder, _ladderParams(true, 999));
         assertFalse(second.createSidePool());
         assertEq(second.sidePoolBps(), 750);
 

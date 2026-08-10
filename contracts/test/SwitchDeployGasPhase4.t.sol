@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
+import {FactoryVanity} from "./FactoryVanity.sol";
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {MockPoolManager} from "../src/mock/MockPoolManager.sol";
 import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
@@ -18,7 +19,7 @@ import {LadderTypes} from "../src/ladder/LadderTypes.sol";
 import {LadderSettlement} from "../src/ladder/LadderSettlement.sol";
 
 /// @title SwitchDeployGasPhase4 — deploy-path gas after switches (Phase 4 evidence)
-contract SwitchDeployGasPhase4 is Test {
+contract SwitchDeployGasPhase4 is Test, FactoryVanity {
     MockPoolManager internal pm;
     BuybackAccumulator internal acc;
     StonkzFeeHook internal hook;
@@ -62,7 +63,7 @@ contract SwitchDeployGasPhase4 is Test {
             stonkzRefPriceWad: 0
         });
         uint256 g = gasleft();
-        express.list(p, bytes32(uint256(1)));
+        _list(express, p);
         emit log_named_uint("gas_express_list", g - gasleft());
     }
 
@@ -93,7 +94,7 @@ contract SwitchDeployGasPhase4 is Test {
             settlement: address(s)
         });
         uint256 g = gasleft();
-        ladder.file(p);
+        _file(ladder, p);
         emit log_named_uint("gas_ladder_file", g - gasleft());
     }
 }

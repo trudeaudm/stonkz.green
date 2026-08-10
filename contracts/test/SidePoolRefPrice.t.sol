@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
+import {FactoryVanity} from "./FactoryVanity.sol";
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {MockPoolManager} from "../src/mock/MockPoolManager.sol";
@@ -22,7 +23,7 @@ import {StonkzLaunchToken} from "../src/StonkzLaunchToken.sol";
 import {TickMath} from "../src/v4/TickMath.sol";
 
 /// @title SidePoolRefPrice — stamped pair-wei/STONKZ ref (ruling B) + known-value init
-contract SidePoolRefPrice is Test {
+contract SidePoolRefPrice is Test, FactoryVanity {
     MockPoolManager internal pm;
     BuybackAccumulator internal acc;
     StonkzFeeHook internal hook;
@@ -85,7 +86,7 @@ contract SidePoolRefPrice is Test {
     function test_ref_express_eth_initTick_knownValue() public {
         // startPriceWad = 4000e18 * WAD / 1e24 = 4e15 pair-wei/token
         // priceInStonkz = 4e15 * WAD / 2.5e11 = 1.6e22 STONKZ/token
-        StonkzDirectListing l = expressEth.list(_params(), bytes32(uint256(1)));
+        StonkzDirectListing l = _list(expressEth, _params());
         assertEq(l.stonkzRefPriceWad(), 2.5e11);
         assertEq(l.startPriceWad(), 4e15);
 
@@ -99,7 +100,7 @@ contract SidePoolRefPrice is Test {
 
     function test_ref_express_usdg_initTick_knownValue() public {
         // priceInStonkz = 4e15 * WAD / 1e15 = 4e18 STONKZ/token
-        StonkzDirectListing l = expressUsdg.list(_params(), bytes32(uint256(2)));
+        StonkzDirectListing l = _list(expressUsdg, _params());
         assertEq(l.stonkzRefPriceWad(), 1e15);
         uint256 priceInStonkz = FixedPointMathLib.mulDiv(l.startPriceWad(), WAD, l.stonkzRefPriceWad());
         assertEq(priceInStonkz, 4e18);
@@ -155,21 +156,21 @@ contract SidePoolRefPrice is Test {
     // ─── stamp survives default change ─────────────────────────────────────
 
     function test_ref_express_stampSurvivesDefaultChange() public {
-        StonkzDirectListing first = expressEth.list(_params(), bytes32(uint256(10)));
+        StonkzDirectListing first = _list(expressEth, _params());
         assertEq(first.stonkzRefPriceWad(), 2.5e11);
 
         expressEth.setStonkzRefPrice(ETH, 5e11); // still mid-ish; pair-wei per STONKZ token, WAD
-        StonkzDirectListing second = expressEth.list(_params(), bytes32(uint256(11)));
+        StonkzDirectListing second = _list(expressEth, _params());
         assertEq(second.stonkzRefPriceWad(), 5e11);
         assertEq(first.stonkzRefPriceWad(), 2.5e11); // stamp immutable
     }
 
     function test_ref_ladder_stampSurvivesDefaultChange() public {
-        StonkzLadderAuction first = ladder.file(_ladderParams(ETH));
+        StonkzLadderAuction first = _file(ladder, _ladderParams(ETH));
         assertEq(first.stonkzRefPriceWad(), 2.5e11);
 
         ladder.setStonkzRefPrice(ETH, 5e11);
-        StonkzLadderAuction second = ladder.file(_ladderParams(ETH));
+        StonkzLadderAuction second = _file(ladder, _ladderParams(ETH));
         assertEq(second.stonkzRefPriceWad(), 5e11);
         assertEq(first.stonkzRefPriceWad(), 2.5e11);
     }
@@ -180,13 +181,13 @@ contract SidePoolRefPrice is Test {
         address unknown = address(0xBEEF);
         StonkzLadderAuction.Params memory p = _ladderParams(unknown);
         vm.expectRevert(abi.encodeWithSelector(DeployControls.RefPriceUnset.selector, unknown));
-        ladder.file(p);
+        ladder.file(p, bytes32(0));
     }
 
     function test_ref_unset_okWhenCreateSidePoolFalse() public {
         address unknown = address(0xBEEF);
         ladder.setDefaultCreateSidePool(false);
-        StonkzLadderAuction a = ladder.file(_ladderParams(unknown));
+        StonkzLadderAuction a = _file(ladder, _ladderParams(unknown));
         assertFalse(a.createSidePool());
         assertEq(a.stonkzRefPriceWad(), 0);
     }

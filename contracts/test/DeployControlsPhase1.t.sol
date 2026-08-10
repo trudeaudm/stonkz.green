@@ -2,6 +2,9 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
+import {FactoryVanity} from "./FactoryVanity.sol";
+import {VanityHelpers} from "./VanityHelpers.sol";
+import {Vanity} from "../src/Vanity.sol";
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {MockPoolManager} from "../src/mock/MockPoolManager.sol";
 import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
@@ -22,7 +25,7 @@ import {DeployControls} from "../src/DeployControls.sol";
 /// @notice Semantics (docs/stop-task-switches-plan §3.2):
 ///         off → all blocked; on+empty → open; on+nonempty → allowlisted only.
 ///         RIDER A: birth = on + deployer-only allowlist.
-contract DeployControlsPhase1 is Test {
+contract DeployControlsPhase1 is Test, FactoryVanity {
     MockPoolManager internal pm;
     BuybackAccumulator internal acc;
     StonkzFeeHook internal hook;
@@ -86,7 +89,7 @@ contract DeployControlsPhase1 is Test {
     // ─── Express gate ──────────────────────────────────────────────────────
 
     function test_P1_express_deployerCanList_atBirth() public {
-        StonkzDirectListing l = express.list(_params(), bytes32(uint256(1)));
+        StonkzDirectListing l = _list(express, _params());
         assertEq(l.creator(), CREATOR);
         assertEq(address(l.token()).code.length > 0, true);
     }
@@ -108,9 +111,7 @@ contract DeployControlsPhase1 is Test {
         assertEq(express.allowlistCount(), 0);
         assertTrue(express.deploysEnabled());
 
-        vm.prank(STRANGER);
-        StonkzDirectListing l = express.list(_params(), bytes32(uint256(4)));
-        assertEq(l.creator(), CREATOR);
+        StonkzDirectListing l  = _listAs(express, STRANGER, _params());        assertEq(l.creator(), CREATOR);
     }
 
     function test_P1_express_allowlistedOnly_whenNonempty() public {
@@ -120,9 +121,7 @@ contract DeployControlsPhase1 is Test {
         vm.expectRevert(DeployControls.DeployerNotAllowed.selector);
         express.list(_params(), bytes32(uint256(5)));
 
-        vm.prank(FRIEND);
-        StonkzDirectListing l = express.list(_params(), bytes32(uint256(6)));
-        assertEq(l.creator(), CREATOR);
+        StonkzDirectListing l  = _listAs(express, FRIEND, _params());        assertEq(l.creator(), CREATOR);
     }
 
     function test_P1_express_revokeRemovesAccess() public {
@@ -151,33 +150,31 @@ contract DeployControlsPhase1 is Test {
     // ─── CREATE2 readiness (RIDER C) ───────────────────────────────────────
 
     function test_P1_express_create2_predictMatchesDeploy() public {
-        bytes32 userSalt = bytes32(uint256(0x4663));
         StonkzDirectListing.ListingParams memory p = _params();
+        bytes32 initCodeHash = express.listingInitCodeHash(p);
 
-        // Deploy once to capture init code hash from the successful CREATE2.
+        (bytes32 userSalt, address predicted) = VanityHelpers.mineExpress(express, address(this), p);
+        assertEq(express.predictListingAddress(address(this), userSalt, initCodeHash), predicted);
+        assertEq(express.listingSalt(address(this), userSalt), keccak256(abi.encode(address(this), userSalt)));
+
         StonkzDirectListing first = express.list(p, userSalt);
-        bytes32 salt = express.listingSalt(address(this), userSalt);
-        assertEq(salt, keccak256(abi.encode(address(this), userSalt)));
+        assertEq(address(first), predicted, "CREATE2 predict == deploy");
 
-        // Same deployer+userSalt must collide (CREATE2); different userSalt succeeds at predicted addr.
-        bytes32 userSalt2 = bytes32(uint256(0x4664));
-        bytes memory initCode = abi.encodePacked(
-            type(StonkzDirectListing).creationCode,
-            abi.encode(
-                IPoolManager(address(pm)),
-                locker,
-                hook,
-                acc,
-                gov,
-                PAIR,
-                address(0),
-                p
-            )
-        );
-        bytes32 initCodeHash = keccak256(initCode);
-        address predicted = express.predictListingAddress(address(this), userSalt2, initCodeHash);
-        StonkzDirectListing second = express.list(p, userSalt2);
-        assertEq(address(second), predicted, "CREATE2 predict == deploy");
+        // Second vanity salt (skip the one already used by first deploy).
+        bytes32 otherSalt;
+        address otherPred;
+        bool found;
+        for (uint256 i = uint256(userSalt) + 1; i < uint256(userSalt) + 500_000; ++i) {
+            otherSalt = bytes32(i);
+            otherPred = express.predictListingAddress(address(this), otherSalt, initCodeHash);
+            if (Vanity.matches(otherPred) && otherPred != predicted) {
+                found = true;
+                break;
+            }
+        }
+        assertTrue(found, "second vanity salt");
+        StonkzDirectListing second = express.list(p, otherSalt);
+        assertEq(address(second), otherPred, "second CREATE2 predict == deploy");
         assertTrue(address(first) != address(second));
     }
 
@@ -194,7 +191,7 @@ contract DeployControlsPhase1 is Test {
     // ─── Ladder gate ───────────────────────────────────────────────────────
 
     function test_P1_ladder_deployerCanFile_atBirth() public {
-        StonkzLadderAuction a = ladder.file(_ladderParams());
+        StonkzLadderAuction a = _file(ladder, _ladderParams());
         assertEq(a.creator(), CREATOR);
     }
 
@@ -202,22 +199,20 @@ contract DeployControlsPhase1 is Test {
         StonkzLadderAuction.Params memory p = _ladderParams();
         vm.prank(STRANGER);
         vm.expectRevert(DeployControls.DeployerNotAllowed.selector);
-        ladder.file(p);
+        ladder.file(p, bytes32(0));
     }
 
     function test_P1_ladder_offBlocksEveryone() public {
         StonkzLadderAuction.Params memory p = _ladderParams();
         ladder.setDeploysEnabled(false);
         vm.expectRevert(DeployControls.DeploysOff.selector);
-        ladder.file(p);
+        ladder.file(p, bytes32(0));
     }
 
     function test_P1_ladder_openWhenEmptyAndOn() public {
         StonkzLadderAuction.Params memory p = _ladderParams();
         ladder.revokeDeployer(address(this));
-        vm.prank(STRANGER);
-        StonkzLadderAuction a = ladder.file(p);
-        assertEq(a.creator(), CREATOR);
+        StonkzLadderAuction a  = _fileAs(ladder, STRANGER, p);        assertEq(a.creator(), CREATOR);
     }
 
     function test_P1_ladder_allowlistedOnly_whenNonempty() public {
@@ -226,11 +221,9 @@ contract DeployControlsPhase1 is Test {
         ladder.allowDeployer(FRIEND);
         vm.prank(STRANGER);
         vm.expectRevert(DeployControls.DeployerNotAllowed.selector);
-        ladder.file(p);
+        ladder.file(p, bytes32(0));
 
-        vm.prank(FRIEND);
-        StonkzLadderAuction a = ladder.file(p2);
-        assertEq(a.creator(), CREATOR);
+        StonkzLadderAuction a  = _fileAs(ladder, FRIEND, p2);        assertEq(a.creator(), CREATOR);
     }
 
     function test_P1_ladder_ownerNotImplicitlyAllowlistedAfterRevoke() public {
@@ -239,7 +232,7 @@ contract DeployControlsPhase1 is Test {
         ladder.allowDeployer(FRIEND);
         ladder.revokeDeployer(address(this));
         vm.expectRevert(DeployControls.DeployerNotAllowed.selector);
-        ladder.file(p);
+        ladder.file(p, bytes32(0));
         // Owner can still toggle
         ladder.setDeploysEnabled(false);
         assertFalse(ladder.deploysEnabled());

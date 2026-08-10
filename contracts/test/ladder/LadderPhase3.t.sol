@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {stdJson} from "forge-std/StdJson.sol";
+import {FactoryVanity} from "../FactoryVanity.sol";
 import {LadderVectorLoader} from "./LadderVectorLoader.sol";
 import {LadderAsserts} from "./LadderAsserts.sol";
 import {LadderTypes} from "../../src/ladder/LadderTypes.sol";
@@ -19,7 +20,7 @@ import {PoolKey, PoolIdLibrary} from "../../src/v4/types/PoolKey.sol";
 import {MockVault} from "./MockVault.sol";
 
 /// @title LadderPhase3 — gate + settlement; full A1–A5 incl. vector 09 vault+cashHB
-contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
+contract LadderPhase3 is LadderVectorLoader, LadderAsserts, FactoryVanity {
     using stdJson for string;
     using PoolIdLibrary for PoolKey;
 
@@ -346,14 +347,14 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
             settlement: address(0)
         });
         assertEq(factory.defaultCarveBps(), 400);
-        StonkzLadderAuction a = factory.file(p);
+        StonkzLadderAuction a = _file(factory, p);
         assertEq(a.carveBps(), 400, "stamped 400");
 
         factory.setDefaultCarveBps(700);
         assertEq(a.carveBps(), 400, "stamp survives default change");
 
         p.carveBps = type(uint16).max;
-        StonkzLadderAuction b = factory.file(p);
+        StonkzLadderAuction b = _file(factory, p);
         assertEq(b.carveBps(), 700, "new filing gets new default");
     }
 

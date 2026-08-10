@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
+import {FactoryVanity} from "./FactoryVanity.sol";
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {MockPoolManager} from "../src/mock/MockPoolManager.sol";
 import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
@@ -21,7 +22,7 @@ import {StonkzLaunchToken} from "../src/StonkzLaunchToken.sol";
 import {PoolIdLibrary} from "../src/v4/types/PoolKey.sol";
 
 /// @title LockStampPhase3 — liquidityLocked stamp + unlock withdraw (docs/03 switch 1)
-contract LockStampPhase3 is Test {
+contract LockStampPhase3 is Test, FactoryVanity {
     using PoolIdLibrary for *;
 
     MockPoolManager internal pm;
@@ -60,7 +61,7 @@ contract LockStampPhase3 is Test {
     }
 
     function test_P3_express_lockedStamp_withdrawReverts() public {
-        StonkzDirectListing l = express.list(_params(), bytes32(uint256(1)));
+        StonkzDirectListing l = _list(express, _params());
         assertTrue(l.liquidityLocked());
         assertEq(l.unlockRecipient(), CREATOR);
         assertTrue(locker.liquidityLocked(address(l.token())));
@@ -73,7 +74,7 @@ contract LockStampPhase3 is Test {
 
     function test_P3_express_unlocked_creatorWithdraws() public {
         express.setDefaultLiquidityLocked(false);
-        StonkzDirectListing l = express.list(_params(), bytes32(uint256(2)));
+        StonkzDirectListing l = _list(express, _params());
         assertFalse(l.liquidityLocked());
         assertEq(l.unlockRecipient(), CREATOR);
         assertGt(l.mainLiquidity(), 0);
@@ -92,9 +93,9 @@ contract LockStampPhase3 is Test {
     }
 
     function test_P3_coexistence_lockedAndUnlocked() public {
-        StonkzDirectListing locked = express.list(_params(), bytes32(uint256(10)));
+        StonkzDirectListing locked = _list(express, _params());
         express.setDefaultLiquidityLocked(false);
-        StonkzDirectListing unlocked = express.list(_params(), bytes32(uint256(11)));
+        StonkzDirectListing unlocked = _list(express, _params());
 
         assertTrue(locked.liquidityLocked());
         assertFalse(unlocked.liquidityLocked());
@@ -110,16 +111,16 @@ contract LockStampPhase3 is Test {
     }
 
     function test_P3_stampSurvivesDefaultChange() public {
-        StonkzDirectListing first = express.list(_params(), bytes32(uint256(20)));
+        StonkzDirectListing first = _list(express, _params());
         express.setDefaultLiquidityLocked(false);
-        StonkzDirectListing second = express.list(_params(), bytes32(uint256(21)));
+        StonkzDirectListing second = _list(express, _params());
         assertTrue(first.liquidityLocked());
         assertFalse(second.liquidityLocked());
     }
 
     /// @notice PHASE-4-GO item 2: read-once at construction — factory flip must not unlock.
     function test_P3_express_readOnce_lockedSurvivesFactoryUnlock() public {
-        StonkzDirectListing locked = express.list(_params(), bytes32(uint256(30)));
+        StonkzDirectListing locked = _list(express, _params());
         assertTrue(locked.liquidityLocked());
         assertGt(locked.mainLiquidity(), 0);
 
@@ -136,7 +137,7 @@ contract LockStampPhase3 is Test {
     /// @notice Inverse: unlocked stamp still withdraws after factory flips back to locked.
     function test_P3_express_readOnce_unlockedSurvivesFactoryRelock() public {
         express.setDefaultLiquidityLocked(false);
-        StonkzDirectListing unlocked = express.list(_params(), bytes32(uint256(31)));
+        StonkzDirectListing unlocked = _list(express, _params());
         assertFalse(unlocked.liquidityLocked());
 
         express.setDefaultLiquidityLocked(true);
@@ -149,19 +150,19 @@ contract LockStampPhase3 is Test {
     }
 
     function test_P3_ladder_factoryStampsLockedFromControls() public {
-        StonkzLadderAuction a = ladder.file(_ladderParams());
+        StonkzLadderAuction a = _file(ladder, _ladderParams());
         assertTrue(a.liquidityLocked());
         assertEq(a.unlockRecipient(), CREATOR);
 
         ladder.setDefaultLiquidityLocked(false);
-        StonkzLadderAuction b = ladder.file(_ladderParams());
+        StonkzLadderAuction b = _file(ladder, _ladderParams());
         assertFalse(b.liquidityLocked());
         assertTrue(a.liquidityLocked()); // first unchanged
     }
 
     /// @notice Ladder msg.sender path: auction stamp survives factory flip (read-once).
     function test_P3_ladder_readOnce_lockedSurvivesFactoryUnlock() public {
-        StonkzLadderAuction a = ladder.file(_ladderParams());
+        StonkzLadderAuction a = _file(ladder, _ladderParams());
         assertTrue(a.liquidityLocked());
         ladder.setDefaultLiquidityLocked(false);
         assertFalse(ladder.defaultLiquidityLocked());
@@ -236,7 +237,7 @@ contract LockStampPhase3 is Test {
     }
 
     function test_P3_invariantFuzz_lockedNeverWithdraws(uint8 saltSeed, bool trySide) public {
-        StonkzDirectListing l = express.list(_params(), bytes32(uint256(saltSeed) + 1000));
+        StonkzDirectListing l = _list(express, _params());
         assertTrue(l.liquidityLocked());
         address caller = saltSeed % 2 == 0 ? CREATOR : STRANGER;
         vm.prank(caller);

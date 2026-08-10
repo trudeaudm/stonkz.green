@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
+import {FactoryVanity} from "../FactoryVanity.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {StonkzVault} from "../../src/vault/StonkzVault.sol";
 import {VaultConstants} from "../../src/vault/VaultConstants.sol";
@@ -19,7 +20,7 @@ import {CTOGovernor} from "../../src/CTOGovernor.sol";
 import {ICTOGovernor} from "../../src/interfaces/IStonkzGovernance.sol";
 
 /// @title VaultPhase1 — lockedBalance gate + factory vaultRef + settlement deposit (docs/10 §6, docs/09)
-contract VaultPhase1 is LadderVectorLoader {
+contract VaultPhase1 is LadderVectorLoader, FactoryVanity {
     using stdJson for string;
 
     StonkzVault internal vault;
@@ -87,10 +88,10 @@ contract VaultPhase1 is LadderVectorLoader {
         StonkzLadderAuction.Params memory p = _params(inn);
 
         vm.expectRevert(StonkzLadderFactory.VaultRequiredForHoldback.selector);
-        factory.file(p);
+        factory.file(p, bytes32(0));
 
         factory.setVaultRef(address(vault));
-        StonkzLadderAuction a = factory.file(p);
+        StonkzLadderAuction a = _file(factory, p);
         assertEq(a.vaultRef(), address(vault));
         assertEq(a.holdbackBps(), 6000);
         assertEq(a.circFrac(), 0.4e18);
@@ -130,7 +131,7 @@ contract VaultPhase1 is LadderVectorLoader {
 
         StonkzLadderAuction.Params memory p = _params(inn);
         p.settlement = address(s); // stamped at construction — no setSettlement forwarder
-        StonkzLadderAuction a = factory.file(p);
+        StonkzLadderAuction a = _file(factory, p);
         assertEq(a.vaultRef(), address(vault));
         assertEq(address(a.settlement()), address(s), "settlement stamped at file");
         assertEq(a.owner(), address(factory));
