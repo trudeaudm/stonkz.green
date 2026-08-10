@@ -83,7 +83,7 @@ contract PoolKeyInvariants is Test {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            stonkzRefPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
+            stonkzRefPriceWad: 1e15 // pair-wei per STONKZ token, WAD (USDG-style pair)
         });
         return new StonkzDirectListing(
             IPoolManager(address(pm)), lockerV2, hook, acc, gov, PAIR, STONKZ, p

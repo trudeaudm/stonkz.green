@@ -178,8 +178,9 @@ contract SidePoolRefPrice is Test {
 
     function test_ref_unset_revertsWhenCreateSidePool() public {
         address unknown = address(0xBEEF);
+        StonkzLadderAuction.Params memory p = _ladderParams(unknown);
         vm.expectRevert(abi.encodeWithSelector(DeployControls.RefPriceUnset.selector, unknown));
-        ladder.file(_ladderParams(unknown));
+        ladder.file(p);
     }
 
     function test_ref_unset_okWhenCreateSidePoolFalse() public {

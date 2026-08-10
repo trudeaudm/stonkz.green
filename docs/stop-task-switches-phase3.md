@@ -23,9 +23,12 @@ side-pool `stonkzRefPriceWad` addendum (ruling B).
 
 ## Evidence
 ```
-LockStampPhase3 + DirectListing + DeployControlsPhase1 + SidePoolSwitchesPhase2 + LadderPhase2
-→ green (incl. C2 rug test unmodified on locked default; fuzz locked-never-withdraws)
+forge test --match-contract SidePoolRefPrice|LockStampPhase3|SidePoolSwitchesPhase2|
+  DeployControlsPhase1|DirectListing|PoolKeyInvariants|VaultPhase1|CrossModelParity|LadderPhase3
+→ all green
+Known-value: ETH 4e15/2.5e11 → 1.6e22; USDG 4e15/1e15 → 4e18 STONKZ/token
 ```
+C2 rug test unmodified on locked default; fuzz locked-never-withdraws 2048 runs.
 
 ## RIDER B
 Vector assertion bodies unmodified. Params builders gained `stonkzRefPriceWad` literals
