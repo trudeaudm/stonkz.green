@@ -38,7 +38,7 @@ contract LadderVectorsReal is Test, Deployers, LadderVectorLoader, LadderAsserts
 
     address internal constant TREASURY = address(0x7A5E);
     address internal constant CREATOR = address(0xCE0);
-    address internal constant STONKZ = address(0x4663);
+    MockLaunchTokenReal internal stonkzToken;
 
     function setUp() public {
         deployFreshManagerAndRouters();
@@ -52,7 +52,9 @@ contract LadderVectorsReal is Test, Deployers, LadderVectorLoader, LadderAsserts
         locker = new FeeLockerV2(pm, hook);
         settlement = new LadderSettlement(pm, hook, address(0));
         settlement.setFeeLocker(locker);
-        settlement.setStonkzRef(STONKZ);
+        // Real PM needs a contract at stonkzRef (side pool currency) — not bare 0x4663.
+        stonkzToken = new MockLaunchTokenReal();
+        settlement.setStonkzRef(address(stonkzToken));
         tok = new MockLaunchTokenReal();
     }
 
@@ -213,10 +215,43 @@ contract LadderVectorsReal is Test, Deployers, LadderVectorLoader, LadderAsserts
         _replay("10-wallet-cap-binding.json");
     }
 
-    /// @notice Vector 09 A1–A5 on Real. Full settle→Real-PM cash/ask mint is STOP'd:
-    ///         Uniswap above/below-range token composition vs pairIs0 cash-[floor,print]
-    ///         geometry still forces liq=0 then dust-1 (OutOfFunds). Mock vacuity hid this.
-    ///         See docs/stop-task-v4canon-phase3.md.
+    /// @notice Vector 09: A1–A5 + settle through Real V4Adapter (cash+ask geometry).
+    function test_real_A1A5_09_settleOnAdapter() public {
+        string memory json = _loadRaw("09-vault-holdback-cashhb.json");
+        LadderTypes.Inputs memory inn = loadInputs(json);
+        LadderTypes.Bid[] memory bids = loadBids(json);
+        LadderTypes.Outputs memory exp = loadOutputs(json);
+
+        auction = new StonkzLadderAuction(_params(inn, address(mockVault)));
+        auction.start();
+        for (uint256 i; i < bids.length; i++) {
+            address w = bids[i].wallet;
+            vm.deal(w, bids[i].size + 1 ether);
+            vm.prank(w);
+            auction.placeBid{value: bids[i].size}(bids[i].size, bids[i].maxPrice);
+        }
+        auction.clearAllForTest();
+        assertTrue(auction.graduated(), "09 graduated");
+        assertApproxEqAbs(auction.lpHealth(), exp.lpHealth, LadderTolerance.fracTol(exp.lpHealth), "lpH");
+
+        uint256 unsold = inn.auctionSupply - auction.soldTokens();
+        uint256 side = (unsold * inn.sidePoolBps) / 10_000;
+        uint256 mainAsk = unsold - side;
+        uint256 vaultAmt = (inn.supply * inn.holdbackBps) / 10_000;
+        tok.mint(address(settlement), vaultAmt + mainAsk + side);
+        // ETH for cash leg already arrives via auction.settle → settlement.settle{value: raised}.
+
+        auction.settle(address(tok));
+
+        assertTrue(hook.registered(address(tok)), "hook registered");
+        assertTrue(settlement.askTickLower() < settlement.askTickUpper(), "ask range");
+        assertTrue(settlement.cashTickLower() < settlement.cashTickUpper(), "cash range");
+        assertGt(settlement.cashLiquidity(), 0, "cash lp");
+        assertGt(settlement.askLiquidity(), 0, "ask lp");
+        // pairIs0 (native < token): cash above print in tick space, ask at/below print.
+        assertGt(settlement.cashTickLower(), settlement.askTickUpper(), "pairIs0 orientation");
+    }
+
     function test_real_A1A5_09() public {
         _replay("09-vault-holdback-cashhb.json");
     }

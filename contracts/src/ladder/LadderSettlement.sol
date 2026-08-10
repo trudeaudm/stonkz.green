@@ -95,6 +95,9 @@ contract LadderSettlement {
     error NothingToWithdraw();
     error NotSettled();
     error RefPriceUnset();
+    /// @dev Cash/ask amount positive but liquidity rounds to 0 for the constructed ticks.
+    ///      Not a silent dust mint (liq=1 retired). Spec addendum candidate if seen in prod sizes.
+    error LiquidityDust(bytes32 leg, uint256 amount);
 
     receive() external payable {}
 
@@ -230,6 +233,8 @@ contract LadderSettlement {
         uint256 cash,
         uint256 askTokens
     ) internal {
+        // docs/09 §7 price geometry unchanged: cash [floorPrice, printPrice], tokens [print, ∞).
+        // Construction must satisfy real PM: below-range = pure token0, above-range = pure token1.
         bool pairIs0 = pairToken < userToken;
         mainPoolKey = _mainPoolKey(pairToken, userToken);
         uint160 printSqrt = _sqrtPriceFromPriceWad(printP, pairIs0);
@@ -241,51 +246,59 @@ contract LadderSettlement {
             try poolManager.syncToPrice(mainPoolKey, printSqrt, 50 ether) {} catch {}
         }
 
-        // Register hook EXACTLY as Express (StonkzDirectListing).
         if (!hook.registered(userToken)) {
             hook.registerPool(userToken, pairToken, creator, mainPoolKey);
         }
 
-        int24 printTick = _align(TickMath.getTickAtSqrtRatio(printSqrt), TICK_SPACING);
-        int24 floorTick = _align(TickMath.getTickAtSqrtRatio(floorSqrt), TICK_SPACING);
+        // Identity ticks from sqrts — do NOT swap names (that was the Real-PM vacuity bug).
+        int24 tickAtPrint = TickMath.getTickAtSqrtRatio(printSqrt);
+        int24 tickAtFloor = TickMath.getTickAtSqrtRatio(floorSqrt);
+        // Spacing-aligned usable extremes (MIN_TICK=-887272 is not divisible by 60).
         int24 maxTick = _alignDown(TickMath.MAX_TICK, TICK_SPACING);
+        int24 minTick = _alignUp(TickMath.MIN_TICK, TICK_SPACING);
 
-        // Orientation: ensure floorTick < printTick < maxTick in tick space for the pair/token ordering.
+        // Align range bounds to spacing relative to the live spot tick.
+        int24 printAligned = _align(tickAtPrint, TICK_SPACING);
+        int24 floorAligned = _align(tickAtFloor, TICK_SPACING);
+
         if (pairIs0) {
-            // price = pair/token → higher token price ⇒ lower sqrt(token/pair); ticks invert vs mcap.
-            // Keep ranges ordered: lower < upper.
-            if (floorTick > printTick) (floorTick, printTick) = (printTick, floorTick);
+            // Inverted: higher mcap (pair/token) → lower sqrt(token/pair) → lower tick.
+            // floorTick_raw > printTick_raw. Cash mcap [floor,print] → ticks (print, floor].
+            // Spot below cash range → pure token0 (pair). Ask mcap [print,∞) → ticks [min, print]
+            // → spot at/above ask upper → pure token1 (token).
+            if (floorAligned <= printAligned) floorAligned = printAligned + TICK_SPACING;
+            cashTickLower = printAligned + TICK_SPACING;
+            cashTickUpper = floorAligned;
+            if (cashTickUpper <= cashTickLower) cashTickUpper = cashTickLower + TICK_SPACING;
+            askTickLower = minTick;
+            askTickUpper = printAligned;
+            if (askTickUpper <= askTickLower) askTickUpper = askTickLower + TICK_SPACING;
         } else {
-            if (floorTick > printTick) (floorTick, printTick) = (printTick, floorTick);
+            // Normal: higher mcap → higher tick. Cash [floor, print] → spot at/above upper → pair=c1.
+            // Ask [print, ∞) → spot below lower → token=c0.
+            if (floorAligned >= printAligned) floorAligned = printAligned - TICK_SPACING;
+            cashTickLower = floorAligned;
+            cashTickUpper = printAligned;
+            if (cashTickUpper <= cashTickLower) cashTickLower = cashTickUpper - TICK_SPACING;
+            askTickLower = printAligned + TICK_SPACING;
+            askTickUpper = maxTick;
+            if (askTickLower >= askTickUpper) askTickLower = askTickUpper - TICK_SPACING;
         }
-        if (printTick >= maxTick) printTick = maxTick - TICK_SPACING;
-        if (floorTick >= printTick) floorTick = printTick - TICK_SPACING;
-
-        cashTickLower = floorTick;
-        // Cash range must sit strictly below print so current price is above-range → pair-only.
-        // tickUpper == print left the position at the edge and forced token1 on real PM.
-        cashTickUpper = printTick - TICK_SPACING;
-        if (cashTickUpper <= cashTickLower) cashTickUpper = cashTickLower + TICK_SPACING;
-        askTickLower = printTick;
-        askTickUpper = maxTick;
 
         bytes32 salt = bytes32(uint256(uint160(address(this))));
         cashSalt = salt;
         askSalt = bytes32(uint256(salt) + 1);
 
-        // Cash leg: pair in [floor, print]
+        // Cash leg: pair only (single-sided via amount0/1 helpers — not current-price mix).
         if (cash > 0 && cashTickLower < cashTickUpper) {
-            uint128 liqCash = LiquidityAmounts.getLiquidityForAmounts(
-                printSqrt,
-                TickMath.getSqrtRatioAtTick(cashTickLower),
-                TickMath.getSqrtRatioAtTick(cashTickUpper),
-                pairIs0 ? cash : 0,
-                pairIs0 ? 0 : cash
-            );
-            if (liqCash == 0) liqCash = 1;
+            uint160 sa = TickMath.getSqrtRatioAtTick(cashTickLower);
+            uint160 sb = TickMath.getSqrtRatioAtTick(cashTickUpper);
+            uint128 liqCash = pairIs0
+                ? LiquidityAmounts.getLiquidityForAmount0(sa, sb, cash)
+                : LiquidityAmounts.getLiquidityForAmount1(sa, sb, cash);
+            if (liqCash == 0) revert LiquidityDust(bytes32("cash"), cash);
             cashLiquidity = liqCash;
             _approvePm(pairToken, cash);
-            _approvePm(userToken, type(uint256).max);
             uint256 ethVal = pairToken == address(0) ? cash : 0;
             poolManager.modifyLiquidity{value: ethVal}(
                 mainPoolKey,
@@ -309,19 +322,16 @@ contract LadderSettlement {
             );
         }
 
-        // Ask leg: tokens in [print, inf)
+        // Ask leg: user token only.
         if (askTokens > 0 && askTickLower < askTickUpper) {
-            uint128 liqAsk = LiquidityAmounts.getLiquidityForAmounts(
-                printSqrt,
-                TickMath.getSqrtRatioAtTick(askTickLower),
-                TickMath.getSqrtRatioAtTick(askTickUpper),
-                pairIs0 ? 0 : askTokens,
-                pairIs0 ? askTokens : 0
-            );
-            if (liqAsk == 0) liqAsk = 1;
+            uint160 sa = TickMath.getSqrtRatioAtTick(askTickLower);
+            uint160 sb = TickMath.getSqrtRatioAtTick(askTickUpper);
+            uint128 liqAsk = pairIs0
+                ? LiquidityAmounts.getLiquidityForAmount1(sa, sb, askTokens)
+                : LiquidityAmounts.getLiquidityForAmount0(sa, sb, askTokens);
+            if (liqAsk == 0) revert LiquidityDust(bytes32("ask"), askTokens);
             askLiquidity = liqAsk;
             _approvePm(userToken, askTokens);
-            _approvePm(pairToken, type(uint256).max);
             poolManager.modifyLiquidity(
                 mainPoolKey,
                 IPoolManager.ModifyLiquidityParams({
@@ -352,24 +362,42 @@ contract LadderSettlement {
         uint256 priceInStonkz = FixedPointMathLib.fullMulDiv(printP, WAD, refPriceWad);
         sidePoolKey = _sidePoolKey(userToken, stonkzRef);
         bool tokIs0 = userToken < stonkzRef;
-        uint160 sqrtP = _sqrtPriceFromPriceWad(priceInStonkz, !tokIs0);
-        if (!poolManager.isInitialized(sidePoolKey.toId())) {
-            poolManager.initialize(sidePoolKey, sqrtP);
+
+        // Spot from price; range placed for pure userToken under real PM composition rules.
+        uint160 priceSqrt = _sqrtPriceFromPriceWad(priceInStonkz, !tokIs0);
+        int24 spotAligned = _align(TickMath.getTickAtSqrtRatio(priceSqrt), TICK_SPACING);
+        int24 maxTick = _alignDown(TickMath.MAX_TICK, TICK_SPACING);
+        int24 minTick = _alignUp(TickMath.MIN_TICK, TICK_SPACING);
+
+        int24 lo;
+        int24 hi;
+        uint160 initSqrt;
+        if (tokIs0) {
+            // token0: below-range → spot below range.
+            lo = spotAligned + TICK_SPACING;
+            hi = maxTick;
+            if (lo >= hi) lo = hi - TICK_SPACING;
+            initSqrt = TickMath.getSqrtRatioAtTick(spotAligned);
+        } else {
+            // token1: above-range → spot at/above upper.
+            lo = minTick;
+            hi = spotAligned;
+            if (hi <= lo) hi = lo + TICK_SPACING;
+            initSqrt = TickMath.getSqrtRatioAtTick(spotAligned);
         }
-        int24 tick = _align(TickMath.getTickAtSqrtRatio(sqrtP), TICK_SPACING);
-        int24 lo = tick;
-        int24 hi = _alignDown(TickMath.MAX_TICK, TICK_SPACING);
-        if (lo >= hi) lo = hi - TICK_SPACING;
+
+        if (!poolManager.isInitialized(sidePoolKey.toId())) {
+            poolManager.initialize(sidePoolKey, initSqrt);
+        }
+
         sideTickLower = lo;
         sideTickUpper = hi;
-        uint128 liq = LiquidityAmounts.getLiquidityForAmounts(
-            sqrtP,
-            TickMath.getSqrtRatioAtTick(lo),
-            TickMath.getSqrtRatioAtTick(hi),
-            tokIs0 ? tokens : 0,
-            tokIs0 ? 0 : tokens
-        );
-        if (liq == 0) liq = 1;
+        uint160 sa = TickMath.getSqrtRatioAtTick(lo);
+        uint160 sb = TickMath.getSqrtRatioAtTick(hi);
+        uint128 liq = tokIs0
+            ? LiquidityAmounts.getLiquidityForAmount0(sa, sb, tokens)
+            : LiquidityAmounts.getLiquidityForAmount1(sa, sb, tokens);
+        if (liq == 0) revert LiquidityDust(bytes32("side"), tokens);
         sideLiquidity = liq;
         bytes32 sideSalt_ = bytes32(uint256(2));
         sideSalt = sideSalt_;
@@ -529,6 +557,14 @@ contract LadderSettlement {
         int24 rem = tick % spacing;
         if (rem < 0) rem += spacing;
         return tick - rem;
+    }
+
+    /// @dev Round toward +inf onto a spacing multiple (usable min tick).
+    function _alignUp(int24 tick, int24 spacing) internal pure returns (int24) {
+        int24 rem = tick % spacing;
+        if (rem < 0) rem += spacing;
+        if (rem == 0) return tick;
+        return tick + (spacing - rem);
     }
 
     function _alignDown(int24 tick, int24 spacing) internal pure returns (int24) {
