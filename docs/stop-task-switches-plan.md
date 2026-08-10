@@ -4,7 +4,7 @@
 **Prompt rulings in force:** stamp pattern; sidePoolBps bounds [0, 2000] default 500;
 allowlist NOT renounceable (purpose = factory migration); loud events; bps units
 discipline.  
-**Status:** Phase 0 only. **NO implementation.** Placement needs David ruling.
+**Status:** Phase 0 RULED 2026-08-09 (all six YES + riders A/B/C). Phase 1 in progress.
 
 ---
 
@@ -100,11 +100,24 @@ risking "byte-for-byte / unmodified tests" and widening the diff beyond the stam
 for both paths. LOCKED tests that ignore position IDs may still pass; any test or
 off-chain tool keyed on listing/settlement as position owner breaks. Larger blast radius.
 
-### 3.4 Designated recipient (needs one-line confirmation)
+### 3.4 Unlock recipient — RULED (stamped immutable)
 
-Propose: **token creator** (Express `ListingParams.creator` / Ladder `Params.creator`) is
-the sole withdrawer when `liquidityLocked == false`. Not feeReceiver (CTO-movable).
-Not factory owner.
+**Unlock recipient = creator, STAMPED AT DEPLOY as an immutable** on Express listing /
+Ladder auction (field e.g. `unlockRecipient`). Never a mutable storage slot, never
+feeReceiver / pageAdmin / CTO-moved address, never factory owner. Phase 3 wires
+withdraw to this stamp; Phase 1–2 do not add a mutable stand-in.
+
+### 3.4a Riders (Phase 0 ruling)
+
+- **RIDER A:** DeployControls birth state = `deploysEnabled=true` + allowlist nonempty
+  (constructor deployer only). Soft-launch gate closed at birth. Deploy-script assertion
+  + unit test required.
+- **RIDER B:** LadderSettlement→FeeLockerV2 registration (Phase 3) must keep ladder
+  vector suite A1–A5 (all 10) **unmodified**; compare vector-test file hashes to `main`.
+  Any vector-test edit = STOP.
+- **RIDER C:** Express factory CREATE2-ready (`userSalt` → `salt = keccak256(deployer,
+  userSalt)`); no 0x4663 mining in this chain — structure must not foreclose the vanity
+  ruling attaching later.
 
 ### 3.5 What does NOT change
 
@@ -134,15 +147,14 @@ survival — no new carve/fee ownership in this chain.
 
 ---
 
-## 5. STOP — decisions requested
+## 5. Phase 0 decisions — RULED 2026-08-09
 
-Approve or amend before Phase 1 code:
+1. Express factory — **YES**
+2. Dual-instance DeployControls — **YES**
+3. Withdraw on Listing/Settlement (not FeeLocker minter) — **YES**
+4. Recipient = creator, **stamped immutable at deploy** — **YES** (hardened)
+5. createSidePool=false ⇒ mass to main — **YES**
+6. Allowlist semantic — **YES**
+Riders A/B/C — see §3.4a.
 
-1. **Express factory** (`StonkzExpressFactory`) as sole Express deploy path — YES/NO?
-2. **Switches live on both factory instances** via shared abstract/lib (not a third gate contract) — YES/NO?
-3. **Lock withdraw placement:** recommended (withdraw on Listing/Settlement, stamp+registry on FeeLockerV2, mint path unchanged) vs alternate (FeeLocker sole minter) — which?
-4. **Designated recipient = creator** — YES/NO?
-5. **`createSidePool=false` ⇒ side amount 0, mass to main LP** (no park) — YES/NO?
-6. **Allowlist semantic** (empty+on = open; nonempty = gated; off = all blocked; not renounceable) — YES/NO?
-
-No merge. No Phase 1 until placement ruled.
+No merge until Phase 4 STOP + David merge ruling.

@@ -3,40 +3,27 @@ pragma solidity ^0.8.26;
 
 import {StonkzLadderAuction} from "./StonkzLadderAuction.sol";
 import {LadderConstants} from "./LadderConstants.sol";
+import {DeployControls} from "../DeployControls.sol";
 
 /// @title StonkzLadderFactory — filing gate for ladder auctions (modularity)
 /// @notice Owner-settable vault + carve default. HoldbackPct > 0 reverts while vault unset.
 ///         carveBps stamped immutably per auction at filing (FEECHAIN stamp pattern).
-contract StonkzLadderFactory {
-    address public owner;
+///         DeployControls: deploysEnabled + allowlist gate every `file` (docs/03 switch 4).
+contract StonkzLadderFactory is DeployControls {
     address public vaultRef;
     /// @notice Mutable default carve for new filings. Bounds [0, CARVE_BPS_MAX]. Unit: bps of raised.
     uint16 public defaultCarveBps = LadderConstants.DEFAULT_CARVE_BPS; // bps of raised
 
-    event OwnerTransferred(address indexed prev, address indexed next);
     event VaultRefSet(address indexed vault);
     event DefaultCarveBpsSet(uint16 bps);
     event AuctionFiled(address indexed auction, address indexed creator, uint16 holdbackBps, uint16 carveBps);
 
-    error NotOwner();
     error VaultRequiredForHoldback();
     error VaultRefNotContract();
     error HoldbackCeiling();
     error CarveBounds();
 
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
-        _;
-    }
-
-    constructor() {
-        owner = msg.sender;
-    }
-
-    function transferOwnership(address next) external onlyOwner {
-        emit OwnerTransferred(owner, next);
-        owner = next;
-    }
+    constructor() DeployControls() {}
 
     /// @notice Set the Management Vault ref. Target MUST have code (EOA/empty reverts).
     function setVaultRef(address vault) external onlyOwner {
@@ -54,6 +41,8 @@ contract StonkzLadderFactory {
     /// @notice File a ladder auction. Stamps current defaultCarveBps (or explicit p.carveBps if set).
     /// @dev Pass carveBps=type(uint16).max to mean "use factory default".
     function file(StonkzLadderAuction.Params memory p) external returns (StonkzLadderAuction auction) {
+        _requireDeployAllowed(msg.sender);
+
         if (p.carveBps == type(uint16).max) {
             p.carveBps = defaultCarveBps;
         }
