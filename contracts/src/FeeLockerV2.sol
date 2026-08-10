@@ -6,12 +6,12 @@ import {PoolKey, PoolId, PoolIdLibrary} from "./v4/types/PoolKey.sol";
 import {Currency, CurrencyLibrary} from "./v4/types/Currency.sol";
 import {StonkzFeeHook} from "./StonkzFeeHook.sol";
 
-/// @title FeeLockerV2 — immutable custody; side-pool compounding
+/// @title FeeLockerV2 — custody registry + side-pool compounding (docs/03 lock stamp)
 /// @notice Main-pool fee conversion crank REMOVED (FEECHAIN Phase 0 / docs/06).
-///         Ongoing main fees are handled by StonkzFeeHook. Side-pool compounding is
-///         UNCHANGED from FeeLocker v1.
-/// @dev Per-token immutability: tokens already launched under v1 keep v1 (no migration).
-///      No admin, no upgradeability. crankMainFees retired — Phase 4 severs FeeLocker main route.
+///         Lock stamp (`liquidityLocked`, `unlockRecipient`) recorded per token at first
+///         `lockPosition`. Withdraw of principal lives on Listing/Settlement (not here) —
+///         this contract exposes gate views + `markWithdrawn` for registry integrity.
+/// @dev Mint path unchanged: callers still `modifyLiquidity` themselves; FeeLocker only registers.
 contract FeeLockerV2 {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
@@ -29,6 +29,7 @@ contract FeeLockerV2 {
         address userToken;
         bool currency0IsPair;
         bool active;
+        address registrar; // msg.sender at lockPosition (Listing/Settlement)
     }
 
     IPoolManager public immutable poolManager;
@@ -37,26 +38,59 @@ contract FeeLockerV2 {
     uint256 public nextLockId;
     mapping(uint256 => LockedPosition) public locks;
 
-    event PositionLocked(uint256 indexed lockId, PoolId indexed poolId, PoolKind kind, bytes32 positionId);
+    /// @notice Per-token lock stamp. Set once at first lockPosition for that token.
+    mapping(address => bool) public liquidityLocked;
+    /// @notice Per-token unlock recipient (creator), stamped immutable at first lock.
+    mapping(address => address) public unlockRecipient;
+    mapping(address => bool) public tokenStampSet;
+    mapping(address => uint256[]) internal _lockIdsOf;
+
+    event PositionLocked(
+        uint256 indexed lockId,
+        PoolId indexed poolId,
+        PoolKind kind,
+        bytes32 positionId,
+        address indexed userToken,
+        bool liquidityLocked_,
+        address unlockRecipient_
+    );
     event SideFeesCompounded(uint256 indexed lockId, uint256 fee0, uint256 fee1);
+    event PositionWithdrawn(uint256 indexed lockId, address indexed userToken, address indexed by);
 
     error NotSide();
     error Inactive();
-    error MainFeeCrankRetired(); // Phase 0: conversion crank deleted
+    error MainFeeCrankRetired();
+    error LiquidityIsLocked();
+    error NotUnlockRecipient();
+    error NotRegistrar();
+    error StampMismatch();
+    error ZeroRecipient();
 
     constructor(IPoolManager poolManager_, StonkzFeeHook hook_) {
         poolManager = poolManager_;
         hook = hook_;
     }
 
-    /// @notice Custody a newly created position (called by the listing/strategy).
+    /// @notice Register a newly minted position and stamp lock terms on first lock for `userToken`.
     function lockPosition(
         PoolKey memory key,
         bytes32 positionId,
         PoolKind kind,
         address pairCurrency,
-        address userToken
+        address userToken,
+        bool liquidityLocked_,
+        address unlockRecipient_
     ) external returns (uint256 lockId) {
+        if (unlockRecipient_ == address(0)) revert ZeroRecipient();
+        if (tokenStampSet[userToken]) {
+            if (liquidityLocked[userToken] != liquidityLocked_) revert StampMismatch();
+            if (unlockRecipient[userToken] != unlockRecipient_) revert StampMismatch();
+        } else {
+            tokenStampSet[userToken] = true;
+            liquidityLocked[userToken] = liquidityLocked_;
+            unlockRecipient[userToken] = unlockRecipient_;
+        }
+
         lockId = ++nextLockId;
         bool c0Pair = key.currency0.toAddress() == pairCurrency;
         locks[lockId] = LockedPosition({
@@ -66,9 +100,32 @@ contract FeeLockerV2 {
             pairCurrency: pairCurrency,
             userToken: userToken,
             currency0IsPair: c0Pair,
-            active: true
+            active: true,
+            registrar: msg.sender
         });
-        emit PositionLocked(lockId, key.toId(), kind, positionId);
+        _lockIdsOf[userToken].push(lockId);
+        emit PositionLocked(lockId, key.toId(), kind, positionId, userToken, liquidityLocked_, unlockRecipient_);
+    }
+
+    /// @notice Gate for Listing/Settlement withdraw. Reverts if locked or wrong caller.
+    function requireCanWithdraw(address token, address caller) external view {
+        if (!tokenStampSet[token]) revert Inactive();
+        if (liquidityLocked[token]) revert LiquidityIsLocked();
+        if (caller != unlockRecipient[token]) revert NotUnlockRecipient();
+    }
+
+    /// @notice Registrar marks a position inactive after successful principal withdraw.
+    function markWithdrawn(uint256 lockId) external {
+        LockedPosition storage lp = locks[lockId];
+        if (!lp.active) revert Inactive();
+        if (msg.sender != lp.registrar) revert NotRegistrar();
+        if (liquidityLocked[lp.userToken]) revert LiquidityIsLocked();
+        lp.active = false;
+        emit PositionWithdrawn(lockId, lp.userToken, msg.sender);
+    }
+
+    function lockIdsOf(address token) external view returns (uint256[] memory) {
+        return _lockIdsOf[token];
     }
 
     /// @notice RETIRED (FEECHAIN Phase 0). Conversion crank deleted per docs/06.

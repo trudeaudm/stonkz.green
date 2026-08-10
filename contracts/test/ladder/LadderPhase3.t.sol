@@ -75,7 +75,9 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
                 ? LadderConstants.HoldbackDelivery.Vault
                 : LadderConstants.HoldbackDelivery.None,
             tier: inn.tier,
+            createSidePool: true,
             sidePoolBps: inn.sidePoolBps,
+            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: inn.walletCapBps,
             sizeBonusBps: inn.sizeBonusBps,
             maxUniqueActives: 300,
@@ -331,7 +333,9 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
             holdbackBps: 0,
             holdbackDelivery: LadderConstants.HoldbackDelivery.None,
             tier: LadderTypes.Tier.God,
+            createSidePool: true,
             sidePoolBps: 500,
+            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: 500,
             sizeBonusBps: 1000,
             maxUniqueActives: 300,
@@ -369,7 +373,9 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
             holdbackBps: 0,
             holdbackDelivery: LadderConstants.HoldbackDelivery.None,
             tier: LadderTypes.Tier.God,
+            createSidePool: true,
             sidePoolBps: 500,
+            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: 1000,
             sizeBonusBps: 0,
             maxUniqueActives: 300,
@@ -394,7 +400,11 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
                 carveBps: 400,
                 cashHoldbackBps: 500,
                 holdbackBps: 0,
+                createSidePool: true,
                 sidePoolBps: 500,
+                stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+                liquidityLocked: true,
+                unlockRecipient: CREATOR,
                 vaultRef: address(0),
                 creator: CREATOR,
                 treasury: TREASURY,

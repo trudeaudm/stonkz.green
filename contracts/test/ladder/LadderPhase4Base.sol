@@ -99,7 +99,9 @@ abstract contract LadderPhase4Base is Test {
                     ? LadderConstants.HoldbackDelivery.Vault
                     : LadderConstants.HoldbackDelivery.None,
                 tier: c.tier,
+                createSidePool: true,
                 sidePoolBps: LadderConstants.SIDE_POOL_BPS,
+                stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
                 walletCapBps: c.walletCapBps,
                 sizeBonusBps: c.sizeBonusBps,
                 maxUniqueActives: c.maxUniqueActives,

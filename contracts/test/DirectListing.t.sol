@@ -49,7 +49,11 @@ contract DirectListing is Test {
             declaredUse: bytes32("ops"),
             creator: CREATOR,
             name: "Stonk",
-            symbol: "STK"
+            symbol: "STK",
+            createSidePool: true,
+            sidePoolBps: 500,
+            liquidityLocked: true,
+            stonkzRefPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
         });
         return new StonkzDirectListing(
             IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0), p
@@ -66,7 +70,11 @@ contract DirectListing is Test {
             declaredUse: bytes32(0),
             creator: CREATOR,
             name: "X",
-            symbol: "X"
+            symbol: "X",
+            createSidePool: true,
+            sidePoolBps: 500,
+            liquidityLocked: true,
+            stonkzRefPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
         });
         vm.expectRevert(StonkzDirectListing.BadTier.selector);
         new StonkzDirectListing(IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0), p);

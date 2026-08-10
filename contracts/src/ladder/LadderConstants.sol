@@ -4,7 +4,7 @@ pragma solidity ^0.8.26;
 /// @title LadderConstants — docs/09 parameter grid + units discipline
 /// @notice Fixed-point choice (Phase 0): WAD = 1e18 (solady FixedPointMathLib),
 ///         semantically equivalent to UD60x18 without adding a PRBMath dependency.
-///         Money = pair-currency wei (WAD dollars when pair is 18-dec USDG/ETH quote).
+///         Money = pair-currency wei (pair currency (WAD) when pair is 18-dec USDG/ETH quote).
 ///         Prices = pair-per-token in WAD. Fractions that are bps-native stay in bps.
 library LadderConstants {
     uint256 internal constant WAD = 1e18;
@@ -12,15 +12,17 @@ library LadderConstants {
     // ─── globals (docs/09 §3) ─────────────────────────────────────────────
     /// @dev Platform raise/pass line only — zero effect on dynamics. Unit: bps of startMcap.
     uint16 internal constant RAISE_RATIO_BPS = 6000; // bps of startMcap (60%)
-    /// @dev Rung spacing in mcap dollars (WAD).
-    uint256 internal constant RUNG_INTERVAL_USD = 1000 * WAD; // $1,000 mcap
+    /// @dev Rung spacing in mcap (pair currency, WAD).
+    uint256 internal constant RUNG_INTERVAL_USD = 1000 * WAD; // 1,000 pair-currency mcap units
     /// @dev Default protocol carve of raise. Unit: bps of raised. Bounds [0, 1000].
     uint16 internal constant DEFAULT_CARVE_BPS = 400; // bps of raised (4%)
     uint16 internal constant CARVE_BPS_MAX = 1000; // bps of raised (10%)
     /// @dev Side pool share of LP-destined tokens. Unit: bps of LP-destined token amount.
+    ///      Factory switch bounds [0, SIDE_POOL_BPS_MAX]; launch grid default = SIDE_POOL_BPS.
     uint16 internal constant SIDE_POOL_BPS = 500; // bps of LP-destined tokens (5%)
+    uint16 internal constant SIDE_POOL_BPS_MAX = 2000; // bps of LP-destined tokens (20%)
     /// @dev Minimum bid notional. Unit: pair-currency wei.
-    uint256 internal constant MIN_BID = 5 * WAD; // $5
+    uint256 internal constant MIN_BID = 5 * WAD; // 5 pair-currency units
     /// @dev Default wallet cap. Unit: bps of auction supply.
     uint16 internal constant DEFAULT_WALLET_CAP_BPS = 500; // bps of auction supply (5%)
     uint16 internal constant WALLET_CAP_BPS_MIN = 1; // bps (0.01%)

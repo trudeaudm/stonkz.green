@@ -22,18 +22,26 @@ contract StonkzLadderAuction {
     // ─── immutables ───────────────────────────────────────────────────────
     uint256 public immutable supply;
     uint256 public immutable auctionSupply;
-    uint256 public immutable floorMcap; // WAD dollars
-    uint256 public immutable floorPrice; // WAD
-    uint256 public immutable rungIntervalUsd; // WAD dollars
+    uint256 public immutable floorMcap; // pair currency (WAD) — FDV at floor
+    uint256 public immutable floorPrice; // pair-wei per token, WAD
+    uint256 public immutable rungIntervalUsd; // pair currency (WAD) mcap step
     uint256 public immutable duration; // seconds
     uint256 public immutable lpShareWad;
     uint256 public immutable lpHealthTargetWad;
     uint256 public immutable circFrac; // WAD fraction
-    uint256 public immutable threshold; // WAD dollars = raiseRatio * floorMcap
+    uint256 public immutable threshold; // pair currency (WAD) = raiseRatio * floorMcap
     uint16 public immutable carveBps; // stamped — bps of raised
     uint16 public immutable cashHoldbackBps; // bps of raised
     uint16 public immutable holdbackBps; // bps of total supply → vault
-    uint16 public immutable sidePoolBps; // bps of LP-destined tokens
+    uint16 public immutable sidePoolBps; // stamped — bps of LP-destined tokens
+    /// @notice Stamped at filing (docs/03 switch 2). False ⇒ settlement puts all LP tokens on main.
+    bool public immutable createSidePool;
+    /// @notice Stamped at filing (docs/03 switch 1). Default TRUE; factory path reads DeployControls.
+    bool public immutable liquidityLocked;
+    /// @notice Stamped at filing — always creator. Sole withdrawer when unlocked.
+    address public immutable unlockRecipient;
+    /// @notice Stamped at filing. Unit: pair-wei per STONKZ token, WAD. 0 when createSidePool=false.
+    uint256 public immutable stonkzRefPriceWad;
     uint16 public immutable walletCapBps; // bps of auction supply
     uint16 public immutable sizeBonusBps; // bps
     int256 public immutable alphaWad; // log2(1+beta) WAD
@@ -138,7 +146,10 @@ contract StonkzLadderAuction {
         uint16 holdbackBps; // bps of total supply
         LadderConstants.HoldbackDelivery holdbackDelivery;
         LadderTypes.Tier tier;
-        uint16 sidePoolBps;
+        bool createSidePool; // stamped — docs/03 switch 2
+        uint16 sidePoolBps; // stamped — bps of LP-destined tokens; bounds [0, 2000]
+        /// @dev Unit: pair-wei per STONKZ token, WAD. Factory stamps; direct tests set explicitly.
+        uint256 stonkzRefPriceWad;
         uint16 walletCapBps;
         uint16 sizeBonusBps;
         uint16 maxUniqueActives;
@@ -153,6 +164,11 @@ contract StonkzLadderAuction {
         require(p.supply > 0 && p.auctionSupply > 0, "supply");
         require(p.duration > 0, "duration");
         require(p.carveBps <= LadderConstants.CARVE_BPS_MAX, "carve");
+        require(p.sidePoolBps <= LadderConstants.SIDE_POOL_BPS_MAX, "sideBps");
+        if (p.createSidePool) {
+            require(p.stonkzRefPriceWad != 0, "refPrice");
+            _validateRefPriceBounds(p.pairToken, p.stonkzRefPriceWad);
+        }
         require(
             p.walletCapBps >= LadderConstants.WALLET_CAP_BPS_MIN && p.walletCapBps <= LadderConstants.WALLET_CAP_BPS_MAX,
             "cap"
@@ -183,7 +199,13 @@ contract StonkzLadderAuction {
         threshold = FixedPointMathLib.fullMulDiv(p.floorMcap, LadderConstants.RAISE_RATIO_BPS, 10_000);
         carveBps = p.carveBps;
         cashHoldbackBps = p.cashHoldbackBps;
+        createSidePool = p.createSidePool;
         sidePoolBps = p.sidePoolBps;
+        // Switch 1: factory path reads DeployControls(msg.sender); direct deploy → locked=true.
+        // Avoids Params field (RIDER B: vector test files need not grow another literal).
+        liquidityLocked = _readFactoryLiquidityLocked(msg.sender);
+        unlockRecipient = p.creator; // stamped immutable
+        stonkzRefPriceWad = p.createSidePool ? p.stonkzRefPriceWad : 0;
         walletCapBps = p.walletCapBps;
         sizeBonusBps = p.sizeBonusBps;
         alphaWad = p.sizeBonusBps == 0 ? int256(0) : LadderConstants.ALPHA_WAD;
@@ -473,7 +495,11 @@ contract StonkzLadderAuction {
             carveBps: carveBps,
             cashHoldbackBps: cashHoldbackBps,
             holdbackBps: holdbackBps,
+            createSidePool: createSidePool,
             sidePoolBps: sidePoolBps,
+            stonkzRefPriceWad: stonkzRefPriceWad,
+            liquidityLocked: liquidityLocked,
+            unlockRecipient: unlockRecipient,
             vaultRef: vaultRef,
             creator: creator,
             treasury: treasury,
@@ -584,5 +610,25 @@ contract StonkzLadderAuction {
         tokens = w.tokens;
         refund = w.committed > w.spent ? w.committed - w.spent : 0;
         if (done && w.refundClaimable > 0 && !w.refundClaimed) refund = w.refundClaimable;
+    }
+
+    /// @dev Factory (DeployControls) exposes defaultLiquidityLocked(); direct deploy → true.
+    function _readFactoryLiquidityLocked(address deployer) private view returns (bool locked) {
+        locked = true;
+        if (deployer.code.length == 0) return locked;
+        (bool ok, bytes memory data) =
+            deployer.staticcall(abi.encodeWithSignature("defaultLiquidityLocked()"));
+        if (ok && data.length >= 32) {
+            locked = abi.decode(data, (bool));
+        }
+    }
+
+    /// @dev Bounds mirror DeployControls. Unit: pair-wei per STONKZ token, WAD.
+    function _validateRefPriceBounds(address pair, uint256 priceWad) private pure {
+        if (pair == address(0)) {
+            require(priceWad >= 1e8 && priceWad <= 1e17, "refBounds");
+        } else {
+            require(priceWad >= 1e12 && priceWad <= 1e21, "refBounds");
+        }
     }
 }
