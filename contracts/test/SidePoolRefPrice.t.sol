@@ -19,9 +19,13 @@ import {LadderConstants} from "../src/ladder/LadderConstants.sol";
 import {LadderTypes} from "../src/ladder/LadderTypes.sol";
 import {LadderSettlement} from "../src/ladder/LadderSettlement.sol";
 import {DeployControls} from "../src/DeployControls.sol";
+import {PoolKey, PoolIdLibrary} from "../src/v4/types/PoolKey.sol";
+import {TickMath} from "../src/v4/TickMath.sol";
 
 /// @title SidePoolRefPrice — stamped pair-wei/side-token ref (ruling B) + known-value init
 contract SidePoolRefPrice is Test, FactoryVanity {
+    using PoolIdLibrary for PoolKey;
+
     MockPoolManager internal pm;
     BuybackAccumulator internal acc;
     StonkzFeeHook internal hook;
@@ -94,6 +98,8 @@ contract SidePoolRefPrice is Test, FactoryVanity {
         // dependent (not naive tickAbovePrice(priceInStonkz)); lock arithmetic + deploy.
         assertTrue(l.sidePoolDeployed());
         assertGt(l.sideLiquidity(), 0);
+        // SIDEPOOL-PRICE-LOCK: on-pool slot0/ticks must match ruled refprice (beside stamp checks).
+        _assertSidePoolOnPoolPrice(l, priceInStonkz);
     }
 
     function test_ref_express_usdg_initTick_knownValue() public {
@@ -102,6 +108,7 @@ contract SidePoolRefPrice is Test, FactoryVanity {
         uint256 priceInStonkz = FixedPointMathLib.mulDiv(l.startPriceWad(), WAD, l.refPriceWad());
         assertEq(priceInStonkz, 4e18);
         assertTrue(l.sidePoolDeployed());
+        _assertSidePoolOnPoolPrice(l, priceInStonkz);
     }
 
     // ─── Ladder file stamps ref ────────────────────────────────────────────
@@ -177,6 +184,67 @@ contract SidePoolRefPrice is Test, FactoryVanity {
     }
 
     // ─── helpers ───────────────────────────────────────────────────────────
+
+    /// @dev Orientation-aware: init at spotAligned(priceInStonkz); range floor/ceiling by tokIs0.
+    function _assertSidePoolOnPoolPrice(StonkzDirectListing l, uint256 priceInStonkz) internal view {
+        bool tokIs0 = address(l.token()) < l.sideTokenRef();
+        // Mirror DirectListing._sqrtPriceFromPriceWad(priceInStonkz, !tokIs0)
+        bool pairIsToken0 = !tokIs0;
+        uint256 pxWad = priceInStonkz;
+        if (pairIsToken0) {
+            pxWad = FixedPointMathLib.mulDiv(WAD, WAD, priceInStonkz);
+        }
+        uint256 sqrtP = _sqrt(pxWad);
+        uint256 sqrtX96 = FixedPointMathLib.fullMulDiv(sqrtP, uint256(1) << 96, 1e9);
+        if (sqrtX96 <= TickMath.MIN_SQRT_RATIO) sqrtX96 = TickMath.MIN_SQRT_RATIO + 1;
+        if (sqrtX96 >= TickMath.MAX_SQRT_RATIO) sqrtX96 = TickMath.MAX_SQRT_RATIO - 1;
+        int24 spotAligned = _align(TickMath.getTickAtSqrtRatio(uint160(sqrtX96)), 60);
+        uint160 expectSqrt = TickMath.getSqrtRatioAtTick(spotAligned);
+        int24 minTick = _alignUp(TickMath.MIN_TICK, 60);
+        int24 maxTick = _alignDown(TickMath.MAX_TICK, 60);
+        if (tokIs0) {
+            int24 lo = spotAligned + 60;
+            if (lo >= maxTick) lo = maxTick - 60;
+            assertEq(l.sideTickLower(), lo);
+            assertEq(l.sideTickUpper(), maxTick);
+        } else {
+            int24 hi = spotAligned;
+            if (hi <= minTick) hi = minTick + 60;
+            assertEq(l.sideTickLower(), minTick);
+            assertEq(l.sideTickUpper(), hi);
+        }
+        (uint160 sqrt, int24 tick,,) = pm.getSlot0(l.sideKey().toId());
+        assertEq(tick, spotAligned, "slot0 tick");
+        assertEq(sqrt, expectSqrt, "slot0 sqrt");
+    }
+
+    function _align(int24 tick, int24 spacing) internal pure returns (int24) {
+        int24 rem = tick % spacing;
+        if (rem < 0) rem += spacing;
+        return tick - rem;
+    }
+
+    function _alignUp(int24 tick, int24 spacing) internal pure returns (int24) {
+        int24 rem = tick % spacing;
+        if (rem < 0) rem += spacing;
+        return rem == 0 ? tick : tick + (spacing - rem);
+    }
+
+    function _alignDown(int24 tick, int24 spacing) internal pure returns (int24) {
+        int24 rem = tick % spacing;
+        if (rem < 0) rem += spacing;
+        return tick - rem;
+    }
+
+    function _sqrt(uint256 x) internal pure returns (uint256 z) {
+        if (x == 0) return 0;
+        z = x;
+        uint256 y = (x + 1) / 2;
+        while (y < z) {
+            z = y;
+            y = (x / y + y) / 2;
+        }
+    }
 
     function _params() internal pure returns (StonkzDirectListing.ListingParams memory p) {
         p = StonkzDirectListing.ListingParams({
