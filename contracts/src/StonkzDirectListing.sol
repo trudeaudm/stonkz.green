@@ -141,6 +141,8 @@ contract StonkzDirectListing {
     error RefPriceOutOfBounds(uint256 price);
     /// @dev createSidePool=true requires a non-zero sideTokenRef (no silent park).
     error SideTokenRefUnset();
+    /// @dev Real-PM: liq rounds to 0 for the chosen range (docs/09 §7 construction).
+    error LiquidityDust(bytes32 which, uint256 tokens);
 
     receive() external payable {}
 
@@ -309,24 +311,46 @@ contract StonkzDirectListing {
     function _deploySidePool(uint256 tokens) internal {
         // priceInStonkz = startPriceWad / refPriceWad (both pair-wei per token, WAD).
         // Unit: STONKZ per userToken. No USD crossing (ruling B).
+        // Real-PM geometry mirrors LadderSettlement._buildSidePool (docs/09 §7 construction).
         uint256 priceInStonkz = FixedPointMathLib.mulDiv(startPriceWad, WAD, refPriceWad);
-        int24 bottom = TickMath.tickAbovePrice(priceInStonkz, TICK_SPACING);
-        int24 top = _align(bottom + 69081, TICK_SPACING);
-        if (top <= bottom) top = bottom + TICK_SPACING * 100;
-
-        sideTickLower = bottom;
-        sideTickUpper = top;
         sidePoolKey = _sidePoolKey(sideTokenRef, address(token));
+        bool tokIs0 = address(token) < sideTokenRef;
 
-        uint160 initSqrt = TickMath.getSqrtRatioAtTick(bottom - TICK_SPACING);
+        uint160 priceSqrt = _sqrtPriceFromPriceWad(priceInStonkz, !tokIs0);
+        int24 spotAligned = _align(TickMath.getTickAtSqrtRatio(priceSqrt), TICK_SPACING);
+        int24 maxTick = _alignDown(TickMath.MAX_TICK, TICK_SPACING);
+        int24 minTick = _alignUp(TickMath.MIN_TICK, TICK_SPACING);
+
+        int24 lo;
+        int24 hi;
+        uint160 initSqrt;
+        if (tokIs0) {
+            // token0: below-range → spot below range.
+            lo = spotAligned + TICK_SPACING;
+            hi = maxTick;
+            if (lo >= hi) lo = hi - TICK_SPACING;
+            initSqrt = TickMath.getSqrtRatioAtTick(spotAligned);
+        } else {
+            // token1: above-range → spot at/above upper.
+            lo = minTick;
+            hi = spotAligned;
+            if (hi <= lo) hi = lo + TICK_SPACING;
+            initSqrt = TickMath.getSqrtRatioAtTick(spotAligned);
+        }
+
+        sideTickLower = lo;
+        sideTickUpper = hi;
+
         if (!poolManager.isInitialized(sidePoolKey.toId())) {
             poolManager.initialize(sidePoolKey, initSqrt);
         }
 
-        // Dump-immunity: single-sided userToken above spot (zero sideTokenRef exposure).
-        bool userIsC1 = !(Currency.wrap(address(token)).lessThan(Currency.wrap(sideTokenRef)));
-        (,, uint128 liq) = LiquidityAmounts.amountsForSingleSided(bottom, top, tokens, userIsC1);
-        if (liq == 0 && tokens > 0) liq = 1;
+        uint160 sa = TickMath.getSqrtRatioAtTick(lo);
+        uint160 sb = TickMath.getSqrtRatioAtTick(hi);
+        uint128 liq = tokIs0
+            ? LiquidityAmounts.getLiquidityForAmount0(sa, sb, tokens)
+            : LiquidityAmounts.getLiquidityForAmount1(sa, sb, tokens);
+        if (liq == 0) revert LiquidityDust(bytes32("side"), tokens);
         sideLiquidity = liq;
 
         bytes32 salt = bytes32("directside");
@@ -334,14 +358,14 @@ contract StonkzDirectListing {
         poolManager.modifyLiquidity(
             sidePoolKey,
             IPoolManager.ModifyLiquidityParams({
-                tickLower: bottom,
-                tickUpper: top,
+                tickLower: lo,
+                tickUpper: hi,
                 liquidityDelta: int256(uint256(liq)),
                 salt: salt
             }),
             ""
         );
-        sidePositionId = keccak256(abi.encode(address(this), bottom, top, salt));
+        sidePositionId = keccak256(abi.encode(address(this), lo, hi, salt));
         sideLockId = feeLocker.lockPosition(
             sidePoolKey,
             sidePositionId,
@@ -350,12 +374,12 @@ contract StonkzDirectListing {
             address(token),
             liquidityLocked,
             unlockRecipient,
-            bottom,
-            top,
+            lo,
+            hi,
             salt
         );
         sidePoolDeployed = true;
-        emit SidePoolDeployed(sidePoolKey.toId(), bottom, top, tokens);
+        emit SidePoolDeployed(sidePoolKey.toId(), lo, hi, tokens);
     }
 
     /// @dev Bounds mirror DeployControls: ETH [1e8,1e17]; else USDG [1e12,1e21]. Unit: pair-wei/STONKZ WAD.
@@ -510,6 +534,12 @@ contract StonkzDirectListing {
         int24 rem = tick % spacing;
         if (rem < 0) rem += spacing;
         return tick - rem;
+    }
+
+    function _alignUp(int24 tick, int24 spacing) internal pure returns (int24) {
+        int24 rem = tick % spacing;
+        if (rem < 0) rem += spacing;
+        return rem == 0 ? tick : tick + (spacing - rem);
     }
 
     function _alignDown(int24 tick, int24 spacing) internal pure returns (int24) {

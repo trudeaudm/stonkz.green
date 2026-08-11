@@ -389,6 +389,7 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
             settlement: address(0)
         });
         LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
+        s.setSideTokenRef(STONKZ); // loud-unset would mask MinAsk if left unset
         // Direct probe: unsold 4; side 5% → main ask 3.8 < 5% of supply (5).
         vm.expectRevert(LadderSettlement.MinAsk.selector);
         s.settle{value: 10 ether}(
