@@ -25,13 +25,14 @@ No Deploy.s.sol / factory / accumulator conflicts (price-lock was test-only on m
 
 ## 3) Fork re-proof (chain 4663)
 
-*(filled after RPC retry)*
+| Drill | Result |
+|---|---|
+| `DeployScriptForkProof` (script parity + graduating Ladder + accumulator fund→crank→burn) | **PASS** — RPC OK on retry |
+| `file()` gas (excl. vanity mine) | **29,306,894** |
+| Accumulator | fund→crank→burn **OK** |
+| vs prior launch-deploy / Phase4 refs | prior script-parity ~29,305,993; Phase4 ref ~29,274,312 — within noise; ≪ Orbit 32M |
 
-### Non-fork evidence covering deploy path (if RPC still 403)
-
-- `SidePoolPriceLockReal` — Express + Ladder side init on Real-in-test PM (slot0 lock)
-- Prior launch-deploy fork results @ `c591717` era (`DeployScriptForkProof` file() gas ~29.3M) remain the last successful chain-4663 script-parity proof if RPC blocked
-
+RPC Cloudflare 403 from prior session **cleared** this run.
 ## Gate
 
 **CLOSED for broadcast.** Return to Phase-3 posture.  
