@@ -33,7 +33,7 @@ contract StandInERC20 {
 }
 
 /// @title DeployPhase0 — in-process mirror of Deploy.s.sol wiring (no broadcast, no keys)
-/// @notice No StonkzToken mint. stonkzRef = stand-in ERC-20. Ownership → custody.
+/// @notice No StonkzToken mint. sideTokenRef = stand-in ERC-20. Ownership → custody.
 contract DeployPhase0 is Test {
     address internal constant CUSTODY = address(0xC05D);
     address internal constant TREASURY = address(0x7A5E);
@@ -56,14 +56,15 @@ contract DeployPhase0 is Test {
         FeeLockerV2 locker = new FeeLockerV2(pm, hook);
         BuybackAccumulator acc = new BuybackAccumulator(address(0), address(standIn), address(0));
         LadderSettlement settlement = new LadderSettlement(pm, hook, address(0));
-        settlement.setStonkzRef(address(standIn));
+        settlement.setSideTokenRef(address(standIn));
         settlement.setFeeLocker(locker);
         StonkzVault vault = new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000);
         StonkzExpressFactory express =
             new StonkzExpressFactory(pm, locker, hook, acc, gov, address(0), address(standIn));
         StonkzLadderFactory ladder = new StonkzLadderFactory();
         ladder.setVaultRef(address(vault));
-        ladder.setStonkzRefPrice(USDG, 1e15);
+        ladder.setSideTokenRef(address(standIn)); // seeds (standIn, ETH)=2.5e11
+        ladder.setRefPrice(address(standIn), USDG, 1e15);
 
         express.transferOwnership(CUSTODY);
         ladder.transferOwnership(CUSTODY);
@@ -82,9 +83,9 @@ contract DeployPhase0 is Test {
         assertEq(settlement.owner(), CUSTODY);
         assertEq(vault.owner(), CUSTODY);
 
-        assertEq(express.stonkzRef(), address(standIn));
-        assertEq(settlement.stonkzRef(), address(standIn));
-        assertEq(acc.stonkz4663(), address(standIn));
+        assertEq(express.sideTokenRef(), address(standIn));
+        assertEq(settlement.sideTokenRef(), address(standIn));
+        assertEq(acc.sideTokenRef(), address(standIn));
         assertEq(address(express.poolManager()), address(adapter));
         assertEq(ladder.vaultRef(), address(vault));
         assertEq(address(settlement.feeLocker()), address(locker));
@@ -93,9 +94,9 @@ contract DeployPhase0 is Test {
         assertEq(address(hook.canonManager()), RH_POOL_MANAGER);
         assertEq(HookVanity.flagsOf(address(hook)), HookVanity.HOOK_FLAGS);
 
-        assertEq(express.stonkzRefPriceWad(address(0)), 2.5e11);
-        assertEq(ladder.stonkzRefPriceWad(address(0)), 2.5e11);
-        assertEq(ladder.stonkzRefPriceWad(USDG), 1e15);
+        assertEq(express.refPriceWad(address(standIn), address(0)), 2.5e11);
+        assertEq(ladder.refPriceWad(address(standIn), address(0)), 2.5e11);
+        assertEq(ladder.refPriceWad(address(standIn), USDG), 1e15);
 
         // Custody is ownership target only — no protocol token parked there.
         assertEq(standIn.balanceOf(CUSTODY), 0);

@@ -118,7 +118,7 @@ contract ForkProofPhase2 is Test, FactoryVanity {
         locker = new FeeLockerV2(IPoolManager(address(pm)), hook);
         acc = new BuybackAccumulator(PAIR, address(stonkz), address(0));
         settlement = new LadderSettlement(IPoolManager(address(pm)), hook, PAIR);
-        settlement.setStonkzRef(address(stonkz));
+        settlement.setSideTokenRef(address(stonkz));
         settlement.setFeeLocker(locker);
         vault = new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000);
         express = new StonkzExpressFactory(
@@ -380,9 +380,9 @@ contract ForkProofPhase2 is Test, FactoryVanity {
         console2.log("carve stamp: OK");
 
         // refprice stamp
-        express.setStonkzRefPrice(PAIR, 5e11);
+        express.setRefPrice(address(stonkz), PAIR, 5e11);
         StonkzDirectListing later = _listAs(express, friend, _expressParams());
-        assertEq(later.stonkzRefPriceWad(), 5e11);
+        assertEq(later.refPriceWad(), 5e11);
         console2.log("refprice stamp: OK");
     }
 
@@ -424,7 +424,7 @@ contract ForkProofPhase2 is Test, FactoryVanity {
         p.createSidePool = true;
         p.sidePoolBps = 500;
         p.liquidityLocked = true;
-        p.stonkzRefPriceWad = 2.5e11;
+        p.refPriceWad = 2.5e11;
     }
 
     function _ladderParams() internal view returns (StonkzLadderAuction.Params memory p) {
@@ -441,7 +441,7 @@ contract ForkProofPhase2 is Test, FactoryVanity {
         p.tier = LadderTypes.Tier.God;
         p.createSidePool = true;
         p.sidePoolBps = 500;
-        p.stonkzRefPriceWad = 2.5e11;
+        p.refPriceWad = 2.5e11;
         p.walletCapBps = 100;
         p.sizeBonusBps = 1000;
         p.maxUniqueActives = 0;

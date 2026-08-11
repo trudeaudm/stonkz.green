@@ -13,7 +13,8 @@ import {CTOGovernor} from "../src/CTOGovernor.sol";
 import {ICTOGovernor} from "../src/interfaces/IStonkzGovernance.sol";
 import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 import {FeeLockerV2} from "../src/FeeLockerV2.sol";
-import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
+import {BuybackAccumulator, IBuyExecutor} from "../src/BuybackAccumulator.sol";
+import {PoolKey} from "../src/v4/types/PoolKey.sol";
 import {LadderSettlement} from "../src/ladder/LadderSettlement.sol";
 import {StonkzVault} from "../src/vault/StonkzVault.sol";
 import {VaultConstants} from "../src/vault/VaultConstants.sol";
@@ -59,8 +60,26 @@ contract StandInERC20 {
     }
 }
 
+/// @dev 1:1 pair→side executor for accumulator crank on fork.
+contract ScriptMockBuyExecutor is IBuyExecutor {
+    StandInERC20 public immutable side;
+    uint256 public outWad = 1e18;
+
+    constructor(StandInERC20 side_) {
+        side = side_;
+    }
+
+    function buyExactIn(uint256 amountIn, uint256 minAmountOut) external payable returns (uint256 amountOut) {
+        amountOut = (amountIn * outWad) / 1e18;
+        require(amountOut >= minAmountOut, "slip");
+        side.transfer(msg.sender, amountOut);
+    }
+
+    receive() external payable {}
+}
+
 /// @title DeployScriptForkProof — script-parity on RH fork after GENESIS VIA PLATFORM
-/// @notice No StonkzToken. stonkzRef = stand-in ERC-20. Graduating Ladder settle; side pool
+/// @notice No StonkzToken. sideTokenRef = stand-in ERC-20. Graduating Ladder settle; side pool
 ///         pairs against stand-in (dormant). Run: forge test --match-contract DeployScriptForkProof -vvv
 contract DeployScriptForkProof is Test {
     address internal constant RH_POOL_MANAGER = 0x8366a39CC670B4001A1121B8F6A443A643e40951;
@@ -117,12 +136,13 @@ contract DeployScriptForkProof is Test {
         locker = new FeeLockerV2(pm, hook);
         acc = new BuybackAccumulator(PAIR, address(standIn), address(0));
         settlement = new LadderSettlement(pm, hook, PAIR);
-        settlement.setStonkzRef(address(standIn));
+        settlement.setSideTokenRef(address(standIn));
         settlement.setFeeLocker(locker);
         vault = new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000);
         express = new StonkzExpressFactory(pm, locker, hook, acc, gov, PAIR, address(standIn));
         ladder = new StonkzLadderFactory();
         ladder.setVaultRef(address(vault));
+        ladder.setSideTokenRef(address(standIn));
 
         express.transferOwnership(custody);
         ladder.transferOwnership(custody);
@@ -139,9 +159,9 @@ contract DeployScriptForkProof is Test {
     }
 
     function test_fork_scriptParity_graduatingLadder_standInSidePool() public {
-        assertEq(express.stonkzRef(), address(standIn));
-        assertEq(settlement.stonkzRef(), address(standIn));
-        assertEq(acc.stonkz4663(), address(standIn));
+        assertEq(express.sideTokenRef(), address(standIn));
+        assertEq(settlement.sideTokenRef(), address(standIn));
+        assertEq(acc.sideTokenRef(), address(standIn));
         assertEq(express.owner(), custody);
         assertEq(standIn.balanceOf(custody), 0, "custody not a mint target");
 
@@ -153,7 +173,7 @@ contract DeployScriptForkProof is Test {
         p.walletCapBps = 1000;
 
         LadderSettlement settleInst = new LadderSettlement(pm, hook, PAIR);
-        settleInst.setStonkzRef(address(standIn));
+        settleInst.setSideTokenRef(address(standIn));
         settleInst.setFeeLocker(locker);
 
         (bytes32 userSalt,) = VanityHelpers.mineLadder(ladder, address(this), p);
@@ -213,7 +233,43 @@ contract DeployScriptForkProof is Test {
         uint256 absDelta = delta < 0 ? uint256(-delta) : uint256(delta);
         assertLt(absDelta, PHASE4_FILE_GAS_REF / 50, "file gas divergence >2% vs Phase4");
 
+        _accumulatorFundCrankBurn();
+
         console2.log("=== DEPLOY SCRIPT FORK RE-PROOF (STAND-IN) OK ===");
+    }
+
+    /// @dev Accumulator v2 fund→crank→burn (mock executor; real PM for spot) — matches refit ForkCanon.
+    function _accumulatorFundCrankBurn() internal {
+        console2.log("--- Accumulator fund -> crank -> burn ---");
+        address dead = address(0x000000000000000000000000000000000000dEaD);
+        StandInERC20 side = new StandInERC20();
+        ScriptMockBuyExecutor exec = new ScriptMockBuyExecutor(side);
+        side.mint(address(exec), 1_000_000 ether);
+
+        BuybackAccumulator a2 = new BuybackAccumulator(PAIR, address(side), address(0));
+        a2.setPoolManager(address(adapter));
+        a2.setExecutor(address(exec));
+        a2.setKeeper(address(this));
+
+        PoolKey memory key = PoolKey({
+            currency0: Currency.wrap(PAIR),
+            currency1: Currency.wrap(address(side)),
+            fee: 3000,
+            tickSpacing: 60,
+            hooks: address(0)
+        });
+        require(PAIR < address(side), "curr order");
+        adapter.initialize(key, uint160(1) << 96);
+        a2.setBuyPoolKey(key);
+
+        vm.deal(address(this), address(this).balance + 100 ether);
+        a2.fundETH{value: 100 ether}();
+        (uint256 inAmt, uint256 outAmt, uint256 burned) = a2.crank(200);
+        assertEq(inAmt, 2 ether);
+        assertEq(outAmt, 2 ether);
+        assertEq(burned, 2 ether);
+        assertEq(side.balanceOf(dead), 2 ether);
+        console2.log("accumulator fund->crank->burn: OK");
     }
 
     function _deployFlagHook() internal returns (StonkzFeeHook h) {
@@ -259,7 +315,7 @@ contract DeployScriptForkProof is Test {
         p.tier = LadderTypes.Tier.God;
         p.createSidePool = true;
         p.sidePoolBps = 500;
-        p.stonkzRefPriceWad = 2.5e11;
+        p.refPriceWad = 2.5e11;
         p.walletCapBps = 100;
         p.sizeBonusBps = 1000;
         p.maxUniqueActives = 0;

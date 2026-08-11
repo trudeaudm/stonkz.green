@@ -37,6 +37,7 @@ contract VanityPhase1 is Test {
     uint256 internal constant SUPPLY = 1_000_000 ether;
 
     function setUp() public {
+        vm.etch(STONKZ, hex"00");
         pm = new MockPoolManager();
         acc = new BuybackAccumulator(PAIR, STONKZ, address(0));
         gov = new CTOGovernor();
@@ -47,6 +48,7 @@ contract VanityPhase1 is Test {
             IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, STONKZ
         );
         ladder = new StonkzLadderFactory();
+        ladder.setSideTokenRef(STONKZ);
     }
 
     function test_P1_minedSalt_deploysAtPredicted_0x4663() public {
@@ -134,7 +136,7 @@ contract VanityPhase1 is Test {
         p.createSidePool = true;
         p.sidePoolBps = 500;
         p.liquidityLocked = true;
-        p.stonkzRefPriceWad = 2.5e11;
+        p.refPriceWad = 2.5e11;
     }
 
     function _ladderParams() internal pure returns (StonkzLadderAuction.Params memory p) {
@@ -151,7 +153,7 @@ contract VanityPhase1 is Test {
         p.tier = LadderTypes.Tier.God;
         p.createSidePool = true;
         p.sidePoolBps = 500;
-        p.stonkzRefPriceWad = 2.5e11;
+        p.refPriceWad = 2.5e11;
         p.walletCapBps = 100;
         p.sizeBonusBps = 1000;
         p.maxUniqueActives = 0;
