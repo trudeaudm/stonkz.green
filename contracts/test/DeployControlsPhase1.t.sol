@@ -44,6 +44,7 @@ contract DeployControlsPhase1 is Test, FactoryVanity {
     uint256 internal constant TIER_4K = 4000e18;
 
     function setUp() public {
+        vm.etch(address(0x4663), hex"00");
         pm = new MockPoolManager();
         acc = new BuybackAccumulator(PAIR, address(0x4663), address(0));
         gov = new CTOGovernor();
