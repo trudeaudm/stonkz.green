@@ -6,21 +6,25 @@ import {LadderConstants} from "./LadderConstants.sol";
 import {DeployControls} from "../DeployControls.sol";
 
 /// @title StonkzLadderFactory — filing gate for ladder auctions (modularity)
-/// @notice Owner-settable vault + settlement + sideTokenRef + carve default.
-///         HoldbackPct > 0 reverts while vault unset. carveBps stamped immutably per auction
-///         at filing (FEECHAIN stamp pattern). DeployControls gate every `file` (docs/03).
+/// @notice Owner-settable vault + settlement + sideTokenRef + carveTreasury + carve default.
+///         HoldbackPct > 0 reverts while vault unset. carveBps + carveTreasury stamped immutably
+///         per auction at filing (FEECHAIN stamp pattern). DeployControls gate every `file` (docs/03).
 contract StonkzLadderFactory is DeployControls {
     address public vaultRef;
     /// @notice Optional settlement stamped into new filings (may be address(0); auction can wire later).
     address public settlementRef;
     /// @notice Protocol-token ref for side-pool price lookup. address(0) until stand-in/genesis set.
     address public sideTokenRef;
+    /// @notice Protocol carve payout destination. Stamped into every `file` as `p.treasury` (filer ignored).
+    /// @dev Safe/EOA allowed (payout address). Must be non-zero before file — CarveTreasuryUnset.
+    address public carveTreasury;
     /// @notice Mutable default carve for new filings. Bounds [0, CARVE_BPS_MAX]. Unit: bps of raised.
     uint16 public defaultCarveBps = LadderConstants.DEFAULT_CARVE_BPS; // bps of raised
 
     event VaultRefSet(address indexed vault);
     event SettlementRefSet(address indexed settlement);
     event SideTokenRefSet(address indexed sideToken);
+    event CarveTreasuryChanged(address indexed carveTreasury);
     event DefaultCarveBpsSet(uint16 bps);
     event AuctionFiled(address indexed auction, address indexed creator, uint16 holdbackBps, uint16 carveBps);
 
@@ -30,6 +34,8 @@ contract StonkzLadderFactory is DeployControls {
     error SideTokenRefNotContract();
     /// @dev createSidePool=true requires factory.sideTokenRef set (no silent park).
     error SideTokenRefUnset();
+    error CarveTreasuryUnset();
+    error CarveTreasuryZero();
     error HoldbackCeiling();
     error CarveBounds();
 
@@ -57,6 +63,13 @@ contract StonkzLadderFactory is DeployControls {
         if (sideToken != address(0)) _seedDefaultRefPrices(sideToken, address(0));
     }
 
+    /// @notice Set protocol carve destination (Safe/EOA). Non-zero required. Filer cannot override.
+    function setCarveTreasury(address treasury_) external onlyOwner {
+        if (treasury_ == address(0)) revert CarveTreasuryZero();
+        carveTreasury = treasury_;
+        emit CarveTreasuryChanged(treasury_);
+    }
+
     function setDefaultCarveBps(uint16 bps) external onlyOwner {
         if (bps > LadderConstants.CARVE_BPS_MAX) revert CarveBounds();
         defaultCarveBps = bps;
@@ -66,9 +79,14 @@ contract StonkzLadderFactory is DeployControls {
     /// @notice File a ladder auction. Stamps current defaultCarveBps (or explicit p.carveBps if set).
     /// @dev Pass carveBps=type(uint16).max to mean "use factory default".
     ///      Side-pool switches (createSidePool, sidePoolBps) are ALWAYS stamped from factory defaults.
-    ///      vaultRef / settlementRef stamped from factory; prior auctions keep their stamps.
+    ///      vaultRef / settlementRef / carveTreasury stamped from factory; prior auctions keep stamps.
+    ///      Filer-supplied `p.treasury` is overwritten — protocol carve is filer-proof (docs/03).
     function file(StonkzLadderAuction.Params memory p) external returns (StonkzLadderAuction auction) {
         _requireDeployAllowed(msg.sender);
+
+        if (carveTreasury == address(0)) revert CarveTreasuryUnset();
+        // Protocol carve destination — filer's p.treasury is ignored.
+        p.treasury = carveTreasury;
 
         if (p.carveBps == type(uint16).max) {
             p.carveBps = defaultCarveBps;

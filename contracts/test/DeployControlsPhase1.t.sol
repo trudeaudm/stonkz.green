@@ -53,6 +53,7 @@ contract DeployControlsPhase1 is Test {
             IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0x4663)
         );
         ladder = new StonkzLadderFactory();
+        ladder.setCarveTreasury(TREASURY);
         ladder.setSideTokenRef(address(0x4663));
     }
 

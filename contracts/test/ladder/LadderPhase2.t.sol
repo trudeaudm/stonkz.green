@@ -142,6 +142,7 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
 
     function test_P2_holdbackFiling_revertsWithoutVault_succeedsAfterSet() public {
         factory = new StonkzLadderFactory();
+        factory.setCarveTreasury(address(0x7A5E));
         vm.etch(address(0x4663), hex"00");
         factory.setSideTokenRef(address(0x4663));
         LadderTypes.Inputs memory inn = loadInputs(_loadRaw("08-locked-holdback-60.json"));
@@ -160,12 +161,14 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
 
     function test_P2_setVaultRef_rejectsEOA() public {
         factory = new StonkzLadderFactory();
+        factory.setCarveTreasury(address(0x7A5E));
         vm.expectRevert(StonkzLadderFactory.VaultRefNotContract.selector);
         factory.setVaultRef(address(0xBEEF));
     }
 
     function test_P2_tierCeiling_god41Reverts_40Files() public {
         factory = new StonkzLadderFactory();
+        factory.setCarveTreasury(address(0x7A5E));
         vm.etch(address(0x4663), hex"00");
         factory.setSideTokenRef(address(0x4663));
         factory.setVaultRef(address(mockVault));
@@ -188,6 +191,7 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
     function test_P2_settlement_depositsHoldbackToVault() public {
         MockERC20 tok = new MockERC20();
         factory = new StonkzLadderFactory();
+        factory.setCarveTreasury(address(0x7A5E));
         vm.etch(address(0x4663), hex"00");
         factory.setSideTokenRef(address(0x4663));
         factory.setVaultRef(address(mockVault));

@@ -36,6 +36,7 @@ contract VaultPhase1 is LadderVectorLoader {
         vm.etch(STONKZ, hex"00");
         vault = new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000);
         factory = new StonkzLadderFactory();
+        factory.setCarveTreasury(TREASURY);
         factory.setSideTokenRef(STONKZ);
         pm = new MockPoolManager();
         CTOGovernor gov = new CTOGovernor();

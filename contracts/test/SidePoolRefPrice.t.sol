@@ -59,6 +59,7 @@ contract SidePoolRefPrice is Test {
             IPoolManager(address(pm)), locker, hook, acc, gov, USDG, STONKZ
         );
         ladder = new StonkzLadderFactory();
+        ladder.setCarveTreasury(TREASURY);
         ladder.setSideTokenRef(STONKZ); // seeds (STONKZ, ETH) default
         ladder.setRefPrice(STONKZ, USDG, ladder.REF_PRICE_USDG_DEFAULT());
     }
