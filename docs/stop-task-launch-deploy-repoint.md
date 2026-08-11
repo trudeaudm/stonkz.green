@@ -13,7 +13,8 @@
 | Merge hash | **`ce99764d02e892b6c046e58aaca41b76deaa4faa`** |
 | Branch deleted | `feat/predeploy-refit` local + `origin` |
 | CI on merge | **RED** — https://github.com/trudeaudm/stonkz.green/actions/runs/31509794944 — 251 pass / 1 fail: `SidePoolRefPrice.test_ref_express_eth_initTick_knownValue` (`sideTickLower` −887220 ≠ naive `tickAbovePrice` 96900 after Phase-4 Express real-PM orientation) |
-| Hotfix | **`08fdca3`** — soften to arithmetic + `sidePoolDeployed` / `sideLiquidity`; https://github.com/trudeaudm/stonkz.green/actions/runs/31511289268 (await green) |
+| Hotfix | **`08fdca3`** — soften to arithmetic + `sidePoolDeployed` / `sideLiquidity` |
+| CI after hotfix | **GREEN** — https://github.com/trudeaudm/stonkz.green/actions/runs/31511289268 @ `08fdca3` |
 
 ## 2) Conflicts reported (merge main → launch-deploy)
 
