@@ -35,7 +35,6 @@ abstract contract PoolBackendHarness is Test {
         hook = new StonkzFeeHook(pm, TREASURY, ICTOGovernor(address(gov)));
         gov.setRegistry(hook);
         strategy = new StonkzLiquidityStrategy(pm, accumulator, feeLocker, hook, PAIR, STONKZ);
-        accumulator.setStrategy(address(strategy));
     }
 }
 
@@ -45,6 +44,7 @@ contract PoolSeamAttacks is PoolBackendHarness {
     using PoolIdLibrary for PoolKey;
 
     function setUp() public {
+        vm.etch(STONKZ, hex"00");
         _deployBackend(IPoolManager(address(new MockPoolManager())));
     }
 

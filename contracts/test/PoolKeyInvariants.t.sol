@@ -101,7 +101,6 @@ contract PoolKeyInvariants is Test {
     function test_noNakedMain_auctionSettle() public {
         StonkzLiquidityStrategy s =
             new StonkzLiquidityStrategy(IPoolManager(address(pm)), acc, locker, hook, PAIR, STONKZ);
-        acc.setStrategy(address(s));
         s.settle(50 ether, 95 ether, 1 ether, 100 ether, 0, 0, 0, USER, CREATOR);
         _assertMainWired(IPoolManager(address(pm)), hook, _readStrategyMain(s));
         assertTrue(s.sidePoolDeployed());
@@ -129,7 +128,6 @@ contract PoolKeyInvariants is Test {
         FeeLocker locker2 = new FeeLocker(IPoolManager(address(pm2)), acc2, address(0));
         StonkzLiquidityStrategy s =
             new StonkzLiquidityStrategy(IPoolManager(address(pm2)), acc2, locker2, hook2, PAIR, STONKZ);
-        acc2.setStrategy(address(s));
 
         s.settle(sold_, 95 ether, 1 ether, reserve, 0, 0, 0, USER, CREATOR);
         _assertMainWired(IPoolManager(address(pm2)), hook2, _readStrategyMain(s));

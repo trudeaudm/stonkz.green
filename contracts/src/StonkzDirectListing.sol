@@ -18,7 +18,7 @@ import {StonkzLaunchToken} from "./StonkzLaunchToken.sol";
 /// @notice INSTANT coins: creator picks a $4k or $8k start-mcap tier; 95% of listing supply is
 ///         deployed single-sided into the primary pool over `[startTick, MAX_TICK]` (start mcap →
 ///         infinity) under FeeLockerV2 custody with StonkzFeeHook attached; 5% seeds the
-///         side-token side pool (pre-genesis parking + permissionless `deploySidePool`).
+///         STONKZ4663 side pool at list (sideTokenRef required when createSidePool; no park).
 ///
 /// @dev **Rug-impossible by construction (§2.4):** there is no raise and NO function withdraws
 ///      LP principal. The only outward token transfer is `claimCreatorReserve`, hard-capped by
@@ -124,7 +124,6 @@ contract StonkzDirectListing {
         bool liquidityLocked
     );
     event MainPoolCreated(PoolId indexed id, int24 startTick, int24 topTick, uint128 liquidity);
-    event SidePoolParked(uint256 tokens);
     event SidePoolDeployed(PoolId indexed id, int24 tickLower, int24 tickUpper, uint256 tokens);
     event CreatorReserveDelivered(address indexed to, uint256 amount);
     event LiquidityWithdrawn(address indexed token, address indexed to, bool main, uint128 liquidity);
@@ -140,6 +139,8 @@ contract StonkzDirectListing {
     error NothingToWithdraw();
     error RefPriceUnset();
     error RefPriceOutOfBounds(uint256 price);
+    /// @dev createSidePool=true requires a non-zero sideTokenRef (no silent park).
+    error SideTokenRefUnset();
 
     receive() external payable {}
 
@@ -157,6 +158,7 @@ contract StonkzDirectListing {
         if (p.totalSupply == 0) revert BadSupply();
         if (p.sidePoolBps > SIDE_POOL_BPS_MAX) revert SidePoolBpsOutOfBounds(p.sidePoolBps);
         if (p.createSidePool) {
+            if (sideTokenRef_ == address(0)) revert SideTokenRefUnset();
             if (p.refPriceWad == 0) revert RefPriceUnset();
             _validateRefPriceBounds(pairToken_, p.refPriceWad);
         }
@@ -197,7 +199,7 @@ contract StonkzDirectListing {
                 : uint64(block.timestamp);
         }
 
-        // Side split from stamped switch (docs/03). createSidePool=false ⇒ all mass to main, no park.
+        // Side split from stamped switch (docs/03). createSidePool=false ⇒ all mass to main.
         if (p.createSidePool) {
             sidePoolTokens = FixedPointMathLib.mulDiv(listingSupply, p.sidePoolBps, 10_000);
             listed = listingSupply - sidePoolTokens; // remainder-exact
@@ -214,22 +216,15 @@ contract StonkzDirectListing {
 
         _createMainPool(pairIsToken0);
 
-        // Side pool: only when stamped createSidePool and sideAmt > 0.
-        // Pre-genesis (stonkz unset): park. Genesis createSidePool=false: nothing to park.
+        // Side pool: createSidePool + sideAmt>0 ⇒ sideTokenRef already validated non-zero.
         if (sidePoolTokens > 0) {
-            if (sideTokenRef_ != address(0)) {
-                _deploySidePool(sidePoolTokens);
-            } else {
-                accumulator.parkSidePoolTokens(sidePoolTokens);
-                emit SidePoolParked(sidePoolTokens);
-            }
+            _deploySidePool(sidePoolTokens);
         }
 
         // Register with governance: hook receiver = creator; CTO denominator inputs (§4.1).
         hook.registerPool(address(token), pairToken_, p.creator, mainPoolKey);
-        uint256 parked = sidePoolDeployed ? 0 : sidePoolTokens;
         uint256 lpHeld = sidePoolDeployed ? listed + sidePoolTokens : listed;
-        ctoGovernor.registerToken(address(token), lpHeld, 0, parked);
+        ctoGovernor.registerToken(address(token), lpHeld, 0, 0);
 
         emit DirectListed(
             address(token),
@@ -299,18 +294,15 @@ contract StonkzDirectListing {
 
     // ─── side pool (§2.2 / §8.2a) ────────────────────────────────────────────
 
-    /// @notice Permissionless: deploy the side pool once sideTokenRef genesis spot is readable.
+    /// @notice Permissionless: deploy the side pool if not already built at list (createSidePool stamp).
+    /// @dev Park/release path RETIRED (PREDEPLOY-REFIT Phase 3a). Tokens must already be in listing custody.
     function deploySidePool() external {
         if (!createSidePool) revert SidePoolDisabled();
         if (sidePoolDeployed) revert SideAlreadyDeployed();
-        if (sideTokenRef == address(0)) revert GenesisUnavailable();
+        if (sideTokenRef == address(0)) revert SideTokenRefUnset();
         uint256 amt = sidePoolTokens;
-        if (accumulator.parkedSidePoolTokens() > 0) {
-            amt = accumulator.releaseSidePoolTokens(address(this));
-            sidePoolTokens = amt;
-        }
+        if (amt == 0) revert NothingToWithdraw();
         _deploySidePool(amt);
-        // Reflect that parked tokens moved into an LP position (§4.1 denominator).
         ctoGovernor.updateDenominator(address(token), listed + sidePoolTokens, 0, 0);
     }
 

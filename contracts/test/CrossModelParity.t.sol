@@ -31,6 +31,7 @@ contract CrossModelParity is Test {
     address internal constant CREATOR = address(0xCEEE);
 
     function setUp() public {
+        vm.etch(address(0x4663), hex"00");
         pm = new MockPoolManager();
         acc = new BuybackAccumulator(PAIR, address(0x4663), address(0));
         gov = new CTOGovernor();
@@ -57,7 +58,7 @@ contract CrossModelParity is Test {
             liquidityLocked: true,
             refPriceWad: 1e15 // pair-wei per STONKZ token, WAD (USDG-style pair)
         });
-        l = new StonkzDirectListing(IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0), p);
+        l = new StonkzDirectListing(IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0x4663), p);
     }
 
     /// @dev A manually-registered "auction-like" token: same hook + governor wiring, no listing.

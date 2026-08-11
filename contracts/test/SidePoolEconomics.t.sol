@@ -27,6 +27,7 @@ contract SidePoolEconomics is Test {
     address internal constant TREASURY = address(0x7A5E);
 
     function setUp() public {
+        vm.etch(STONKZ, hex"00");
         _bind(IPoolManager(address(new MockPoolManager())));
     }
 
@@ -38,7 +39,6 @@ contract SidePoolEconomics is Test {
         hook = new StonkzFeeHook(pm, TREASURY, ICTOGovernor(address(gov)));
         gov.setRegistry(hook);
         strategy = new StonkzLiquidityStrategy(pm, accumulator, feeLocker, hook, PAIR, STONKZ);
-        accumulator.setStrategy(address(strategy));
     }
 
     /// @dev Dual-backend entrypoint — pass real IPoolManager in M3.5 without rewriting.

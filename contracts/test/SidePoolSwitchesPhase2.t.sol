@@ -104,7 +104,9 @@ contract SidePoolSwitchesPhase2 is Test {
         (uint256 listed, uint256 side,) = l.conservationBuckets();
         assertEq(side, 0);
         assertEq(listed, SUPPLY);
-        assertEq(acc.parkedSidePoolTokens(), 0);
+        // createSidePool=false: no side deploy, no park (park RETIRED).
+        assertFalse(l.sidePoolDeployed());
+        assertEq(acc.pairBalance(), 0);
 
         vm.expectRevert(StonkzDirectListing.SidePoolDisabled.selector);
         l.deploySidePool();

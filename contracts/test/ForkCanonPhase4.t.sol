@@ -163,12 +163,9 @@ contract ForkCanonPhase4 is Test {
         settlement.setSideTokenRef(address(stonkz));
         settlement.setFeeLocker(locker);
         vault = new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000);
-        // Express: sideTokenRef=0 parks side tokens (pre-genesis). DirectListing side geometry
-        // still demands STONKZ on real PM in some orientations; LadderSettlement was fixed in
-        // Phase 3 and is exercised on the graduating settle drill with sideTokenRef set.
-        express = new StonkzExpressFactory(pm, locker, hook, acc, gov, PAIR, address(0));
-        // Pre-genesis park path still stamps a (sideToken=0, pair) ref for later geometry.
-        express.setRefPrice(address(0), PAIR, express.REF_PRICE_ETH_DEFAULT());
+        // Express: production requires sideTokenRef from birth (STONKZ_REF / stand-in).
+        // Park-on-unset RETIRED (PREDEPLOY-REFIT Phase 3a) — fork drills the set-ref path only.
+        express = new StonkzExpressFactory(pm, locker, hook, acc, gov, PAIR, address(stonkz));
         ladder = new StonkzLadderFactory();
         ladder.setVaultRef(address(vault));
         ladder.setSideTokenRef(address(stonkz));
@@ -444,7 +441,7 @@ contract ForkCanonPhase4 is Test {
         assertEq(b.carveBps(), 700);
         console2.log("carve stamp: OK");
 
-        express.setRefPrice(address(0), PAIR, 5e11);
+        express.setRefPrice(address(stonkz), PAIR, 5e11);
         StonkzDirectListing later = _listAs(express, friend, _expressParams());
         assertEq(later.refPriceWad(), 5e11);
         console2.log("refprice stamp: OK");
