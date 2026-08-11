@@ -51,7 +51,7 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
             tier: inn.tier,
             createSidePool: true,
             sidePoolBps: inn.sidePoolBps,
-            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: inn.walletCapBps,
             sizeBonusBps: inn.sizeBonusBps,
             maxUniqueActives: 300,
@@ -142,6 +142,8 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
 
     function test_P2_holdbackFiling_revertsWithoutVault_succeedsAfterSet() public {
         factory = new StonkzLadderFactory();
+        vm.etch(address(0x4663), hex"00");
+        factory.setSideTokenRef(address(0x4663));
         LadderTypes.Inputs memory inn = loadInputs(_loadRaw("08-locked-holdback-60.json"));
         StonkzLadderAuction.Params memory p = _params(inn, address(0));
         p.vaultRef = address(0);
@@ -164,6 +166,8 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
 
     function test_P2_tierCeiling_god41Reverts_40Files() public {
         factory = new StonkzLadderFactory();
+        vm.etch(address(0x4663), hex"00");
+        factory.setSideTokenRef(address(0x4663));
         factory.setVaultRef(address(mockVault));
         LadderTypes.Inputs memory inn = loadInputs(_loadRaw("02-god-2p5k-at-bar.json"));
         StonkzLadderAuction.Params memory p = _params(inn, address(mockVault));
@@ -184,6 +188,8 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
     function test_P2_settlement_depositsHoldbackToVault() public {
         MockERC20 tok = new MockERC20();
         factory = new StonkzLadderFactory();
+        vm.etch(address(0x4663), hex"00");
+        factory.setSideTokenRef(address(0x4663));
         factory.setVaultRef(address(mockVault));
 
         StonkzLadderAuction.Params memory p = StonkzLadderAuction.Params({
@@ -200,7 +206,7 @@ contract LadderPhase2 is LadderVectorLoader, LadderAsserts {
             tier: LadderTypes.Tier.God,
             createSidePool: true,
             sidePoolBps: 500,
-            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: 1000,
             sizeBonusBps: 1000,
             maxUniqueActives: 300,

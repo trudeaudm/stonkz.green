@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {MockPoolManager} from "../src/mock/MockPoolManager.sol";
 import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
-import {FeeLocker} from "../src/FeeLocker.sol";
+import {FeeLocker} from "../legacy/FeeLocker.sol";
 import {FeeLockerV2} from "../src/FeeLockerV2.sol";
 import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 import {CTOGovernor} from "../src/CTOGovernor.sol";
@@ -38,6 +38,7 @@ contract PoolKeyInvariants is Test {
     uint256 internal constant TIER_8K = 8000e18;
 
     function setUp() public {
+        vm.etch(STONKZ, hex"00");
         pm = new MockPoolManager();
         gov = new CTOGovernor();
         hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
@@ -83,7 +84,7 @@ contract PoolKeyInvariants is Test {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            stonkzRefPriceWad: 1e15 // pair-wei per STONKZ token, WAD (USDG-style pair)
+            refPriceWad: 1e15 // pair-wei per STONKZ token, WAD (USDG-style pair)
         });
         return new StonkzDirectListing(
             IPoolManager(address(pm)), lockerV2, hook, acc, gov, PAIR, STONKZ, p
@@ -100,7 +101,6 @@ contract PoolKeyInvariants is Test {
     function test_noNakedMain_auctionSettle() public {
         StonkzLiquidityStrategy s =
             new StonkzLiquidityStrategy(IPoolManager(address(pm)), acc, locker, hook, PAIR, STONKZ);
-        acc.setStrategy(address(s));
         s.settle(50 ether, 95 ether, 1 ether, 100 ether, 0, 0, 0, USER, CREATOR);
         _assertMainWired(IPoolManager(address(pm)), hook, _readStrategyMain(s));
         assertTrue(s.sidePoolDeployed());
@@ -128,7 +128,6 @@ contract PoolKeyInvariants is Test {
         FeeLocker locker2 = new FeeLocker(IPoolManager(address(pm2)), acc2, address(0));
         StonkzLiquidityStrategy s =
             new StonkzLiquidityStrategy(IPoolManager(address(pm2)), acc2, locker2, hook2, PAIR, STONKZ);
-        acc2.setStrategy(address(s));
 
         s.settle(sold_, 95 ether, 1 ether, reserve, 0, 0, 0, USER, CREATOR);
         _assertMainWired(IPoolManager(address(pm2)), hook2, _readStrategyMain(s));

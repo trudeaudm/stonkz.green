@@ -27,6 +27,7 @@ abstract contract LadderPhase4Base is Test {
     address internal VAULT;
 
     function setUp() public virtual {
+        vm.etch(STONKZ, hex"00");
         mockVault = new MockVault();
         VAULT = address(mockVault);
         pm = new MockPoolManager();
@@ -83,7 +84,7 @@ abstract contract LadderPhase4Base is Test {
         address vault = c.holdbackBps > 0 ? VAULT : address(0);
         // Per-auction settlement stamped before the bell (LadderSettlement is single-use).
         LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
-        s.setStonkzRef(STONKZ);
+        s.setSideTokenRef(STONKZ);
         auction = new StonkzLadderAuction(
             StonkzLadderAuction.Params({
                 supply: supply,
@@ -101,7 +102,7 @@ abstract contract LadderPhase4Base is Test {
                 tier: c.tier,
                 createSidePool: true,
                 sidePoolBps: LadderConstants.SIDE_POOL_BPS,
-                stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+                refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
                 walletCapBps: c.walletCapBps,
                 sizeBonusBps: c.sizeBonusBps,
                 maxUniqueActives: c.maxUniqueActives,

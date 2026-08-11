@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.26;
 
-import {IPoolManager} from "./v4/IPoolManager.sol";
-import {PoolKey, PoolId, PoolIdLibrary} from "./v4/types/PoolKey.sol";
-import {Currency, CurrencyLibrary} from "./v4/types/Currency.sol";
-import {BuybackAccumulator} from "./BuybackAccumulator.sol";
+import {IPoolManager} from "../src/v4/IPoolManager.sol";
+import {PoolKey, PoolId, PoolIdLibrary} from "../src/v4/types/PoolKey.sol";
+import {Currency, CurrencyLibrary} from "../src/v4/types/Currency.sol";
+import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
 
 /// @title FeeLocker — immutable custody for positions we create (spec §8.6)
 /// @notice Main-pool fee crank RETIRED (FEECHAIN Phase 4 / docs/06). Ongoing main fees are

@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {MockPoolManager} from "../src/mock/MockPoolManager.sol";
 import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
-import {FeeLocker} from "../src/FeeLocker.sol";
+import {FeeLocker} from "../legacy/FeeLocker.sol";
 import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 import {CTOGovernor} from "../src/CTOGovernor.sol";
 import {ICTOGovernor} from "../src/interfaces/IStonkzGovernance.sol";
@@ -17,6 +17,7 @@ contract SettlementConservation is Test {
     uint256 constant WAD = 1e18;
 
     function setUp() public {
+        vm.etch(address(0x4663), hex"00");
         MockPoolManager pm = new MockPoolManager();
         BuybackAccumulator acc = new BuybackAccumulator(address(0), address(0x4663), address(0));
         FeeLocker fl = new FeeLocker(IPoolManager(address(pm)), acc, address(0));
@@ -24,7 +25,6 @@ contract SettlementConservation is Test {
         StonkzFeeHook hook = new StonkzFeeHook(IPoolManager(address(pm)), address(0x7A5E), ICTOGovernor(address(gov)));
         gov.setRegistry(hook);
         strategy = new StonkzLiquidityStrategy(IPoolManager(address(pm)), acc, fl, hook, address(0xB111), address(0x4663));
-        acc.setStrategy(address(strategy));
     }
 
     function test_C5_conservationAtSettle_100pctLp() public {

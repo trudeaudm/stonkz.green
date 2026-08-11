@@ -41,7 +41,7 @@ contract StonkzLadderAuction {
     /// @notice Stamped at filing — always creator. Sole withdrawer when unlocked.
     address public immutable unlockRecipient;
     /// @notice Stamped at filing. Unit: pair-wei per STONKZ token, WAD. 0 when createSidePool=false.
-    uint256 public immutable stonkzRefPriceWad;
+    uint256 public immutable refPriceWad;
     uint16 public immutable walletCapBps; // bps of auction supply
     uint16 public immutable sizeBonusBps; // bps
     int256 public immutable alphaWad; // log2(1+beta) WAD
@@ -149,7 +149,7 @@ contract StonkzLadderAuction {
         bool createSidePool; // stamped — docs/03 switch 2
         uint16 sidePoolBps; // stamped — bps of LP-destined tokens; bounds [0, 2000]
         /// @dev Unit: pair-wei per STONKZ token, WAD. Factory stamps; direct tests set explicitly.
-        uint256 stonkzRefPriceWad;
+        uint256 refPriceWad;
         uint16 walletCapBps;
         uint16 sizeBonusBps;
         uint16 maxUniqueActives;
@@ -166,8 +166,8 @@ contract StonkzLadderAuction {
         require(p.carveBps <= LadderConstants.CARVE_BPS_MAX, "carve");
         require(p.sidePoolBps <= LadderConstants.SIDE_POOL_BPS_MAX, "sideBps");
         if (p.createSidePool) {
-            require(p.stonkzRefPriceWad != 0, "refPrice");
-            _validateRefPriceBounds(p.pairToken, p.stonkzRefPriceWad);
+            require(p.refPriceWad != 0, "refPrice");
+            _validateRefPriceBounds(p.pairToken, p.refPriceWad);
         }
         require(
             p.walletCapBps >= LadderConstants.WALLET_CAP_BPS_MIN && p.walletCapBps <= LadderConstants.WALLET_CAP_BPS_MAX,
@@ -205,7 +205,7 @@ contract StonkzLadderAuction {
         // Avoids Params field (RIDER B: vector test files need not grow another literal).
         liquidityLocked = _readFactoryLiquidityLocked(msg.sender);
         unlockRecipient = p.creator; // stamped immutable
-        stonkzRefPriceWad = p.createSidePool ? p.stonkzRefPriceWad : 0;
+        refPriceWad = p.createSidePool ? p.refPriceWad : 0;
         walletCapBps = p.walletCapBps;
         sizeBonusBps = p.sizeBonusBps;
         alphaWad = p.sizeBonusBps == 0 ? int256(0) : LadderConstants.ALPHA_WAD;
@@ -497,7 +497,7 @@ contract StonkzLadderAuction {
             holdbackBps: holdbackBps,
             createSidePool: createSidePool,
             sidePoolBps: sidePoolBps,
-            stonkzRefPriceWad: stonkzRefPriceWad,
+            refPriceWad: refPriceWad,
             liquidityLocked: liquidityLocked,
             unlockRecipient: unlockRecipient,
             vaultRef: vaultRef,

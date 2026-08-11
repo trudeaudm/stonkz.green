@@ -15,7 +15,7 @@ import {V4Adapter} from "../src/v4/V4Adapter.sol";
 import {PoolKey, PoolIdLibrary} from "../src/v4/types/PoolKey.sol";
 import {Currency} from "../src/v4/types/Currency.sol";
 import {TickMath} from "../src/v4/TickMath.sol";
-import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
+import {BuybackAccumulator, IBuyExecutor} from "../src/BuybackAccumulator.sol";
 import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 import {HookVanity} from "../src/HookVanity.sol";
 import {FeeLockerV2} from "../src/FeeLockerV2.sol";
@@ -41,6 +41,24 @@ contract ForkHostileReceiver {
     receive() external payable {
         revert Nope();
     }
+}
+
+/// @dev 1:1 pair→side executor for fork accumulator fund→crank→burn (V4 buy path unset).
+contract ForkMockBuyExecutor is IBuyExecutor {
+    ForkMockERC20 public immutable side;
+    uint256 public outWad = 1e18;
+
+    constructor(ForkMockERC20 side_) {
+        side = side_;
+    }
+
+    function buyExactIn(uint256 amountIn, uint256 minAmountOut) external payable returns (uint256 amountOut) {
+        amountOut = (amountIn * outWad) / 1e18;
+        require(amountOut >= minAmountOut, "slip");
+        side.transfer(msg.sender, amountOut);
+    }
+
+    receive() external payable {}
 }
 
 /// @dev Minimal ERC20 for vault holdback + hostile-probe pool currency.
@@ -160,15 +178,15 @@ contract ForkCanonPhase4 is Test {
         locker = new FeeLockerV2(pm, hook);
         acc = new BuybackAccumulator(PAIR, address(stonkz), address(0));
         settlement = new LadderSettlement(pm, hook, PAIR);
-        settlement.setStonkzRef(address(stonkz));
+        settlement.setSideTokenRef(address(stonkz));
         settlement.setFeeLocker(locker);
         vault = new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000);
-        // Express: stonkzRef=0 parks side tokens (pre-genesis). DirectListing side geometry
-        // still demands STONKZ on real PM in some orientations; LadderSettlement was fixed in
-        // Phase 3 and is exercised on the graduating settle drill with stonkzRef set.
-        express = new StonkzExpressFactory(pm, locker, hook, acc, gov, PAIR, address(0));
+        // Express: production requires sideTokenRef from birth (STONKZ_REF / stand-in).
+        // Park-on-unset RETIRED (PREDEPLOY-REFIT Phase 3a) — fork drills the set-ref path only.
+        express = new StonkzExpressFactory(pm, locker, hook, acc, gov, PAIR, address(stonkz));
         ladder = new StonkzLadderFactory();
         ladder.setVaultRef(address(vault));
+        ladder.setSideTokenRef(address(stonkz));
         hostile = new ForkHostileReceiver();
 
         express.assertSoftLaunchGate(address(this));
@@ -195,6 +213,7 @@ contract ForkCanonPhase4 is Test {
         _drill_smallGraduatingLadder_fileGas_settleVault();
         _drill_switches();
         _drill_hostileReceiver();
+        _drill_accumulatorFundCrankBurn();
 
         console2.log("=== FORK CANON PHASE 4 SUMMARY ===");
         console2.log("file() gas used", fileGasUsed);
@@ -326,7 +345,7 @@ contract ForkCanonPhase4 is Test {
 
         // Fresh settlement instance (LadderSettlement is single-use).
         LadderSettlement settleInst = new LadderSettlement(pm, hook, PAIR);
-        settleInst.setStonkzRef(address(stonkz));
+        settleInst.setSideTokenRef(address(stonkz));
         settleInst.setFeeLocker(locker);
 
         uint256 g0 = gasleft();
@@ -441,9 +460,9 @@ contract ForkCanonPhase4 is Test {
         assertEq(b.carveBps(), 700);
         console2.log("carve stamp: OK");
 
-        express.setStonkzRefPrice(PAIR, 5e11);
+        express.setRefPrice(address(stonkz), PAIR, 5e11);
         StonkzDirectListing later = _listAs(express, friend, _expressParams());
-        assertEq(later.stonkzRefPriceWad(), 5e11);
+        assertEq(later.refPriceWad(), 5e11);
         console2.log("refprice stamp: OK");
     }
 
@@ -483,6 +502,46 @@ contract ForkCanonPhase4 is Test {
         // Flush must not revert; hostile share stays accrued; treasury can move.
         hook.flush(token);
         console2.log("hostile flush non-reverting: OK");
+    }
+
+    /// @notice Accumulator v2 fund→crank→burn on the fork (mock executor; real PM for spot).
+    function _drill_accumulatorFundCrankBurn() internal {
+        console2.log("--- Accumulator fund -> crank -> burn ---");
+        address dead = address(0x000000000000000000000000000000000000dEaD);
+        ForkMockERC20 side = new ForkMockERC20();
+        ForkMockBuyExecutor exec = new ForkMockBuyExecutor(side);
+        side.mint(address(exec), 1_000_000 ether);
+
+        BuybackAccumulator a2 = new BuybackAccumulator(PAIR, address(side), address(0));
+        a2.setPoolManager(address(adapter));
+        a2.setExecutor(address(exec));
+        a2.setKeeper(friend);
+
+        // Spot pool for slippage bound (1:1).
+        PoolKey memory key = PoolKey({
+            currency0: Currency.wrap(PAIR),
+            currency1: Currency.wrap(address(side)),
+            fee: 3000,
+            tickSpacing: 60,
+            hooks: address(0)
+        });
+        require(PAIR < address(side), "curr order");
+        adapter.initialize(key, uint160(1) << 96);
+        a2.setBuyPoolKey(key);
+
+        vm.deal(address(this), address(this).balance + 100 ether);
+        a2.fundETH{value: 100 ether}();
+        assertEq(a2.pairBalance(), 100 ether);
+
+        vm.prank(friend);
+        (uint256 inAmt, uint256 outAmt, uint256 burned) = a2.crank(200); // 2%
+        assertEq(inAmt, 2 ether);
+        assertEq(outAmt, 2 ether);
+        assertEq(burned, 2 ether);
+        assertEq(a2.pairBalance(), 98 ether);
+        assertEq(a2.totalBurned(), 2 ether);
+        assertEq(side.balanceOf(dead), 2 ether);
+        console2.log("accumulator fund->crank->burn: OK");
     }
 
     // =======================================================================
@@ -574,7 +633,7 @@ contract ForkCanonPhase4 is Test {
         p.createSidePool = true;
         p.sidePoolBps = 500;
         p.liquidityLocked = true;
-        p.stonkzRefPriceWad = 2.5e11;
+        p.refPriceWad = 2.5e11;
     }
 
     function _ladderParams() internal view returns (StonkzLadderAuction.Params memory p) {
@@ -591,7 +650,7 @@ contract ForkCanonPhase4 is Test {
         p.tier = LadderTypes.Tier.God;
         p.createSidePool = true;
         p.sidePoolBps = 500;
-        p.stonkzRefPriceWad = 2.5e11;
+        p.refPriceWad = 2.5e11;
         p.walletCapBps = 100;
         p.sizeBonusBps = 1000;
         p.maxUniqueActives = 0;

@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {MockPoolManager} from "../src/mock/MockPoolManager.sol";
 import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
-import {FeeLocker} from "../src/FeeLocker.sol";
+import {FeeLocker} from "../legacy/FeeLocker.sol";
 import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 import {CTOGovernor} from "../src/CTOGovernor.sol";
 import {ICTOGovernor} from "../src/interfaces/IStonkzGovernance.sol";
@@ -35,7 +35,6 @@ abstract contract PoolBackendHarness is Test {
         hook = new StonkzFeeHook(pm, TREASURY, ICTOGovernor(address(gov)));
         gov.setRegistry(hook);
         strategy = new StonkzLiquidityStrategy(pm, accumulator, feeLocker, hook, PAIR, STONKZ);
-        accumulator.setStrategy(address(strategy));
     }
 }
 
@@ -45,6 +44,7 @@ contract PoolSeamAttacks is PoolBackendHarness {
     using PoolIdLibrary for PoolKey;
 
     function setUp() public {
+        vm.etch(STONKZ, hex"00");
         _deployBackend(IPoolManager(address(new MockPoolManager())));
     }
 

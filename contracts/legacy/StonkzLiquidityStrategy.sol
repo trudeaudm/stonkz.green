@@ -8,7 +8,7 @@ import {Currency, CurrencyLibrary} from "../src/v4/types/Currency.sol";
 import {TickMath} from "../src/v4/TickMath.sol";
 import {LiquidityAmounts} from "../src/v4/LiquidityAmounts.sol";
 import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
-import {FeeLocker} from "../src/FeeLocker.sol";
+import {FeeLocker} from "./FeeLocker.sol";
 import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 
 /// @title StonkzLiquidityStrategy — LEGACY (V4-CANON Phase 2)
@@ -251,14 +251,10 @@ contract StonkzLiquidityStrategy {
         _dispose(toDispose, disposalMode_);
         surplusRouted = surplus;
 
-        // Side pool: deploy if genesis spot live, else park — spec §8.2a
+        // Side pool: require live side-token ref (park RETIRED — PREDEPLOY-REFIT Phase 3a/2).
         if (sideAmt > 0) {
-            if (stonkz4663 != address(0) && _genesisSpotLive()) {
-                _deploySidePool(sideAmt, P);
-            } else {
-                accumulator.parkSidePoolTokens(sideAmt);
-                emit SidePoolParked(sideAmt);
-            }
+            require(stonkz4663 != address(0) && _genesisSpotLive(), "sideToken");
+            _deploySidePool(sideAmt, P);
         }
 
         emit SettlementExecuted(msg.sender, fMain, fCarve, mainPaired, sidePoolTokens, surplusRouted, excessRouted);
@@ -270,10 +266,6 @@ contract StonkzLiquidityStrategy {
         require(settled && !sidePoolDeployed, "state");
         require(stonkz4663 != address(0) && _genesisSpotLive(), "genesis");
         uint256 amt = sidePoolTokens;
-        if (accumulator.parkedSidePoolTokens() > 0) {
-            amt = accumulator.releaseSidePoolTokens(address(this));
-            sidePoolTokens = amt;
-        }
         require(amt > 0, "empty");
         _deploySidePool(amt, printPrice);
     }

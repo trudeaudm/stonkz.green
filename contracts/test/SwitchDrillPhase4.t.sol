@@ -47,6 +47,7 @@ contract SwitchDrillPhase4 is Test {
     uint256 internal constant TIER_4K = 4000e18;
 
     function setUp() public {
+        vm.etch(STONKZ, hex"00");
         pm = new MockPoolManager();
         acc = new BuybackAccumulator(PAIR, STONKZ, address(0));
         gov = new CTOGovernor();
@@ -57,6 +58,7 @@ contract SwitchDrillPhase4 is Test {
             IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, STONKZ
         );
         ladder = new StonkzLadderFactory();
+        ladder.setSideTokenRef(STONKZ);
     }
 
     /// @notice Full drill: gate → allowlist → side → lock coexistence → custom fee → carve.
@@ -125,12 +127,12 @@ contract SwitchDrillPhase4 is Test {
         assertEq(b.carveBps(), 700);
 
         // 7) refprice stamp (pair-wei per STONKZ, WAD) survives default change
-        assertEq(withSide.stonkzRefPriceWad(), express.REF_PRICE_ETH_DEFAULT());
-        express.setStonkzRefPrice(PAIR, 5e11); // pair-wei per STONKZ token, WAD
+        assertEq(withSide.refPriceWad(), express.REF_PRICE_ETH_DEFAULT());
+        express.setRefPrice(STONKZ, PAIR, 5e11); // pair-wei per STONKZ token, WAD
         vm.prank(FRIEND);
         StonkzDirectListing later = express.list(_params(), bytes32(uint256(8)));
-        assertEq(later.stonkzRefPriceWad(), 5e11);
-        assertEq(withSide.stonkzRefPriceWad(), 2.5e11); // prior ETH stamp intact
+        assertEq(later.refPriceWad(), 5e11);
+        assertEq(withSide.refPriceWad(), 2.5e11); // prior ETH stamp intact
     }
 
     function _mainKey(address pair, address token) internal view returns (PoolKey memory key) {
@@ -158,7 +160,7 @@ contract SwitchDrillPhase4 is Test {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            stonkzRefPriceWad: 0
+            refPriceWad: 0
         });
     }
 
@@ -178,7 +180,7 @@ contract SwitchDrillPhase4 is Test {
             tier: LadderTypes.Tier.God,
             createSidePool: true,
             sidePoolBps: 500,
-            stonkzRefPriceWad: 0,
+            refPriceWad: 0,
             walletCapBps: 500,
             sizeBonusBps: 1000,
             maxUniqueActives: 64,

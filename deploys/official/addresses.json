@@ -1,0 +1,50 @@
+{
+  "chainId": 0,
+  "mode": "placeholder",
+  "note": "Official address book. Populated by contracts/script/Deploy.s.sol. No StonkzToken — sideTokenRef is a stand-in ERC-20 input (GENESIS VIA PLATFORM). MockPoolManager not in manifest. FeeLockerV1 is legacy.",
+  "deployer": "0x0000000000000000000000000000000000000000",
+  "contracts": {
+    "StonkzRefStandIn": "0x0000000000000000000000000000000000000000",
+    "PoolManager": "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+    "V4Adapter": "0x0000000000000000000000000000000000000000",
+    "UniversalRouter": "0x06AfBA43Fd06227fA663b0DAecF536f6EaA6bf99",
+    "Permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+    "CTOGovernor": "0x0000000000000000000000000000000000000000",
+    "StonkzFeeHook": "0x0000000000000000000000000000000000000000",
+    "FeeLockerV2": "0x0000000000000000000000000000000000000000",
+    "BuybackAccumulator": "0x0000000000000000000000000000000000000000",
+    "LadderSettlement": "0x0000000000000000000000000000000000000000",
+    "StonkzVault": "0x0000000000000000000000000000000000000000",
+    "StonkzExpressFactory": "0x0000000000000000000000000000000000000000",
+    "StonkzLadderFactory": "0x0000000000000000000000000000000000000000"
+  },
+  "config": {
+    "custody": "0x0000000000000000000000000000000000000000",
+    "treasury": "0x0000000000000000000000000000000000000000",
+    "pairToken": "0x0000000000000000000000000000000000000000",
+    "usdg": "0x0000000000000000000000000000000000000000",
+    "sideTokenRefStandIn": "0x0000000000000000000000000000000000000000",
+    "refPriceEthWad": "250000000000",
+    "refPriceUsdgWad": "1000000000000000",
+    "poolManagerNote": "Robinhood PoolManager singleton 0x8366a39C via V4Adapter; MockPoolManager not in official manifest; no StonkzToken in manifest"
+  },
+  "wiring": {
+    "vaultRef": false,
+    "settlementRef": false,
+    "settlementSideTokenRef": false,
+    "settlementFeeLocker": false,
+    "govRegistry": false,
+    "softLaunchExpress": false,
+    "softLaunchLadder": false,
+    "hookFlagsValidated": false,
+    "canonManagerBound": false,
+    "ownershipToCustody": false,
+    "accumulatorPoolManager": false,
+    "sideTokenRefIsStandIn": true
+  },
+  "templates": {
+    "StonkzDirectListing": "factory-CREATE2-via-StonkzExpressFactory",
+    "StonkzLadderAuction": "factory-via-StonkzLadderFactory",
+    "DeployControls": "inherited-by-both-factories"
+  }
+}

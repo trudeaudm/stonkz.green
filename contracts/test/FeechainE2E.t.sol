@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {MockPoolManager} from "../src/mock/MockPoolManager.sol";
 import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
-import {FeeLocker} from "../src/FeeLocker.sol";
+import {FeeLocker} from "../legacy/FeeLocker.sol";
 import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 import {CTOGovernor} from "../src/CTOGovernor.sol";
 import {ICTOGovernor} from "../src/interfaces/IStonkzGovernance.sol";
@@ -32,6 +32,7 @@ contract FeechainE2E is Test {
     address payable internal creator;
 
     function setUp() public {
+        vm.etch(STONKZ, hex"00");
         pm = new MockPoolManager();
         vm.deal(address(pm), 1_000_000 ether);
         treasury = payable(address(0x7A5E));
@@ -47,7 +48,6 @@ contract FeechainE2E is Test {
         strategy = new StonkzLiquidityStrategy(
             IPoolManager(address(pm)), acc, locker, hook, PAIR, STONKZ
         );
-        acc.setStrategy(address(strategy));
     }
 
     function _readMain() internal view returns (PoolKey memory key) {
