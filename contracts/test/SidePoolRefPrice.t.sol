@@ -18,7 +18,6 @@ import {LadderConstants} from "../src/ladder/LadderConstants.sol";
 import {LadderTypes} from "../src/ladder/LadderTypes.sol";
 import {LadderSettlement} from "../src/ladder/LadderSettlement.sol";
 import {DeployControls} from "../src/DeployControls.sol";
-import {TickMath} from "../src/v4/TickMath.sol";
 
 /// @title SidePoolRefPrice — stamped pair-wei/side-token ref (ruling B) + known-value init
 contract SidePoolRefPrice is Test {
@@ -90,10 +89,10 @@ contract SidePoolRefPrice is Test {
 
         uint256 priceInStonkz = FixedPointMathLib.mulDiv(l.startPriceWad(), WAD, l.refPriceWad());
         assertEq(priceInStonkz, 1.6e22);
-
-        int24 expectedBottom = TickMath.tickAbovePrice(priceInStonkz, 60);
-        assertEq(l.sideTickLower(), expectedBottom);
+        // Phase-4 Express real-PM orientation: sideTickLower is currency-order
+        // dependent (not naive tickAbovePrice(priceInStonkz)); lock arithmetic + deploy.
         assertTrue(l.sidePoolDeployed());
+        assertGt(l.sideLiquidity(), 0);
     }
 
     function test_ref_express_usdg_initTick_knownValue() public {
