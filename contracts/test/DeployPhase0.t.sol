@@ -62,7 +62,7 @@ contract DeployPhase0 is Test {
         StonkzExpressFactory express =
             new StonkzExpressFactory(pm, locker, hook, acc, gov, address(0), address(standIn));
         StonkzLadderFactory ladder = new StonkzLadderFactory();
-        ladder.setCarveTreasury(custody);
+        ladder.setCarveTreasury(CUSTODY); // protocol carve Safe (≠ FeeHook TREASURY)
         ladder.setVaultRef(address(vault));
         ladder.setSideTokenRef(address(standIn)); // seeds (standIn, ETH)=2.5e11
         ladder.setRefPrice(address(standIn), USDG, 1e15);
