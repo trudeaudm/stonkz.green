@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {MockPoolManager} from "../src/mock/MockPoolManager.sol";
 import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
-import {FeeLocker} from "../src/FeeLocker.sol";
+import {FeeLocker} from "../legacy/FeeLocker.sol";
 import {FeeLockerV2} from "../src/FeeLockerV2.sol";
 import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 import {CTOGovernor} from "../src/CTOGovernor.sol";

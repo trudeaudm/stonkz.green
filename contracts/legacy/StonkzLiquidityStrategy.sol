@@ -8,7 +8,7 @@ import {Currency, CurrencyLibrary} from "../src/v4/types/Currency.sol";
 import {TickMath} from "../src/v4/TickMath.sol";
 import {LiquidityAmounts} from "../src/v4/LiquidityAmounts.sol";
 import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
-import {FeeLocker} from "../src/FeeLocker.sol";
+import {FeeLocker} from "./FeeLocker.sol";
 import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 
 /// @title StonkzLiquidityStrategy — LEGACY (V4-CANON Phase 2)

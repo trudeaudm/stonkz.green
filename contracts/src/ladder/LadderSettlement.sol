@@ -78,7 +78,6 @@ contract LadderSettlement {
     event TreasuryPaid(address indexed treasury, uint256 amount);
     event MainPoolBuilt(PoolId id, int24 cashLo, int24 cashHi, int24 askLo, int24 askHi);
     event SidePoolBuilt(PoolId id, uint256 tokens);
-    event SidePoolParked(uint256 tokens);
     event SettlementComplete(uint256 printPrice, uint256 raised, bool graduated);
     event LiquidityWithdrawn(address indexed token, address indexed to, bytes32 leg, uint128 liquidity);
 
@@ -97,6 +96,8 @@ contract LadderSettlement {
     error RefPriceUnset();
     error SideTokenRefNotContract();
     error FeeLockerNotContract();
+    /// @dev createSidePool=true requires sideTokenRef (park RETIRED — PREDEPLOY-REFIT).
+    error SideTokenRefUnset();
     /// @dev Cash/ask amount positive but liquidity rounds to 0 for the constructed ticks.
     ///      Not a silent dust mint (liq=1 retired). Spec addendum candidate if seen in prod sizes.
     error LiquidityDust(bytes32 leg, uint256 amount);
@@ -198,7 +199,10 @@ contract LadderSettlement {
 
         // ─── LP-destined tokens: unsold auction + (no reserve) ────────────
         // auctionSupply - sold = unsold → thicker LP.
-        // createSidePool=false ⇒ sideAmt=0, all mass to main (no park). docs/03 switch 2.
+        // createSidePool=false ⇒ sideAmt=0, all mass to main. docs/03 switch 2.
+        // Loud unset backstop: createSidePool=true never parks (PREDEPLOY-REFIT).
+        if (a.createSidePool && sideTokenRef == address(0)) revert SideTokenRefUnset();
+
         uint256 unsold = a.auctionSupply > a.soldTokens ? a.auctionSupply - a.soldTokens : 0;
         uint256 lpDestined = unsold; // docs/09: ALL unsold → thicker LP
         uint256 sideAmt =
@@ -215,14 +219,10 @@ contract LadderSettlement {
         // ─── pool geometry: cash [floor,print], tokens [print,inf) ────────
         _buildMainPool(a.userToken, a.creator, a.floorPrice, a.printPrice, toLP, mainTokens);
 
-        // ─── side pool vs STONKZ ref (absent when createSidePool=false or sideAmt=0)
+        // ─── side pool vs sideTokenRef (absent when createSidePool=false or sideAmt=0)
         if (sideAmt > 0) {
-            if (sideTokenRef != address(0)) {
-                if (a.refPriceWad == 0) revert RefPriceUnset();
-                _buildSidePool(a.userToken, sideAmt, a.printPrice, a.refPriceWad);
-            } else {
-                emit SidePoolParked(sideAmt);
-            }
+            if (a.refPriceWad == 0) revert RefPriceUnset();
+            _buildSidePool(a.userToken, sideAmt, a.printPrice, a.refPriceWad);
         }
 
         emit SettlementComplete(a.printPrice, a.raised, true);
