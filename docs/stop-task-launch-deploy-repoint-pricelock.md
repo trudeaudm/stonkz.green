@@ -11,7 +11,7 @@
 | Merge | `feat/sidepool-price-lock` → `main` `--no-ff` |
 | Merge hash | **`6099b8b1a84c07cb526eda583bd54db5e01f7368`** |
 | Branch deleted | `feat/sidepool-price-lock` local + `origin` |
-| CI | https://github.com/trudeaudm/stonkz.green/actions/runs/31516032151 |
+| CI | **GREEN** — https://github.com/trudeaudm/stonkz.green/actions/runs/31516032151 @ `6099b8b` |
 
 ## 2) Conflicts + reconciliations (merge main → launch-deploy)
 
