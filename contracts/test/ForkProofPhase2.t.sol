@@ -125,6 +125,7 @@ contract ForkProofPhase2 is Test, FactoryVanity {
             IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(stonkz)
         );
         ladder = new StonkzLadderFactory();
+        ladder.setCarveTreasury(treasury);
         ladder.setVaultRef(address(vault));
         hostile = new ForkHostileReceiver();
 

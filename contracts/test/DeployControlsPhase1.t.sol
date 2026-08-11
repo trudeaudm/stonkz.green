@@ -58,7 +58,9 @@ contract DeployControlsPhase1 is Test, FactoryVanity {
         // Gate drills do not need side pools; loud-unset would mask DeployControls reverts.
         express.setDefaultCreateSidePool(false);
         ladder = new StonkzLadderFactory();
+        ladder.setCarveTreasury(TREASURY);
         ladder.setDefaultCreateSidePool(false);
+        // SideTokenRef optional here: createSidePool=false so loud-unset does not mask gate tests.
     }
 
     // ─── RIDER A birth ─────────────────────────────────────────────────────

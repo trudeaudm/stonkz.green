@@ -51,6 +51,7 @@ contract SettableRefsPhase1 is Test {
             IPoolManager(address(pm)), locker, hook, acc, gov, ETH, STAND_IN
         );
         ladder = new StonkzLadderFactory();
+        ladder.setCarveTreasury(TREASURY);
         ladder.setSideTokenRef(STAND_IN);
         genesisToken = new StonkzLaunchToken("GENESIS", "GEN", 1, address(this));
     }

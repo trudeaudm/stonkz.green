@@ -187,6 +187,7 @@ contract ForkCanonPhase4 is Test {
         // Park-on-unset RETIRED (PREDEPLOY-REFIT Phase 3a) — fork drills the set-ref path only.
         express = new StonkzExpressFactory(pm, locker, hook, acc, gov, PAIR, address(stonkz));
         ladder = new StonkzLadderFactory();
+        ladder.setCarveTreasury(treasury);
         ladder.setVaultRef(address(vault));
         ladder.setSideTokenRef(address(stonkz));
         hostile = new ForkHostileReceiver();
@@ -345,6 +346,11 @@ contract ForkCanonPhase4 is Test {
         p.tier = LadderTypes.Tier.Daily;
         p.walletCapBps = 1000;
 
+        // Filer tries to capture carve — factory stamp must win (CARVE TREASURY STAMP).
+        address attacker = address(0xA77A);
+        p.treasury = attacker;
+        assertEq(ladder.carveTreasury(), treasury);
+
         // Fresh settlement instance (LadderSettlement is single-use).
         LadderSettlement settleInst = new LadderSettlement(pm, hook, PAIR);
         settleInst.setSideTokenRef(address(stonkz));
@@ -355,6 +361,8 @@ contract ForkCanonPhase4 is Test {
         uint256 g0 = gasleft();
         StonkzLadderAuction a = ladder.file(p, userSalt);
         fileGasUsed = g0 - gasleft();
+        assertEq(a.treasury(), treasury, "carve stamped to factory carveTreasury");
+        assertTrue(a.treasury() != attacker, "filer treasury ignored");
         console2.log("observed file() gas (excl. vanity mine)", fileGasUsed);
         console2.log("compare mock Phase2 file()", MOCK_FILE_GAS_REF);
         console2.log("expected file() gas < 32_000_000 Orbit");
@@ -391,10 +399,16 @@ contract ForkCanonPhase4 is Test {
             uint256 hb = a.holdbackAmount();
             tok.mint(address(settleInst), hb + mainAsk + side);
 
+            (, uint256 toTreasury,) = a.raiseSplit();
+            uint256 protoBefore = treasury.balance;
+            uint256 attackBefore = attacker.balance;
             a.settle(address(tok));
+            assertEq(treasury.balance - protoBefore, toTreasury, "carve ETH to carveTreasury");
+            assertEq(attacker.balance - attackBefore, 0, "attacker got no carve");
             assertTrue(settleInst.askLiquidity() > 0 || settleInst.cashLiquidity() > 0, "settle LP");
             assertEq(vault.balanceOf(address(tok), creator), hb, "vault deposit via settle");
             console2.log("settle + vault deposit: OK", hb);
+            console2.log("carve to carveTreasury (not filer): OK", toTreasury);
 
             uint256 amt = hb / 10;
             if (amt == 0) amt = hb;
