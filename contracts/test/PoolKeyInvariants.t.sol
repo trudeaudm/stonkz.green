@@ -38,6 +38,7 @@ contract PoolKeyInvariants is Test {
     uint256 internal constant TIER_8K = 8000e18;
 
     function setUp() public {
+        vm.etch(STONKZ, hex"00");
         pm = new MockPoolManager();
         gov = new CTOGovernor();
         hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
@@ -83,7 +84,7 @@ contract PoolKeyInvariants is Test {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            stonkzRefPriceWad: 1e15 // pair-wei per STONKZ token, WAD (USDG-style pair)
+            refPriceWad: 1e15 // pair-wei per STONKZ token, WAD (USDG-style pair)
         });
         return new StonkzDirectListing(
             IPoolManager(address(pm)), lockerV2, hook, acc, gov, PAIR, STONKZ, p

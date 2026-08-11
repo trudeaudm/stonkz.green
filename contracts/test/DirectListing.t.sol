@@ -53,7 +53,7 @@ contract DirectListing is Test {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            stonkzRefPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
         });
         return new StonkzDirectListing(
             IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0), p
@@ -74,7 +74,7 @@ contract DirectListing is Test {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            stonkzRefPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
         });
         vm.expectRevert(StonkzDirectListing.BadTier.selector);
         new StonkzDirectListing(IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0), p);

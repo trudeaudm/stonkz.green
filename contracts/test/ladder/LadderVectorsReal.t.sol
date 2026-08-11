@@ -52,9 +52,9 @@ contract LadderVectorsReal is Test, Deployers, LadderVectorLoader, LadderAsserts
         locker = new FeeLockerV2(pm, hook);
         settlement = new LadderSettlement(pm, hook, address(0));
         settlement.setFeeLocker(locker);
-        // Real PM needs a contract at stonkzRef (side pool currency) — not bare 0x4663.
+        // Real PM needs a contract at sideTokenRef (side pool currency) — not bare 0x4663.
         stonkzToken = new MockLaunchTokenReal();
-        settlement.setStonkzRef(address(stonkzToken));
+        settlement.setSideTokenRef(address(stonkzToken));
         tok = new MockLaunchTokenReal();
     }
 
@@ -116,7 +116,7 @@ contract LadderVectorsReal is Test, Deployers, LadderVectorLoader, LadderAsserts
         p.tier = inn.tier;
         p.createSidePool = true;
         p.sidePoolBps = inn.sidePoolBps;
-        p.stonkzRefPriceWad = 2.5e11;
+        p.refPriceWad = 2.5e11;
         p.walletCapBps = inn.walletCapBps;
         p.sizeBonusBps = inn.sizeBonusBps;
         p.maxUniqueActives = 300;

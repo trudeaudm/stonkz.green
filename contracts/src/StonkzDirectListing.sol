@@ -18,7 +18,7 @@ import {StonkzLaunchToken} from "./StonkzLaunchToken.sol";
 /// @notice INSTANT coins: creator picks a $4k or $8k start-mcap tier; 95% of listing supply is
 ///         deployed single-sided into the primary pool over `[startTick, MAX_TICK]` (start mcap →
 ///         infinity) under FeeLockerV2 custody with StonkzFeeHook attached; 5% seeds the
-///         STONKZ4663 side pool (pre-genesis parking + permissionless `deploySidePool`).
+///         side-token side pool (pre-genesis parking + permissionless `deploySidePool`).
 ///
 /// @dev **Rug-impossible by construction (§2.4):** there is no raise and NO function withdraws
 ///      LP principal. The only outward token transfer is `claimCreatorReserve`, hard-capped by
@@ -48,7 +48,7 @@ contract StonkzDirectListing {
     BuybackAccumulator public immutable accumulator;
     CTOGovernor public immutable ctoGovernor;
     address public immutable pairToken;
-    address public immutable stonkz4663; // address(0) until genesis
+    address public immutable sideTokenRef; // address(0) until genesis
     address public immutable creator;
     StonkzLaunchToken public immutable token;
 
@@ -61,7 +61,7 @@ contract StonkzDirectListing {
     /// @notice Stamped at deploy — always creator. Sole withdrawer when unlocked. Immutable.
     address public immutable unlockRecipient;
     /// @notice Stamped at deploy. Unit: pair-wei per STONKZ token, WAD. 0 when createSidePool=false.
-    uint256 public immutable stonkzRefPriceWad;
+    uint256 public immutable refPriceWad;
 
     uint256 public immutable startMcap;
     uint256 public immutable totalSupply;
@@ -108,7 +108,7 @@ contract StonkzDirectListing {
         /// @dev Factory stamps defaultLiquidityLocked. Direct tests: true = legacy lock.
         bool liquidityLocked;
         /// @dev Unit: pair-wei per STONKZ token, WAD. Factory stamps from DeployControls; 0 if !createSidePool.
-        uint256 stonkzRefPriceWad;
+        uint256 refPriceWad;
     }
 
     event DirectListed(
@@ -150,15 +150,15 @@ contract StonkzDirectListing {
         BuybackAccumulator accumulator_,
         CTOGovernor ctoGovernor_,
         address pairToken_,
-        address stonkz4663_,
+        address sideTokenRef_,
         ListingParams memory p
     ) payable {
         if (p.startMcap != TIER_4K && p.startMcap != TIER_8K) revert BadTier();
         if (p.totalSupply == 0) revert BadSupply();
         if (p.sidePoolBps > SIDE_POOL_BPS_MAX) revert SidePoolBpsOutOfBounds(p.sidePoolBps);
         if (p.createSidePool) {
-            if (p.stonkzRefPriceWad == 0) revert RefPriceUnset();
-            _validateRefPriceBounds(pairToken_, p.stonkzRefPriceWad);
+            if (p.refPriceWad == 0) revert RefPriceUnset();
+            _validateRefPriceBounds(pairToken_, p.refPriceWad);
         }
 
         poolManager = poolManager_;
@@ -167,13 +167,13 @@ contract StonkzDirectListing {
         accumulator = accumulator_;
         ctoGovernor = ctoGovernor_;
         pairToken = pairToken_;
-        stonkz4663 = stonkz4663_;
+        sideTokenRef = sideTokenRef_;
         creator = p.creator;
         createSidePool = p.createSidePool;
         sidePoolBps = p.sidePoolBps;
         liquidityLocked = p.liquidityLocked;
         unlockRecipient = p.creator; // stamped immutable — never mutable (Phase 0 rider 4)
-        stonkzRefPriceWad = p.createSidePool ? p.stonkzRefPriceWad : 0;
+        refPriceWad = p.createSidePool ? p.refPriceWad : 0;
         startMcap = p.startMcap;
         totalSupply = p.totalSupply;
 
@@ -217,7 +217,7 @@ contract StonkzDirectListing {
         // Side pool: only when stamped createSidePool and sideAmt > 0.
         // Pre-genesis (stonkz unset): park. Genesis createSidePool=false: nothing to park.
         if (sidePoolTokens > 0) {
-            if (stonkz4663_ != address(0)) {
+            if (sideTokenRef_ != address(0)) {
                 _deploySidePool(sidePoolTokens);
             } else {
                 accumulator.parkSidePoolTokens(sidePoolTokens);
@@ -299,11 +299,11 @@ contract StonkzDirectListing {
 
     // ─── side pool (§2.2 / §8.2a) ────────────────────────────────────────────
 
-    /// @notice Permissionless: deploy the side pool once STONKZ4663 genesis spot is readable.
+    /// @notice Permissionless: deploy the side pool once sideTokenRef genesis spot is readable.
     function deploySidePool() external {
         if (!createSidePool) revert SidePoolDisabled();
         if (sidePoolDeployed) revert SideAlreadyDeployed();
-        if (stonkz4663 == address(0)) revert GenesisUnavailable();
+        if (sideTokenRef == address(0)) revert GenesisUnavailable();
         uint256 amt = sidePoolTokens;
         if (accumulator.parkedSidePoolTokens() > 0) {
             amt = accumulator.releaseSidePoolTokens(address(this));
@@ -315,24 +315,24 @@ contract StonkzDirectListing {
     }
 
     function _deploySidePool(uint256 tokens) internal {
-        // priceInStonkz = startPriceWad / stonkzRefPriceWad (both pair-wei per token, WAD).
+        // priceInStonkz = startPriceWad / refPriceWad (both pair-wei per token, WAD).
         // Unit: STONKZ per userToken. No USD crossing (ruling B).
-        uint256 priceInStonkz = FixedPointMathLib.mulDiv(startPriceWad, WAD, stonkzRefPriceWad);
+        uint256 priceInStonkz = FixedPointMathLib.mulDiv(startPriceWad, WAD, refPriceWad);
         int24 bottom = TickMath.tickAbovePrice(priceInStonkz, TICK_SPACING);
         int24 top = _align(bottom + 69081, TICK_SPACING);
         if (top <= bottom) top = bottom + TICK_SPACING * 100;
 
         sideTickLower = bottom;
         sideTickUpper = top;
-        sidePoolKey = _sidePoolKey(stonkz4663, address(token));
+        sidePoolKey = _sidePoolKey(sideTokenRef, address(token));
 
         uint160 initSqrt = TickMath.getSqrtRatioAtTick(bottom - TICK_SPACING);
         if (!poolManager.isInitialized(sidePoolKey.toId())) {
             poolManager.initialize(sidePoolKey, initSqrt);
         }
 
-        // Dump-immunity: single-sided userToken above spot (zero STONKZ4663 exposure).
-        bool userIsC1 = !(Currency.wrap(address(token)).lessThan(Currency.wrap(stonkz4663)));
+        // Dump-immunity: single-sided userToken above spot (zero sideTokenRef exposure).
+        bool userIsC1 = !(Currency.wrap(address(token)).lessThan(Currency.wrap(sideTokenRef)));
         (,, uint128 liq) = LiquidityAmounts.amountsForSingleSided(bottom, top, tokens, userIsC1);
         if (liq == 0 && tokens > 0) liq = 1;
         sideLiquidity = liq;
@@ -354,7 +354,7 @@ contract StonkzDirectListing {
             sidePoolKey,
             sidePositionId,
             FeeLockerV2.PoolKind.Side,
-            stonkz4663,
+            sideTokenRef,
             address(token),
             liquidityLocked,
             unlockRecipient,

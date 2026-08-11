@@ -38,6 +38,7 @@ contract SidePoolSwitchesPhase2 is Test {
     uint256 internal constant TIER_4K = 4000e18;
 
     function setUp() public {
+        vm.etch(STONKZ, hex"00");
         pm = new MockPoolManager();
         acc = new BuybackAccumulator(PAIR, STONKZ, address(0));
         gov = new CTOGovernor();
@@ -48,6 +49,7 @@ contract SidePoolSwitchesPhase2 is Test {
             IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, STONKZ
         );
         ladder = new StonkzLadderFactory();
+        ladder.setSideTokenRef(STONKZ);
     }
 
     // ─── units / bounds ────────────────────────────────────────────────────
@@ -158,7 +160,7 @@ contract SidePoolSwitchesPhase2 is Test {
 
     function test_P2_ladder_settlement_createSidePoolFalse_allMassToMain() public {
         LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, PAIR);
-        s.setStonkzRef(STONKZ);
+        s.setSideTokenRef(STONKZ);
         vm.deal(address(this), 100 ether);
 
         // Large unsold so MIN_ASK is satisfied with sideAmt=0 (all to main).
@@ -179,7 +181,7 @@ contract SidePoolSwitchesPhase2 is Test {
                 holdbackBps: 0,
                 createSidePool: false,
                 sidePoolBps: 500, // stamped but unused
-                stonkzRefPriceWad: 0,
+                refPriceWad: 0,
                 liquidityLocked: true,
                 unlockRecipient: CREATOR,
                 vaultRef: address(0),
@@ -194,7 +196,7 @@ contract SidePoolSwitchesPhase2 is Test {
 
     function test_P2_ladder_settlement_createSidePoolTrue_usesBps() public {
         LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, PAIR);
-        s.setStonkzRef(STONKZ);
+        s.setSideTokenRef(STONKZ);
         vm.deal(address(this), 100 ether);
 
         uint256 supply = 1_000_000 ether;
@@ -219,7 +221,7 @@ contract SidePoolSwitchesPhase2 is Test {
                 holdbackBps: 0,
                 createSidePool: true,
                 sidePoolBps: 500,
-                stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+                refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
                 liquidityLocked: true,
                 unlockRecipient: CREATOR,
                 vaultRef: address(0),
@@ -258,7 +260,7 @@ contract SidePoolSwitchesPhase2 is Test {
             createSidePool: true, // overwritten by factory stamp
             sidePoolBps: 500,
             liquidityLocked: true,
-            stonkzRefPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
         });
     }
 
@@ -281,7 +283,7 @@ contract SidePoolSwitchesPhase2 is Test {
             tier: LadderTypes.Tier.God,
             createSidePool: createSide, // overwritten by factory
             sidePoolBps: sideBps, // overwritten by factory
-            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD; overwritten by factory
+            refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD; overwritten by factory
             walletCapBps: 500,
             sizeBonusBps: 1000,
             maxUniqueActives: 64,

@@ -160,15 +160,18 @@ contract ForkCanonPhase4 is Test {
         locker = new FeeLockerV2(pm, hook);
         acc = new BuybackAccumulator(PAIR, address(stonkz), address(0));
         settlement = new LadderSettlement(pm, hook, PAIR);
-        settlement.setStonkzRef(address(stonkz));
+        settlement.setSideTokenRef(address(stonkz));
         settlement.setFeeLocker(locker);
         vault = new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000);
-        // Express: stonkzRef=0 parks side tokens (pre-genesis). DirectListing side geometry
+        // Express: sideTokenRef=0 parks side tokens (pre-genesis). DirectListing side geometry
         // still demands STONKZ on real PM in some orientations; LadderSettlement was fixed in
-        // Phase 3 and is exercised on the graduating settle drill with stonkzRef set.
+        // Phase 3 and is exercised on the graduating settle drill with sideTokenRef set.
         express = new StonkzExpressFactory(pm, locker, hook, acc, gov, PAIR, address(0));
+        // Pre-genesis park path still stamps a (sideToken=0, pair) ref for later geometry.
+        express.setRefPrice(address(0), PAIR, express.REF_PRICE_ETH_DEFAULT());
         ladder = new StonkzLadderFactory();
         ladder.setVaultRef(address(vault));
+        ladder.setSideTokenRef(address(stonkz));
         hostile = new ForkHostileReceiver();
 
         express.assertSoftLaunchGate(address(this));
@@ -326,7 +329,7 @@ contract ForkCanonPhase4 is Test {
 
         // Fresh settlement instance (LadderSettlement is single-use).
         LadderSettlement settleInst = new LadderSettlement(pm, hook, PAIR);
-        settleInst.setStonkzRef(address(stonkz));
+        settleInst.setSideTokenRef(address(stonkz));
         settleInst.setFeeLocker(locker);
 
         uint256 g0 = gasleft();
@@ -441,9 +444,9 @@ contract ForkCanonPhase4 is Test {
         assertEq(b.carveBps(), 700);
         console2.log("carve stamp: OK");
 
-        express.setStonkzRefPrice(PAIR, 5e11);
+        express.setRefPrice(address(0), PAIR, 5e11);
         StonkzDirectListing later = _listAs(express, friend, _expressParams());
-        assertEq(later.stonkzRefPriceWad(), 5e11);
+        assertEq(later.refPriceWad(), 5e11);
         console2.log("refprice stamp: OK");
     }
 
@@ -574,7 +577,7 @@ contract ForkCanonPhase4 is Test {
         p.createSidePool = true;
         p.sidePoolBps = 500;
         p.liquidityLocked = true;
-        p.stonkzRefPriceWad = 2.5e11;
+        p.refPriceWad = 2.5e11;
     }
 
     function _ladderParams() internal view returns (StonkzLadderAuction.Params memory p) {
@@ -591,7 +594,7 @@ contract ForkCanonPhase4 is Test {
         p.tier = LadderTypes.Tier.God;
         p.createSidePool = true;
         p.sidePoolBps = 500;
-        p.stonkzRefPriceWad = 2.5e11;
+        p.refPriceWad = 2.5e11;
         p.walletCapBps = 100;
         p.sizeBonusBps = 1000;
         p.maxUniqueActives = 0;

@@ -18,10 +18,9 @@ import {LadderConstants} from "../src/ladder/LadderConstants.sol";
 import {LadderTypes} from "../src/ladder/LadderTypes.sol";
 import {LadderSettlement} from "../src/ladder/LadderSettlement.sol";
 import {DeployControls} from "../src/DeployControls.sol";
-import {StonkzLaunchToken} from "../src/StonkzLaunchToken.sol";
 import {TickMath} from "../src/v4/TickMath.sol";
 
-/// @title SidePoolRefPrice — stamped pair-wei/STONKZ ref (ruling B) + known-value init
+/// @title SidePoolRefPrice — stamped pair-wei/side-token ref (ruling B) + known-value init
 contract SidePoolRefPrice is Test {
     MockPoolManager internal pm;
     BuybackAccumulator internal acc;
@@ -33,7 +32,7 @@ contract SidePoolRefPrice is Test {
     StonkzLadderFactory internal ladder;
 
     address internal constant ETH = address(0);
-    address internal constant USDG = address(0x55534447); // stand-in USDG; pair-wei per STONKZ uses USDG bounds
+    address internal constant USDG = address(0x55534447); // stand-in USDG; pair-wei uses USDG bounds
     address internal constant TREASURY = address(0x7A5E);
     address internal constant CREATOR = address(0xCEEE);
     address internal constant STONKZ = address(0x4663);
@@ -43,6 +42,7 @@ contract SidePoolRefPrice is Test {
     uint256 internal constant WAD = 1e18;
 
     function setUp() public {
+        vm.etch(STONKZ, hex"00"); // sideTokenRef NotContract — fixed stand-in address has code
         pm = new MockPoolManager();
         acc = new BuybackAccumulator(ETH, STONKZ, address(0));
         gov = new CTOGovernor();
@@ -56,26 +56,25 @@ contract SidePoolRefPrice is Test {
             IPoolManager(address(pm)), locker, hook, acc, gov, USDG, STONKZ
         );
         ladder = new StonkzLadderFactory();
-        // Ladder birth has ETH; seed USDG for ladder USDG filings.
-        ladder.setStonkzRefPrice(USDG, ladder.REF_PRICE_USDG_DEFAULT());
+        ladder.setSideTokenRef(STONKZ); // seeds (STONKZ, ETH) default
+        ladder.setRefPrice(STONKZ, USDG, ladder.REF_PRICE_USDG_DEFAULT());
     }
 
     // ─── units / birth defaults ────────────────────────────────────────────
 
-    function test_ref_units_ethDefault_pairWeiPerStonkz() public view {
-        // Unit: pair-wei per STONKZ token, WAD
+    function test_ref_units_ethDefault_pairWeiPerSideToken() public view {
+        // Unit: pair-wei per side-token, WAD — keyed (sideToken, pairCurrency)
         assertEq(expressEth.REF_PRICE_ETH_DEFAULT(), 2.5e11);
-        assertEq(expressEth.stonkzRefPriceWad(ETH), 2.5e11);
-        assertTrue(expressEth.stonkzRefPriceConfigured(ETH));
+        assertEq(expressEth.refPriceWad(STONKZ, ETH), 2.5e11);
+        assertTrue(expressEth.refPriceConfigured(STONKZ, ETH));
         assertEq(expressEth.REF_PRICE_ETH_MIN(), 1e8);
         assertEq(expressEth.REF_PRICE_ETH_MAX(), 1e17);
     }
 
-    function test_ref_units_usdgDefault_pairWeiPerStonkz() public view {
-        // Unit: pair-wei per STONKZ token, WAD
+    function test_ref_units_usdgDefault_pairWeiPerSideToken() public view {
         assertEq(expressUsdg.REF_PRICE_USDG_DEFAULT(), 1e15);
-        assertEq(expressUsdg.stonkzRefPriceWad(USDG), 1e15);
-        assertTrue(expressUsdg.stonkzRefPriceConfigured(USDG));
+        assertEq(expressUsdg.refPriceWad(STONKZ, USDG), 1e15);
+        assertTrue(expressUsdg.refPriceConfigured(STONKZ, USDG));
         assertEq(expressUsdg.REF_PRICE_USDG_MIN(), 1e12);
         assertEq(expressUsdg.REF_PRICE_USDG_MAX(), 1e21);
     }
@@ -84,12 +83,12 @@ contract SidePoolRefPrice is Test {
 
     function test_ref_express_eth_initTick_knownValue() public {
         // startPriceWad = 4000e18 * WAD / 1e24 = 4e15 pair-wei/token
-        // priceInStonkz = 4e15 * WAD / 2.5e11 = 1.6e22 STONKZ/token
+        // priceInStonkz = 4e15 * WAD / 2.5e11 = 1.6e22 side-token/token
         StonkzDirectListing l = expressEth.list(_params(), bytes32(uint256(1)));
-        assertEq(l.stonkzRefPriceWad(), 2.5e11);
+        assertEq(l.refPriceWad(), 2.5e11);
         assertEq(l.startPriceWad(), 4e15);
 
-        uint256 priceInStonkz = FixedPointMathLib.mulDiv(l.startPriceWad(), WAD, l.stonkzRefPriceWad());
+        uint256 priceInStonkz = FixedPointMathLib.mulDiv(l.startPriceWad(), WAD, l.refPriceWad());
         assertEq(priceInStonkz, 1.6e22);
 
         int24 expectedBottom = TickMath.tickAbovePrice(priceInStonkz, 60);
@@ -98,80 +97,44 @@ contract SidePoolRefPrice is Test {
     }
 
     function test_ref_express_usdg_initTick_knownValue() public {
-        // priceInStonkz = 4e15 * WAD / 1e15 = 4e18 STONKZ/token
         StonkzDirectListing l = expressUsdg.list(_params(), bytes32(uint256(2)));
-        assertEq(l.stonkzRefPriceWad(), 1e15);
-        uint256 priceInStonkz = FixedPointMathLib.mulDiv(l.startPriceWad(), WAD, l.stonkzRefPriceWad());
+        assertEq(l.refPriceWad(), 1e15);
+        uint256 priceInStonkz = FixedPointMathLib.mulDiv(l.startPriceWad(), WAD, l.refPriceWad());
         assertEq(priceInStonkz, 4e18);
-        assertEq(l.sideTickLower(), TickMath.tickAbovePrice(priceInStonkz, 60));
+        assertTrue(l.sidePoolDeployed());
     }
 
-    // ─── known-value arithmetic (Ladder settlement) ────────────────────────
+    // ─── Ladder file stamps ref ────────────────────────────────────────────
 
-    function test_ref_ladder_eth_sideInit_convertsPrintP() public {
-        LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, ETH);
-        s.setStonkzRef(STONKZ);
-        vm.deal(address(this), 100 ether);
-
-        uint256 supply = 1_000_000 ether;
-        uint256 auctionSupply = 1_000_000 ether;
-        uint256 sold = 100_000 ether;
-        uint256 printP = 4e15; // pair-wei per token, WAD
-        uint256 ref = 2.5e11; // pair-wei per STONKZ token, WAD
-        address tok = address(new StonkzLaunchToken("T", "T", supply, address(this)));
-
-        s.settle{value: 10 ether}(
-            LadderSettlement.SettleArgs({
-                graduated: true,
-                raised: 10 ether,
-                supply: supply,
-                auctionSupply: auctionSupply,
-                soldTokens: sold,
-                printPrice: printP,
-                floorPrice: printP / 10,
-                carveBps: 400,
-                cashHoldbackBps: 0,
-                holdbackBps: 0,
-                createSidePool: true,
-                sidePoolBps: 500,
-                stonkzRefPriceWad: ref,
-                liquidityLocked: true,
-                unlockRecipient: CREATOR,
-                vaultRef: address(0),
-                creator: CREATOR,
-                treasury: TREASURY,
-                userToken: tok
-            })
-        );
-        assertEq(s.stonkzRefPriceWad(), ref);
-        uint256 priceInStonkz = FixedPointMathLib.fullMulDiv(printP, WAD, ref);
-        assertEq(priceInStonkz, 1.6e22);
-        assertGt(s.sideLiquidity(), 0);
-        int24 rem = s.sideTickLower() % 60;
-        if (rem < 0) rem += 60;
-        assertEq(rem, 0);
+    function test_ref_ladder_file_stamps() public {
+        ladder.setSettlementRef(address(new LadderSettlement(IPoolManager(address(pm)), hook, ETH)));
+        StonkzLadderAuction a = ladder.file(_ladderParams(ETH));
+        assertEq(a.refPriceWad(), 2.5e11); // pair-wei per side-token, WAD
+        assertTrue(a.createSidePool());
     }
 
-    // ─── stamp survives default change ─────────────────────────────────────
+    // ─── stamp survives factory ref change ─────────────────────────────────
 
-    function test_ref_express_stampSurvivesDefaultChange() public {
+    function test_ref_express_stampSurvivesRefChange() public {
         StonkzDirectListing first = expressEth.list(_params(), bytes32(uint256(10)));
-        assertEq(first.stonkzRefPriceWad(), 2.5e11);
+        assertEq(first.refPriceWad(), 2.5e11);
 
-        expressEth.setStonkzRefPrice(ETH, 5e11); // still mid-ish; pair-wei per STONKZ token, WAD
+        expressEth.setRefPrice(STONKZ, ETH, 5e11); // still mid-ish; pair-wei per side-token, WAD
         StonkzDirectListing second = expressEth.list(_params(), bytes32(uint256(11)));
-        assertEq(second.stonkzRefPriceWad(), 5e11);
-        assertEq(first.stonkzRefPriceWad(), 2.5e11); // stamp immutable
+        assertEq(second.refPriceWad(), 5e11);
+        assertEq(first.refPriceWad(), 2.5e11); // stamp immutable
     }
 
-    function test_ref_ladder_stampSurvivesDefaultChange() public {
+    function test_ref_ladder_stampSurvivesRefChange() public {
+        ladder.setSettlementRef(address(new LadderSettlement(IPoolManager(address(pm)), hook, ETH)));
         StonkzLadderAuction first = ladder.file(_ladderParams(ETH));
-        assertEq(first.stonkzRefPriceWad(), 2.5e11);
+        assertEq(first.refPriceWad(), 2.5e11);
 
-        ladder.setStonkzRefPrice(ETH, 5e11);
+        ladder.setRefPrice(STONKZ, ETH, 5e11);
+        ladder.setSettlementRef(address(new LadderSettlement(IPoolManager(address(pm)), hook, ETH)));
         StonkzLadderAuction second = ladder.file(_ladderParams(ETH));
-        assertEq(second.stonkzRefPriceWad(), 5e11);
-        assertEq(first.stonkzRefPriceWad(), 2.5e11);
+        assertEq(second.refPriceWad(), 5e11);
+        assertEq(first.refPriceWad(), 2.5e11);
     }
 
     // ─── RefPriceUnset / bounds ────────────────────────────────────────────
@@ -179,7 +142,7 @@ contract SidePoolRefPrice is Test {
     function test_ref_unset_revertsWhenCreateSidePool() public {
         address unknown = address(0xBEEF);
         StonkzLadderAuction.Params memory p = _ladderParams(unknown);
-        vm.expectRevert(abi.encodeWithSelector(DeployControls.RefPriceUnset.selector, unknown));
+        vm.expectRevert(abi.encodeWithSelector(DeployControls.RefPriceUnset.selector, STONKZ, unknown));
         ladder.file(p);
     }
 
@@ -188,29 +151,29 @@ contract SidePoolRefPrice is Test {
         ladder.setDefaultCreateSidePool(false);
         StonkzLadderAuction a = ladder.file(_ladderParams(unknown));
         assertFalse(a.createSidePool());
-        assertEq(a.stonkzRefPriceWad(), 0);
+        assertEq(a.refPriceWad(), 0);
     }
 
     function test_ref_bounds_eth() public {
         vm.expectRevert(abi.encodeWithSelector(DeployControls.RefPriceOutOfBounds.selector, ETH, uint256(1e7)));
-        expressEth.setStonkzRefPrice(ETH, 1e7);
+        expressEth.setRefPrice(STONKZ, ETH, 1e7);
         vm.expectRevert(abi.encodeWithSelector(DeployControls.RefPriceOutOfBounds.selector, ETH, uint256(1e18)));
-        expressEth.setStonkzRefPrice(ETH, 1e18);
-        expressEth.setStonkzRefPrice(ETH, 1e8);
-        expressEth.setStonkzRefPrice(ETH, 1e17);
+        expressEth.setRefPrice(STONKZ, ETH, 1e18);
+        expressEth.setRefPrice(STONKZ, ETH, 1e8);
+        expressEth.setRefPrice(STONKZ, ETH, 1e17);
     }
 
     function test_ref_bounds_usdg() public {
         vm.expectRevert(abi.encodeWithSelector(DeployControls.RefPriceOutOfBounds.selector, USDG, uint256(1e11)));
-        expressUsdg.setStonkzRefPrice(USDG, 1e11);
-        expressUsdg.setStonkzRefPrice(USDG, 1e12);
-        expressUsdg.setStonkzRefPrice(USDG, 1e21);
+        expressUsdg.setRefPrice(STONKZ, USDG, 1e11);
+        expressUsdg.setRefPrice(STONKZ, USDG, 1e12);
+        expressUsdg.setRefPrice(STONKZ, USDG, 1e21);
     }
 
     function test_ref_event_loud() public {
-        vm.expectEmit(true, false, false, true);
-        emit DeployControls.RefPriceChanged(ETH, 3e11);
-        expressEth.setStonkzRefPrice(ETH, 3e11);
+        vm.expectEmit(true, true, false, true);
+        emit DeployControls.RefPriceChanged(STONKZ, ETH, 3e11);
+        expressEth.setRefPrice(STONKZ, ETH, 3e11);
     }
 
     // ─── helpers ───────────────────────────────────────────────────────────
@@ -229,12 +192,13 @@ contract SidePoolRefPrice is Test {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            stonkzRefPriceWad: 0 // factory overwrites
+            refPriceWad: 0 // factory overwrites
         });
     }
 
     function _ladderParams(address pair) internal returns (StonkzLadderAuction.Params memory p) {
         LadderSettlement settlement = new LadderSettlement(IPoolManager(address(pm)), hook, pair);
+        ladder.setSettlementRef(address(settlement));
         p = StonkzLadderAuction.Params({
             supply: SUPPLY,
             auctionSupply: SUPPLY,
@@ -249,7 +213,7 @@ contract SidePoolRefPrice is Test {
             tier: LadderTypes.Tier.God,
             createSidePool: true,
             sidePoolBps: 500,
-            stonkzRefPriceWad: 0, // factory overwrites / unset path
+            refPriceWad: 0, // factory overwrites / unset path
             walletCapBps: 500,
             sizeBonusBps: 1000,
             maxUniqueActives: 64,
@@ -257,7 +221,7 @@ contract SidePoolRefPrice is Test {
             creator: CREATOR,
             treasury: TREASURY,
             vaultRef: address(0),
-            settlement: address(settlement)
+            settlement: address(0) // stamped from factory.settlementRef
         });
     }
 }

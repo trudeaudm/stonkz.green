@@ -29,8 +29,8 @@ contract LadderSettlement {
     StonkzFeeHook public immutable hook;
     address public immutable pairToken;
 
-    /// @notice Owner-settable STONKZ reference for side pool (modularity). address(0) ⇒ park.
-    address public stonkzRef;
+    /// @notice Owner-settable side-token reference for side pool (modularity). address(0) ⇒ park.
+    address public sideTokenRef;
     /// @notice Optional FeeLockerV2 registry. address(0) ⇒ skip lock registration (vector path).
     FeeLockerV2 public feeLocker;
     address public owner;
@@ -66,11 +66,11 @@ contract LadderSettlement {
     bool public liquidityLocked;
     address public unlockRecipient;
     address public userTokenSettled;
-    /// @notice Stamped from settle. Unit: pair-wei per STONKZ token, WAD.
-    uint256 public stonkzRefPriceWad;
+    /// @notice Stamped from settle. Unit: pair-wei per side-token, WAD.
+    uint256 public refPriceWad;
 
     event OwnershipTransferred(address indexed prev, address indexed next);
-    event StonkzRefSet(address indexed stonkz);
+    event SideTokenRefSet(address indexed sideToken);
     event FeeLockerSet(address indexed feeLocker);
     event RaiseSplit(uint256 toLP, uint256 toTreasury, uint256 toCreator);
     event HoldbackToVault(address indexed vault, uint256 amount);
@@ -95,6 +95,8 @@ contract LadderSettlement {
     error NothingToWithdraw();
     error NotSettled();
     error RefPriceUnset();
+    error SideTokenRefNotContract();
+    error FeeLockerNotContract();
     /// @dev Cash/ask amount positive but liquidity rounds to 0 for the constructed ticks.
     ///      Not a silent dust mint (liq=1 retired). Spec addendum candidate if seen in prod sizes.
     error LiquidityDust(bytes32 leg, uint256 amount);
@@ -118,13 +120,15 @@ contract LadderSettlement {
         owner = next;
     }
 
-    function setStonkzRef(address stonkz) external onlyOwner {
-        stonkzRef = stonkz;
-        emit StonkzRefSet(stonkz);
+    function setSideTokenRef(address sideToken) external onlyOwner {
+        if (sideToken != address(0) && sideToken.code.length == 0) revert SideTokenRefNotContract();
+        sideTokenRef = sideToken;
+        emit SideTokenRefSet(sideToken);
     }
 
     /// @notice Wire FeeLockerV2 for lock registry (production / rehearsal). Vectors leave unset.
     function setFeeLocker(FeeLockerV2 fl) external onlyOwner {
+        if (address(fl) != address(0) && address(fl).code.length == 0) revert FeeLockerNotContract();
         feeLocker = fl;
         emit FeeLockerSet(address(fl));
     }
@@ -142,8 +146,8 @@ contract LadderSettlement {
         uint16 holdbackBps; // token vault holdback
         bool createSidePool; // stamped — docs/03 switch 2
         uint16 sidePoolBps; // stamped — bps of LP-destined tokens
-        /// @dev Unit: pair-wei per STONKZ token, WAD. Required when createSidePool && sideAmt>0.
-        uint256 stonkzRefPriceWad;
+        /// @dev Unit: pair-wei per side-token, WAD. Required when createSidePool && sideAmt>0.
+        uint256 refPriceWad;
         bool liquidityLocked; // stamped — docs/03 switch 1
         address unlockRecipient; // stamped — creator
         address vaultRef;
@@ -162,7 +166,7 @@ contract LadderSettlement {
         liquidityLocked = a.liquidityLocked;
         unlockRecipient = a.unlockRecipient;
         userTokenSettled = a.userToken;
-        stonkzRefPriceWad = a.stonkzRefPriceWad;
+        refPriceWad = a.refPriceWad;
 
         // ─── three-leg raise split (docs/09 §7) ───────────────────────────
         toTreasury = FixedPointMathLib.fullMulDiv(a.raised, a.carveBps, 10_000);
@@ -213,9 +217,9 @@ contract LadderSettlement {
 
         // ─── side pool vs STONKZ ref (absent when createSidePool=false or sideAmt=0)
         if (sideAmt > 0) {
-            if (stonkzRef != address(0)) {
-                if (a.stonkzRefPriceWad == 0) revert RefPriceUnset();
-                _buildSidePool(a.userToken, sideAmt, a.printPrice, a.stonkzRefPriceWad);
+            if (sideTokenRef != address(0)) {
+                if (a.refPriceWad == 0) revert RefPriceUnset();
+                _buildSidePool(a.userToken, sideAmt, a.printPrice, a.refPriceWad);
             } else {
                 emit SidePoolParked(sideAmt);
             }
@@ -357,11 +361,11 @@ contract LadderSettlement {
         emit MainPoolBuilt(mainPoolKey.toId(), cashTickLower, cashTickUpper, askTickLower, askTickUpper);
     }
 
-    function _buildSidePool(address userToken, uint256 tokens, uint256 printP, uint256 refPriceWad) internal {
-        // priceInStonkz = printP / refPriceWad (both pair-wei per token, WAD). Ruling B: no USD leg.
-        uint256 priceInStonkz = FixedPointMathLib.fullMulDiv(printP, WAD, refPriceWad);
-        sidePoolKey = _sidePoolKey(userToken, stonkzRef);
-        bool tokIs0 = userToken < stonkzRef;
+    function _buildSidePool(address userToken, uint256 tokens, uint256 printP, uint256 refPrice) internal {
+        // priceInStonkz = printP / refPrice (both pair-wei per token, WAD). Ruling B: no USD leg.
+        uint256 priceInStonkz = FixedPointMathLib.fullMulDiv(printP, WAD, refPrice);
+        sidePoolKey = _sidePoolKey(userToken, sideTokenRef);
+        bool tokIs0 = userToken < sideTokenRef;
 
         // Spot from price; range placed for pure userToken under real PM composition rules.
         uint160 priceSqrt = _sqrtPriceFromPriceWad(priceInStonkz, !tokIs0);
@@ -413,7 +417,7 @@ contract LadderSettlement {
             sidePoolKey,
             keccak256(abi.encode(address(this), lo, hi, sideSalt_)),
             FeeLockerV2.PoolKind.Side,
-            stonkzRef,
+            sideTokenRef,
             userToken,
             lo,
             hi,

@@ -14,10 +14,10 @@ import {DeployControls} from "../src/DeployControls.sol";
 /// - DeployControls birth / post-config: deploysEnabled + nonempty allowlist (deployer)
 ///
 /// RUNBOOK (rehearsal / official — fold into concrete run() when MAINNET PATH lands):
-/// - [ ] Re-check ETH `stonkzRefPriceWad[address(0)]` against spot at deploy time.
-///       Birth default 2.5e11 pair-wei/STONKZ ≈ $0.001 at $4k ETH; update via
-///       `setStonkzRefPrice(address(0), …)` before first createSidePool=true file/list.
-/// - [ ] Seed USDG ref: `setStonkzRefPrice(USDG, 1e15)` (or Express ctor seed) before USDG launches.
+/// - [ ] Re-check ETH `refPriceWad[sideTokenRef][address(0)]` against spot at deploy time.
+///       Birth default 2.5e11 pair-wei/side-token ≈ $0.001 at $4k ETH; update via
+///       `setRefPrice(sideTokenRef, address(0), …)` before first createSidePool=true file/list.
+/// - [ ] Seed USDG ref: `setRefPrice(sideTokenRef, USDG, 1e15)` (or Express pair seed) before USDG launches.
 /// - [ ] Soft-launch gate: `_assertSoftLaunchGate` after each factory construct.
 abstract contract DeploySoftLaunchGuard is Script {
     /// @dev Call after each factory construct (or after intentional allowlist config).

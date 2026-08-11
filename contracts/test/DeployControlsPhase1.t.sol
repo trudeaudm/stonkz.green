@@ -41,6 +41,7 @@ contract DeployControlsPhase1 is Test {
     uint256 internal constant TIER_4K = 4000e18;
 
     function setUp() public {
+        vm.etch(address(0x4663), hex"00");
         pm = new MockPoolManager();
         acc = new BuybackAccumulator(PAIR, address(0x4663), address(0));
         gov = new CTOGovernor();
@@ -49,9 +50,10 @@ contract DeployControlsPhase1 is Test {
         locker = new FeeLockerV2(IPoolManager(address(pm)), hook);
 
         express = new StonkzExpressFactory(
-            IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0)
+            IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0x4663)
         );
         ladder = new StonkzLadderFactory();
+        ladder.setSideTokenRef(address(0x4663));
     }
 
     // ─── RIDER A birth ─────────────────────────────────────────────────────
@@ -161,6 +163,11 @@ contract DeployControlsPhase1 is Test {
 
         // Same deployer+userSalt must collide (CREATE2); different userSalt succeeds at predicted addr.
         bytes32 userSalt2 = bytes32(uint256(0x4664));
+        // Mirror factory.list stamps so init-code hash matches the CREATE2 deploy.
+        p.createSidePool = express.defaultCreateSidePool();
+        p.sidePoolBps = express.defaultSidePoolBps();
+        p.liquidityLocked = express.defaultLiquidityLocked();
+        p.refPriceWad = p.createSidePool ? express.refPriceWad(express.sideTokenRef(), PAIR) : 0;
         bytes memory initCode = abi.encodePacked(
             type(StonkzDirectListing).creationCode,
             abi.encode(
@@ -170,7 +177,7 @@ contract DeployControlsPhase1 is Test {
                 acc,
                 gov,
                 PAIR,
-                address(0),
+                express.sideTokenRef(),
                 p
             )
         );
@@ -261,7 +268,7 @@ contract DeployControlsPhase1 is Test {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            stonkzRefPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
         });
     }
 
@@ -281,7 +288,7 @@ contract DeployControlsPhase1 is Test {
             tier: LadderTypes.Tier.God,
             createSidePool: true,
             sidePoolBps: 500,
-            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: 500,
             sizeBonusBps: 1000,
             maxUniqueActives: 64,
