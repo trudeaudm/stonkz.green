@@ -34,8 +34,10 @@ contract VaultPhase1 is LadderVectorLoader, FactoryVanity {
     address internal constant DEST = address(0xD57);
 
     function setUp() public {
+        vm.etch(STONKZ, hex"00");
         vault = new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000);
         factory = new StonkzLadderFactory();
+        factory.setSideTokenRef(STONKZ);
         pm = new MockPoolManager();
         CTOGovernor gov = new CTOGovernor();
         hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
@@ -70,7 +72,7 @@ contract VaultPhase1 is LadderVectorLoader, FactoryVanity {
             tier: inn.tier,
             createSidePool: true,
             sidePoolBps: inn.sidePoolBps,
-            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: inn.walletCapBps,
             sizeBonusBps: inn.sizeBonusBps,
             maxUniqueActives: 300,
@@ -127,7 +129,7 @@ contract VaultPhase1 is LadderVectorLoader, FactoryVanity {
         assertEq(exp.lockedTokens, vaultAmt);
 
         LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
-        s.setStonkzRef(STONKZ);
+        s.setSideTokenRef(STONKZ);
 
         StonkzLadderAuction.Params memory p = _params(inn);
         p.settlement = address(s); // stamped at construction — no setSettlement forwarder
@@ -212,7 +214,7 @@ contract VaultPhase1 is LadderVectorLoader, FactoryVanity {
         p.vaultRef = address(vault);
         StonkzLadderAuction a = new StonkzLadderAuction(p);
         LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
-        s.setStonkzRef(STONKZ);
+        s.setSideTokenRef(STONKZ);
         a.setSettlement(s);
         a.start();
 

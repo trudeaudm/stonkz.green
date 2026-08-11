@@ -9,9 +9,7 @@ import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
 import {FeeLockerV2} from "../src/FeeLockerV2.sol";
 import {CTOGovernor} from "../src/CTOGovernor.sol";
 import {StonkzDirectListing} from "../src/StonkzDirectListing.sol";
-import {StonkzLaunchToken} from "../src/StonkzLaunchToken.sol";
 import {ICTOGovernor} from "../src/interfaces/IStonkzGovernance.sol";
-import {TickMath} from "../src/v4/TickMath.sol";
 
 /// @title DirectListing — C2 (fees-and-governance.md §2). MAX_TICK range, rug-impossibility,
 ///        emergent tier volatility, wei-exact conservation.
@@ -25,14 +23,16 @@ contract DirectListing is Test {
     address internal constant PAIR = address(0); // native pair — fixed orientation for both tiers
     address internal constant TREASURY = address(0x7A5E);
     address internal constant CREATOR = address(0xCEEE);
+    address internal constant SIDE = address(0x4663);
 
     uint256 internal constant SUPPLY = 1_000_000 ether;
     uint256 internal constant TIER_4K = 4000e18;
     uint256 internal constant TIER_8K = 8000e18;
 
     function setUp() public {
+        vm.etch(SIDE, hex"00");
         pm = new MockPoolManager();
-        acc = new BuybackAccumulator(PAIR, address(0x4663), address(0));
+        acc = new BuybackAccumulator(PAIR, SIDE, address(0));
         gov = new CTOGovernor();
         hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
         gov.setRegistry(hook);
@@ -53,10 +53,10 @@ contract DirectListing is Test {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            stonkzRefPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11 // pair-wei per side-token, WAD
         });
         return new StonkzDirectListing(
-            IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0), p
+            IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, SIDE, p
         );
     }
 
@@ -74,9 +74,29 @@ contract DirectListing is Test {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            stonkzRefPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11
         });
         vm.expectRevert(StonkzDirectListing.BadTier.selector);
+        new StonkzDirectListing(IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, SIDE, p);
+    }
+
+    function test_C2_sideTokenRefUnset_revertsWhenCreateSidePool() public {
+        StonkzDirectListing.ListingParams memory p = StonkzDirectListing.ListingParams({
+            startMcap: TIER_4K,
+            totalSupply: SUPPLY,
+            creatorReserveBps: 0,
+            deliveryMode: 0,
+            vestDuration: 0,
+            declaredUse: bytes32(0),
+            creator: CREATOR,
+            name: "X",
+            symbol: "X",
+            createSidePool: true,
+            sidePoolBps: 500,
+            liquidityLocked: true,
+            refPriceWad: 2.5e11
+        });
+        vm.expectRevert(StonkzDirectListing.SideTokenRefUnset.selector);
         new StonkzDirectListing(IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0), p);
     }
 
@@ -92,37 +112,29 @@ contract DirectListing is Test {
         (uint256 listed, uint256 side, uint256 cr) = l.conservationBuckets();
         assertEq(listed + side + cr, SUPPLY, "listed + side + reserve == supply (wei-exact)");
         assertEq(l.conservationSum(), SUPPLY);
-        // creatorReserve == 15% of supply.
         assertEq(cr, (SUPPLY * 1500) / 10_000);
-        // side == 5% of listing supply.
         uint256 listingSupply = SUPPLY - cr;
         assertEq(side, (listingSupply * 500) / 10_000);
         assertEq(listed, listingSupply - side);
     }
 
     function test_C2_rugImpossible_noPrincipalWithdraw() public {
-        StonkzDirectListing l = _list(TIER_4K, 0, 0); // 0 reserve
-        // With zero creatorReserve there is nothing to claim, ever.
+        StonkzDirectListing l = _list(TIER_4K, 0, 0);
         assertEq(l.claimCreatorReserve(), 0);
-        // listed principal is fixed and never withdrawable — buckets are immutable post-construction.
         (uint256 listed0,,) = l.conservationBuckets();
         vm.warp(block.timestamp + 3650 days);
         assertEq(l.claimCreatorReserve(), 0, "no principal path");
         (uint256 listed1,,) = l.conservationBuckets();
         assertEq(listed0, listed1, "listed principal untouched");
-        // The launch token supply held by the listing (LP principal) is not transferable by any
-        // caller: there is no admin/withdraw entrypoint (asserted by absence at compile time).
     }
 
     function test_C2_creatorReserveInstantTimelock() public {
         StonkzDirectListing l = _list(TIER_4K, 1000, 0); // 10% INSTANT
-        // Before 10-min timelock: nothing deliverable.
         assertEq(l.claimCreatorReserve(), 0, "instant timelock pending");
         vm.warp(block.timestamp + 10 minutes);
         uint256 got = l.claimCreatorReserve();
         assertEq(got, (SUPPLY * 1000) / 10_000, "full reserve after timelock");
         assertEq(l.token().balanceOf(CREATOR), got);
-        // Capped: second claim yields nothing (no over-delivery).
         assertEq(l.claimCreatorReserve(), 0);
     }
 
@@ -134,7 +146,6 @@ contract DirectListing is Test {
         uint256 impact4 = l4.quoteBuyImpactWad(buy);
         uint256 impact8 = l8.quoteBuyImpactWad(buy);
         assertGt(impact4, impact8, "lower start mcap => steeper impact");
-        // Same token depth at both tiers (feature, not a parameter).
         (uint256 listed4,,) = l4.conservationBuckets();
         (uint256 listed8,,) = l8.conservationBuckets();
         assertEq(listed4, listed8, "identical depth curve");
@@ -147,9 +158,10 @@ contract DirectListing is Test {
         assertEq(hook.pageAdmin(tok), CREATOR);
         (, uint256 lpHeld,, uint256 parked, bool set) = gov.tokenRegs(tok);
         assertTrue(set, "gov registered");
-        // Side parked pre-genesis; LP-held = listed (95%).
+        // Side deployed at list (sideTokenRef set); LP-held = listed + side; parked = 0.
         (uint256 listed, uint256 side,) = l.conservationBuckets();
-        assertEq(lpHeld, listed);
-        assertEq(parked, side);
+        assertTrue(l.sidePoolDeployed());
+        assertEq(lpHeld, listed + side);
+        assertEq(parked, 0);
     }
 }

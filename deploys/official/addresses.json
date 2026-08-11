@@ -1,7 +1,7 @@
 {
   "chainId": 0,
   "mode": "placeholder",
-  "note": "Official address book. Populated by contracts/script/Deploy.s.sol. No StonkzToken — stonkzRef is a stand-in ERC-20 input (GENESIS VIA PLATFORM). MockPoolManager not in manifest.",
+  "note": "Official address book. Populated by contracts/script/Deploy.s.sol. No StonkzToken — sideTokenRef is a stand-in ERC-20 input (GENESIS VIA PLATFORM). MockPoolManager not in manifest. FeeLockerV1 is legacy.",
   "deployer": "0x0000000000000000000000000000000000000000",
   "contracts": {
     "StonkzRefStandIn": "0x0000000000000000000000000000000000000000",
@@ -23,14 +23,15 @@
     "treasury": "0x0000000000000000000000000000000000000000",
     "pairToken": "0x0000000000000000000000000000000000000000",
     "usdg": "0x0000000000000000000000000000000000000000",
-    "stonkzRefStandIn": "0x0000000000000000000000000000000000000000",
+    "sideTokenRefStandIn": "0x0000000000000000000000000000000000000000",
     "refPriceEthWad": "250000000000",
     "refPriceUsdgWad": "1000000000000000",
     "poolManagerNote": "Robinhood PoolManager singleton 0x8366a39C via V4Adapter; MockPoolManager not in official manifest; no StonkzToken in manifest"
   },
   "wiring": {
     "vaultRef": false,
-    "settlementStonkzRef": false,
+    "settlementRef": false,
+    "settlementSideTokenRef": false,
     "settlementFeeLocker": false,
     "govRegistry": false,
     "softLaunchExpress": false,
@@ -38,7 +39,8 @@
     "hookFlagsValidated": false,
     "canonManagerBound": false,
     "ownershipToCustody": false,
-    "stonkzRefIsStandIn": false
+    "accumulatorPoolManager": false,
+    "sideTokenRefIsStandIn": true
   },
   "templates": {
     "StonkzDirectListing": "factory-CREATE2-via-StonkzExpressFactory",

@@ -43,6 +43,7 @@ contract LockStampPhase3 is Test, FactoryVanity {
     uint256 internal constant TIER_4K = 4000e18;
 
     function setUp() public {
+        vm.etch(STONKZ, hex"00");
         pm = new MockPoolManager();
         acc = new BuybackAccumulator(PAIR, STONKZ, address(0));
         gov = new CTOGovernor();
@@ -53,6 +54,7 @@ contract LockStampPhase3 is Test, FactoryVanity {
             IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, STONKZ
         );
         ladder = new StonkzLadderFactory();
+        ladder.setSideTokenRef(STONKZ);
     }
 
     function test_P3_birth_defaultLiquidityLockedTrue() public view {
@@ -208,7 +210,7 @@ contract LockStampPhase3 is Test, FactoryVanity {
     function _settleMinimal(bool locked) internal returns (LadderSettlement s) {
         s = new LadderSettlement(IPoolManager(address(pm)), hook, PAIR);
         s.setFeeLocker(locker);
-        s.setStonkzRef(STONKZ);
+        s.setSideTokenRef(STONKZ);
         vm.deal(address(this), 50 ether);
         uint256 supply = 1_000_000 ether;
         s.settle{value: 10 ether}(
@@ -225,7 +227,7 @@ contract LockStampPhase3 is Test, FactoryVanity {
                 holdbackBps: 0,
                 createSidePool: false,
                 sidePoolBps: 500,
-                stonkzRefPriceWad: 0,
+                refPriceWad: 0,
                 liquidityLocked: locked,
                 unlockRecipient: CREATOR,
                 vaultRef: address(0),
@@ -271,7 +273,7 @@ contract LockStampPhase3 is Test, FactoryVanity {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            stonkzRefPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
         });
     }
 
@@ -291,7 +293,7 @@ contract LockStampPhase3 is Test, FactoryVanity {
             tier: LadderTypes.Tier.God,
             createSidePool: true,
             sidePoolBps: 500,
-            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: 500,
             sizeBonusBps: 1000,
             maxUniqueActives: 64,

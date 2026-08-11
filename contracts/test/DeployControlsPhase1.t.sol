@@ -54,7 +54,10 @@ contract DeployControlsPhase1 is Test, FactoryVanity {
         express = new StonkzExpressFactory(
             IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0)
         );
+        // Gate drills do not need side pools; loud-unset would mask DeployControls reverts.
+        express.setDefaultCreateSidePool(false);
         ladder = new StonkzLadderFactory();
+        ladder.setDefaultCreateSidePool(false);
     }
 
     // ─── RIDER A birth ─────────────────────────────────────────────────────
@@ -254,7 +257,7 @@ contract DeployControlsPhase1 is Test, FactoryVanity {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            stonkzRefPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
         });
     }
 
@@ -274,7 +277,7 @@ contract DeployControlsPhase1 is Test, FactoryVanity {
             tier: LadderTypes.Tier.God,
             createSidePool: true,
             sidePoolBps: 500,
-            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: 500,
             sizeBonusBps: 1000,
             maxUniqueActives: 64,

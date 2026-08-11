@@ -27,7 +27,7 @@ interface IERC20StandInCheck {
     function decimals() external view returns (uint8);
 }
 
-/// @title DeploySoftLaunchGuard — RIDER A soft-launch assertion shared by deploy paths
+/// @title DeploySoftLaunchGuard - RIDER A soft-launch assertion shared by deploy paths
 abstract contract DeploySoftLaunchGuard is Script {
     function _assertSoftLaunchGate(DeployControls factory, address expectedDeployer) internal view {
         factory.assertSoftLaunchGate(expectedDeployer);
@@ -35,19 +35,21 @@ abstract contract DeploySoftLaunchGuard is Script {
     }
 }
 
-/// @title Deploy — official full-manifest deploy (docs/03 GENESIS VIA PLATFORM + V4-CANON)
+/// @title Deploy - official full-manifest deploy (GENESIS VIA PLATFORM + V4-CANON + PREDEPLOY-REFIT)
 /// @notice Binds to Robinhood PoolManager via V4Adapter. Hook CREATE2-mined 0x4663+0x088.
-///         NO StonkzToken deploy/mint — stonkzRef is a stand-in ERC-20 INPUT (repoint at genesis).
-///         NO MockPoolManager in the official address book.
+///         NO StonkzToken deploy/mint - sideTokenRef is a stand-in ERC-20 INPUT (repoint at genesis).
+///         NO MockPoolManager in the official address book. FeeLockerV2 only (V1 is legacy).
 ///
 /// ENV (required for live/fork broadcast):
-///   PRIVATE_KEY          — deployer key (env only; never a file)
-///   CUSTODY_ADDRESS      — ownership-transfer target (Safe); NOT a mint destination
-///   TREASURY_ADDRESS     — StonkzFeeHook protocolTreasury
-///   HOOK_CREATE2_SALT    — from hook-vanity-mine.mjs --mode eoa
-///   STONKZ_REF_ADDRESS   — stand-in ERC-20 on 4663 (code + totalSupply/balanceOf/decimals)
+///   PRIVATE_KEY          - deployer key (env only; never a file)
+///   CUSTODY_ADDRESS      - ownership-transfer target (Safe); NOT a mint destination
+///   TREASURY_ADDRESS     - StonkzFeeHook protocolTreasury (R-L3CAP: genesis feeReceiver=treasury)
+///   HOOK_CREATE2_SALT    - from hook-vanity-mine.mjs --mode eoa
+///   STONKZ_REF_ADDRESS   - stand-in ERC-20 on 4663 (code + totalSupply/balanceOf/decimals)
 /// Optional:
-///   ETH_REF_PRICE_WAD    — pair-wei/STONKZ; default 2.5e11. Formula: 0.001e18 / spotEthUsd
+///   ETH_REF_PRICE_WAD    - pair-wei/side-token; default 2.5e11. Formula: 0.001e18 / spotEthUsd
+///   ACC_KEEPER_ADDRESS   - BuybackAccumulator keeper (owner can crank without this)
+///   BUY_EXECUTOR_ADDRESS - IBuyExecutor (unset until V4 buy path wired)
 ///   PAIR_TOKEN, USDG_ADDRESS, FORK, ADDRESS_BOOK_PATH
 contract Deploy is DeploySoftLaunchGuard {
     using stdJson for string;
@@ -64,16 +66,16 @@ contract Deploy is DeploySoftLaunchGuard {
 
     error WrongChain(uint256 chainId);
     error MissingEnv(string name);
-    error RefPriceMismatch(address pair, uint256 got, uint256 want);
+    error RefPriceMismatch(address side, address pair, uint256 got, uint256 want);
     error WiringFailed(string what);
     error ExternalMissing(string what, address addr);
     error HookVanityBad(address predicted);
     error PredictMismatch(string what, address got, address want);
     error OwnershipNotTransferred(string what, address owner, address want);
-    error StonkzRefInvalid(address ref);
+    error SideTokenRefInvalid(address ref);
 
     struct Book {
-        address stonkzRef; // stand-in INPUT — never minted by this script
+        address sideTokenRef; // stand-in INPUT - never minted by this script
         address poolManager;
         address v4Adapter;
         address governor;
@@ -94,20 +96,22 @@ contract Deploy is DeploySoftLaunchGuard {
 
         address custody = vm.envAddress("CUSTODY_ADDRESS");
         address treasury = vm.envAddress("TREASURY_ADDRESS");
-        address stonkzRef = vm.envAddress("STONKZ_REF_ADDRESS");
+        address sideTokenRef = vm.envAddress("STONKZ_REF_ADDRESS");
+        address accKeeper = vm.envOr("ACC_KEEPER_ADDRESS", address(0));
+        address buyExecutor = vm.envOr("BUY_EXECUTOR_ADDRESS", address(0));
         address pairToken = vm.envOr("PAIR_TOKEN", address(0));
         address usdg = vm.envOr("USDG_ADDRESS", address(0));
         if (custody == address(0)) revert MissingEnv("CUSTODY_ADDRESS");
         if (treasury == address(0)) revert MissingEnv("TREASURY_ADDRESS");
-        if (stonkzRef == address(0)) revert MissingEnv("STONKZ_REF_ADDRESS");
-        _assertStonkzRef(stonkzRef);
+        if (sideTokenRef == address(0)) revert MissingEnv("STONKZ_REF_ADDRESS");
+        _assertSideTokenRef(sideTokenRef);
 
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(pk);
 
         string memory bookPath = vm.envOr("ADDRESS_BOOK_PATH", string("../deploys/official/addresses.json"));
         Book memory book = _loadBook(bookPath);
-        book.stonkzRef = stonkzRef;
+        book.sideTokenRef = sideTokenRef;
         book.poolManager = RH_POOL_MANAGER;
         book.universalRouter = UNIVERSAL_ROUTER;
         book.permit2 = PERMIT2;
@@ -118,7 +122,7 @@ contract Deploy is DeploySoftLaunchGuard {
         console2.log("Deployer", deployer);
         console2.log("Custody (ownership only)", custody);
         console2.log("Treasury", treasury);
-        console2.log("stonkzRef stand-in", stonkzRef);
+        console2.log("sideTokenRef stand-in", sideTokenRef);
         console2.log("RH PoolManager", RH_POOL_MANAGER);
 
         bool deployAdapter = !_hasCode(book.v4Adapter);
@@ -143,7 +147,7 @@ contract Deploy is DeploySoftLaunchGuard {
 
         vm.startBroadcast(pk);
 
-        // 1) V4Adapter around RH singleton — never deploy MockPoolManager / StonkzToken
+        // 1) V4Adapter around RH singleton - never deploy MockPoolManager / StonkzToken
         if (deployAdapter) {
             book.v4Adapter = address(new V4Adapter(ICanonPM(RH_POOL_MANAGER)));
             console2.log("deployed V4Adapter", book.v4Adapter);
@@ -179,7 +183,7 @@ contract Deploy is DeploySoftLaunchGuard {
             CTOGovernor(book.governor).setRegistry(StonkzFeeHook(payable(book.hook)));
         }
 
-        // 3) Fee locker + buyback accumulator (stonkz4663 slot = stand-in until genesis repoint)
+        // 3) Fee locker + buyback accumulator (sideTokenRef = stand-in until genesis repoint)
         if (!_hasCode(book.feeLocker)) {
             book.feeLocker = address(new FeeLockerV2(pm, StonkzFeeHook(payable(book.hook))));
             console2.log("deployed FeeLockerV2", book.feeLocker);
@@ -188,10 +192,20 @@ contract Deploy is DeploySoftLaunchGuard {
         }
 
         if (!_hasCode(book.accumulator)) {
-            book.accumulator = address(new BuybackAccumulator(pairToken, book.stonkzRef, address(0)));
+            book.accumulator = address(new BuybackAccumulator(pairToken, book.sideTokenRef, address(0)));
             console2.log("deployed BuybackAccumulator", book.accumulator);
         } else {
             console2.log("skip BuybackAccumulator", book.accumulator);
+        }
+        // Accumulator v2: PM for spot, optional keeper/executor; launch band/interval defaults in ctor.
+        BuybackAccumulator(payable(book.accumulator)).setPoolManager(book.v4Adapter);
+        if (accKeeper != address(0)) {
+            BuybackAccumulator(payable(book.accumulator)).setKeeper(accKeeper);
+            console2.log("accumulator keeper", accKeeper);
+        }
+        if (buyExecutor != address(0)) {
+            BuybackAccumulator(payable(book.accumulator)).setExecutor(buyExecutor);
+            console2.log("accumulator executor", buyExecutor);
         }
 
         // 4) Ladder settlement + stamps
@@ -201,7 +215,7 @@ contract Deploy is DeploySoftLaunchGuard {
         } else {
             console2.log("skip LadderSettlement", book.settlement);
         }
-        LadderSettlement(payable(book.settlement)).setStonkzRef(book.stonkzRef);
+        LadderSettlement(payable(book.settlement)).setSideTokenRef(book.sideTokenRef);
         LadderSettlement(payable(book.settlement)).setFeeLocker(FeeLockerV2(book.feeLocker));
 
         // 5) Vault
@@ -212,7 +226,7 @@ contract Deploy is DeploySoftLaunchGuard {
             console2.log("skip StonkzVault", book.vault);
         }
 
-        // 6) Express factory (stonkzRef = stand-in)
+        // 6) Express factory (sideTokenRef = stand-in)
         if (!_hasCode(book.express)) {
             book.express = address(
                 new StonkzExpressFactory(
@@ -222,7 +236,7 @@ contract Deploy is DeploySoftLaunchGuard {
                     BuybackAccumulator(payable(book.accumulator)),
                     CTOGovernor(book.governor),
                     pairToken,
-                    book.stonkzRef
+                    book.sideTokenRef
                 )
             );
             console2.log("deployed StonkzExpressFactory", book.express);
@@ -238,24 +252,29 @@ contract Deploy is DeploySoftLaunchGuard {
             console2.log("skip StonkzLadderFactory", book.ladder);
         }
         StonkzLadderFactory(book.ladder).setVaultRef(book.vault);
+        StonkzLadderFactory(book.ladder).setSettlementRef(book.settlement);
+        StonkzLadderFactory(book.ladder).setSideTokenRef(book.sideTokenRef); // seeds (side,ETH)=2.5e11
+
         if (usdg != address(0)) {
-            StonkzLadderFactory(book.ladder).setStonkzRefPrice(usdg, REF_USDG);
+            StonkzLadderFactory(book.ladder).setRefPrice(book.sideTokenRef, usdg, REF_USDG);
         }
         if (pairToken != address(0) && pairToken != usdg) {
-            StonkzLadderFactory(book.ladder).setStonkzRefPrice(pairToken, REF_USDG);
+            StonkzLadderFactory(book.ladder).setRefPrice(book.sideTokenRef, pairToken, REF_USDG);
+            StonkzExpressFactory(book.express).setRefPrice(book.sideTokenRef, pairToken, REF_USDG);
         }
 
         uint256 ethRef = vm.envOr("ETH_REF_PRICE_WAD", REF_ETH);
-        StonkzExpressFactory(book.express).setStonkzRefPrice(address(0), ethRef);
-        StonkzLadderFactory(book.ladder).setStonkzRefPrice(address(0), ethRef);
-        console2.log("ETH stonkzRefPriceWad", ethRef);
+        StonkzExpressFactory(book.express).setRefPrice(book.sideTokenRef, address(0), ethRef);
+        StonkzLadderFactory(book.ladder).setRefPrice(book.sideTokenRef, address(0), ethRef);
+        console2.log("ETH refPriceWad(side,ETH)", ethRef);
 
-        // 8) Ownership → custody Safe (ownership only — no token mint)
+        // 8) Ownership -> custody Safe (ownership only - no token mint)
         DeployControls(book.express).transferOwnership(custody);
         DeployControls(book.ladder).transferOwnership(custody);
         StonkzFeeHook(payable(book.hook)).transferOwnership(custody);
         LadderSettlement(payable(book.settlement)).transferOwnership(custody);
         StonkzVault(book.vault).transferOwnership(custody);
+        BuybackAccumulator(payable(book.accumulator)).transferOwnership(custody);
         console2.log("ownership transferred to custody", custody);
 
         vm.stopBroadcast();
@@ -264,7 +283,7 @@ contract Deploy is DeploySoftLaunchGuard {
         _writeBook(bookPath, book, deployer, custody, treasury, pairToken, usdg);
 
         console2.log("=== DEPLOY COMPLETE ===");
-        console2.log("stonkzRef stand-in", book.stonkzRef);
+        console2.log("sideTokenRef stand-in", book.sideTokenRef);
         console2.log("V4Adapter", book.v4Adapter);
         console2.log("StonkzFeeHook", book.hook);
         console2.log("ExpressFactory", book.express);
@@ -336,19 +355,19 @@ contract Deploy is DeploySoftLaunchGuard {
     }
 
     /// @dev Stand-in must have code and answer totalSupply / balanceOf / decimals.
-    function _assertStonkzRef(address ref) internal view {
-        if (ref == address(0) || ref.code.length == 0) revert StonkzRefInvalid(ref);
+    function _assertSideTokenRef(address ref) internal view {
+        if (ref == address(0) || ref.code.length == 0) revert SideTokenRefInvalid(ref);
         try IERC20StandInCheck(ref).totalSupply() returns (uint256) {}
         catch {
-            revert StonkzRefInvalid(ref);
+            revert SideTokenRefInvalid(ref);
         }
         try IERC20StandInCheck(ref).balanceOf(address(0)) returns (uint256) {}
         catch {
-            revert StonkzRefInvalid(ref);
+            revert SideTokenRefInvalid(ref);
         }
         try IERC20StandInCheck(ref).decimals() returns (uint8) {}
         catch {
-            revert StonkzRefInvalid(ref);
+            revert SideTokenRefInvalid(ref);
         }
     }
 
@@ -362,7 +381,7 @@ contract Deploy is DeploySoftLaunchGuard {
         b.permit2 = PERMIT2;
         if (!vm.exists(path)) return b;
         string memory raw = vm.readFile(path);
-        b.stonkzRef = _readAddr(raw, ".contracts.StonkzRefStandIn");
+        b.sideTokenRef = _readAddr(raw, ".contracts.StonkzRefStandIn");
         b.v4Adapter = _readAddr(raw, ".contracts.V4Adapter");
         b.governor = _readAddr(raw, ".contracts.CTOGovernor");
         b.hook = _readAddr(raw, ".contracts.StonkzFeeHook");
@@ -395,7 +414,7 @@ contract Deploy is DeploySoftLaunchGuard {
         vm.serializeAddress(root, "deployer", deployer);
 
         string memory contracts = "contracts";
-        vm.serializeAddress(contracts, "StonkzRefStandIn", book.stonkzRef);
+        vm.serializeAddress(contracts, "StonkzRefStandIn", book.sideTokenRef);
         vm.serializeAddress(contracts, "PoolManager", RH_POOL_MANAGER);
         vm.serializeAddress(contracts, "V4Adapter", book.v4Adapter);
         vm.serializeAddress(contracts, "UniversalRouter", UNIVERSAL_ROUTER);
@@ -414,7 +433,7 @@ contract Deploy is DeploySoftLaunchGuard {
         vm.serializeAddress(config, "treasury", treasury);
         vm.serializeAddress(config, "pairToken", pairToken);
         vm.serializeAddress(config, "usdg", usdg);
-        vm.serializeAddress(config, "stonkzRefStandIn", book.stonkzRef);
+        vm.serializeAddress(config, "sideTokenRefStandIn", book.sideTokenRef);
         vm.serializeString(config, "refPriceEthWad", "250000000000");
         vm.serializeString(config, "refPriceUsdgWad", "1000000000000000");
         string memory configJson = vm.serializeString(
@@ -425,7 +444,8 @@ contract Deploy is DeploySoftLaunchGuard {
 
         string memory wiring = "wiring";
         vm.serializeBool(wiring, "vaultRef", true);
-        vm.serializeBool(wiring, "settlementStonkzRef", true);
+        vm.serializeBool(wiring, "settlementRef", true);
+        vm.serializeBool(wiring, "settlementSideTokenRef", true);
         vm.serializeBool(wiring, "settlementFeeLocker", true);
         vm.serializeBool(wiring, "govRegistry", true);
         vm.serializeBool(wiring, "softLaunchExpress", true);
@@ -433,7 +453,8 @@ contract Deploy is DeploySoftLaunchGuard {
         vm.serializeBool(wiring, "hookFlagsValidated", true);
         vm.serializeBool(wiring, "canonManagerBound", true);
         vm.serializeBool(wiring, "ownershipToCustody", true);
-        string memory wiringJson = vm.serializeBool(wiring, "stonkzRefIsStandIn", true);
+        vm.serializeBool(wiring, "accumulatorPoolManager", true);
+        string memory wiringJson = vm.serializeBool(wiring, "sideTokenRefIsStandIn", true);
 
         string memory templates = "templates";
         vm.serializeString(templates, "StonkzDirectListing", "factory-CREATE2-via-StonkzExpressFactory");
@@ -461,21 +482,23 @@ contract Deploy is DeploySoftLaunchGuard {
         if (address(V4Adapter(payable(book.v4Adapter)).manager()) != RH_POOL_MANAGER) {
             revert WiringFailed("adapter.manager");
         }
-        _assertStonkzRef(book.stonkzRef);
+        _assertSideTokenRef(book.sideTokenRef);
 
         _assertSoftLaunchGate(DeployControls(book.express), deployer);
         _assertSoftLaunchGate(DeployControls(book.ladder), deployer);
 
         StonkzExpressFactory express = StonkzExpressFactory(book.express);
-        if (express.stonkzRef() != book.stonkzRef) revert WiringFailed("express.stonkzRef");
+        if (express.sideTokenRef() != book.sideTokenRef) revert WiringFailed("express.sideTokenRef");
         if (address(express.hook()) != book.hook) revert WiringFailed("express.hook");
         if (address(express.poolManager()) != book.v4Adapter) revert WiringFailed("express.pm=adapter");
 
         StonkzLadderFactory ladder = StonkzLadderFactory(book.ladder);
         if (ladder.vaultRef() != book.vault) revert WiringFailed("ladder.vaultRef");
+        if (ladder.settlementRef() != book.settlement) revert WiringFailed("ladder.settlementRef");
+        if (ladder.sideTokenRef() != book.sideTokenRef) revert WiringFailed("ladder.sideTokenRef");
 
         LadderSettlement settlement = LadderSettlement(payable(book.settlement));
-        if (settlement.stonkzRef() != book.stonkzRef) revert WiringFailed("settlement.stonkzRef");
+        if (settlement.sideTokenRef() != book.sideTokenRef) revert WiringFailed("settlement.sideTokenRef");
         if (address(settlement.feeLocker()) != book.feeLocker) revert WiringFailed("settlement.feeLocker");
 
         if (address(CTOGovernor(book.governor).registry()) != book.hook) revert WiringFailed("gov.registry");
@@ -485,22 +508,26 @@ contract Deploy is DeploySoftLaunchGuard {
         if (address(hook.canonManager()) != RH_POOL_MANAGER) revert WiringFailed("hook.canonManager");
         if (address(hook.poolManager()) != book.v4Adapter) revert WiringFailed("hook.poolManager");
 
-        uint256 ethExpress = express.stonkzRefPriceWad(address(0));
-        uint256 ethLadder = ladder.stonkzRefPriceWad(address(0));
-        if (ethExpress != ethRef) revert RefPriceMismatch(address(0), ethExpress, ethRef);
-        if (ethLadder != ethRef) revert RefPriceMismatch(address(0), ethLadder, ethRef);
+        uint256 ethExpress = express.refPriceWad(book.sideTokenRef, address(0));
+        uint256 ethLadder = ladder.refPriceWad(book.sideTokenRef, address(0));
+        if (ethExpress != ethRef) revert RefPriceMismatch(book.sideTokenRef, address(0), ethExpress, ethRef);
+        if (ethLadder != ethRef) revert RefPriceMismatch(book.sideTokenRef, address(0), ethLadder, ethRef);
 
         if (usdg != address(0)) {
-            uint256 u = ladder.stonkzRefPriceWad(usdg);
-            if (u != REF_USDG) revert RefPriceMismatch(usdg, u, REF_USDG);
+            uint256 u = ladder.refPriceWad(book.sideTokenRef, usdg);
+            if (u != REF_USDG) revert RefPriceMismatch(book.sideTokenRef, usdg, u, REF_USDG);
         }
         if (pairToken != address(0)) {
-            uint256 p = express.stonkzRefPriceWad(pairToken);
-            if (p != REF_USDG) revert RefPriceMismatch(pairToken, p, REF_USDG);
+            uint256 p = express.refPriceWad(book.sideTokenRef, pairToken);
+            if (p != REF_USDG) revert RefPriceMismatch(book.sideTokenRef, pairToken, p, REF_USDG);
         }
 
         BuybackAccumulator acc = BuybackAccumulator(payable(book.accumulator));
-        if (acc.stonkz4663() != book.stonkzRef) revert WiringFailed("accumulator.stonkzRef");
+        if (acc.sideTokenRef() != book.sideTokenRef) revert WiringFailed("accumulator.sideTokenRef");
+        if (address(acc.poolManager()) != book.v4Adapter) revert WiringFailed("accumulator.poolManager");
+        if (acc.minPctBps() != 100 || acc.maxPctBps() != 300) revert WiringFailed("accumulator.band");
+        if (acc.minCrankInterval() != 1 hours) revert WiringFailed("accumulator.interval");
+        if (acc.maxSlippageBps() != 100) revert WiringFailed("accumulator.slippage");
 
         if (DeployControls(book.express).owner() != custody) {
             revert OwnershipNotTransferred("express", DeployControls(book.express).owner(), custody);
@@ -514,6 +541,9 @@ contract Deploy is DeploySoftLaunchGuard {
         }
         if (StonkzVault(book.vault).owner() != custody) {
             revert OwnershipNotTransferred("vault", StonkzVault(book.vault).owner(), custody);
+        }
+        if (acc.owner() != custody) {
+            revert OwnershipNotTransferred("accumulator", acc.owner(), custody);
         }
     }
 }

@@ -85,7 +85,7 @@ abstract contract ListingAdapterPhase2Base is V4DualBackend {
             createSidePool: side,
             sidePoolBps: side ? 500 : 0,
             liquidityLocked: true,
-            stonkzRefPriceWad: side ? 2.5e11 : 0
+            refPriceWad: side ? 2.5e11 : 0
         });
     }
 
@@ -102,6 +102,7 @@ abstract contract ListingAdapterPhase2Base is V4DualBackend {
 
 contract ListingAdapterPhase2Mock is ListingAdapterPhase2Base {
     function setUp() public {
+        vm.etch(address(0x4663), hex"00");
         _setBackend(Backend.Mock);
         _wire();
     }
@@ -109,6 +110,7 @@ contract ListingAdapterPhase2Mock is ListingAdapterPhase2Base {
 
 contract ListingAdapterPhase2Real is ListingAdapterPhase2Base {
     function setUp() public {
+        vm.etch(address(0x4663), hex"00");
         _setBackend(Backend.Real);
         _wire();
     }

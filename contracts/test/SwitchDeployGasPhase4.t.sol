@@ -34,6 +34,7 @@ contract SwitchDeployGasPhase4 is Test, FactoryVanity {
     address internal constant STONKZ = address(0x4663);
 
     function setUp() public {
+        vm.etch(STONKZ, hex"00");
         pm = new MockPoolManager();
         acc = new BuybackAccumulator(PAIR, STONKZ, address(0));
         gov = new CTOGovernor();
@@ -44,6 +45,7 @@ contract SwitchDeployGasPhase4 is Test, FactoryVanity {
             IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, STONKZ
         );
         ladder = new StonkzLadderFactory();
+        ladder.setSideTokenRef(STONKZ);
     }
 
     function test_gas_express_list() public {
@@ -60,7 +62,7 @@ contract SwitchDeployGasPhase4 is Test, FactoryVanity {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            stonkzRefPriceWad: 0
+            refPriceWad: 0
         });
         uint256 g = gasleft();
         _list(express, p);
@@ -83,7 +85,7 @@ contract SwitchDeployGasPhase4 is Test, FactoryVanity {
             tier: LadderTypes.Tier.God,
             createSidePool: true,
             sidePoolBps: 500,
-            stonkzRefPriceWad: 0,
+            refPriceWad: 0,
             walletCapBps: 500,
             sizeBonusBps: 1000,
             maxUniqueActives: 64,

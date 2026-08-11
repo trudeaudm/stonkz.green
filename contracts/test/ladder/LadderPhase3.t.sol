@@ -38,15 +38,18 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts, FactoryVanity {
     address internal constant STONKZ = address(0x4663);
 
     function setUp() public {
+        vm.etch(STONKZ, hex"00");
         mockVault = new MockVault();
         pm = new MockPoolManager();
         CTOGovernor gov = new CTOGovernor();
         hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
         gov.setRegistry(hook);
         settlement = new LadderSettlement(IPoolManager(address(pm)), hook, PAIR);
-        settlement.setStonkzRef(STONKZ);
+        settlement.setSideTokenRef(STONKZ);
         factory = new StonkzLadderFactory();
         factory.setVaultRef(address(mockVault));
+        factory.setSideTokenRef(STONKZ);
+        factory.setRefPrice(STONKZ, PAIR, factory.REF_PRICE_USDG_DEFAULT());
         tok = new MockLaunchToken();
     }
 
@@ -78,7 +81,7 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts, FactoryVanity {
             tier: inn.tier,
             createSidePool: true,
             sidePoolBps: inn.sidePoolBps,
-            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: inn.walletCapBps,
             sizeBonusBps: inn.sizeBonusBps,
             maxUniqueActives: 300,
@@ -222,7 +225,7 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts, FactoryVanity {
         // Native pair settlement stamped before the bell (no post-end rewire).
         LadderSettlement nativeSettle =
             new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
-        nativeSettle.setStonkzRef(STONKZ);
+        nativeSettle.setSideTokenRef(STONKZ);
 
         StonkzLadderAuction.Params memory p = _params(inn, address(mockVault));
         p.settlement = address(nativeSettle);
@@ -336,7 +339,7 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts, FactoryVanity {
             tier: LadderTypes.Tier.God,
             createSidePool: true,
             sidePoolBps: 500,
-            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: 500,
             sizeBonusBps: 1000,
             maxUniqueActives: 300,
@@ -376,7 +379,7 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts, FactoryVanity {
             tier: LadderTypes.Tier.God,
             createSidePool: true,
             sidePoolBps: 500,
-            stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
             walletCapBps: 1000,
             sizeBonusBps: 0,
             maxUniqueActives: 300,
@@ -387,6 +390,7 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts, FactoryVanity {
             settlement: address(0)
         });
         LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
+        s.setSideTokenRef(STONKZ); // loud-unset would mask MinAsk if left unset
         // Direct probe: unsold 4; side 5% → main ask 3.8 < 5% of supply (5).
         vm.expectRevert(LadderSettlement.MinAsk.selector);
         s.settle{value: 10 ether}(
@@ -403,7 +407,7 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts, FactoryVanity {
                 holdbackBps: 0,
                 createSidePool: true,
                 sidePoolBps: 500,
-                stonkzRefPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+                refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
                 liquidityLocked: true,
                 unlockRecipient: CREATOR,
                 vaultRef: address(0),
@@ -420,7 +424,7 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts, FactoryVanity {
         LadderTypes.Bid[] memory bids = loadBids(json);
 
         LadderSettlement s = new LadderSettlement(IPoolManager(address(pm)), hook, address(0));
-        s.setStonkzRef(STONKZ);
+        s.setSideTokenRef(STONKZ);
         StonkzLadderAuction.Params memory p = _params(inn, address(0));
         p.settlement = address(s);
         auction = new StonkzLadderAuction(p);
