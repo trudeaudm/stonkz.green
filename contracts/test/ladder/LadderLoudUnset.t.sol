@@ -35,6 +35,7 @@ contract LadderLoudUnset is Test {
         hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
         gov.setRegistry(hook);
         factory = new StonkzLadderFactory();
+        factory.setCarveTreasury(TREASURY);
     }
 
     function test_file_revertsWhenCreateSidePoolAndSideTokenUnset() public {

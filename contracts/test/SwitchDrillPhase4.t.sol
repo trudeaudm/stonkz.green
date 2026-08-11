@@ -58,6 +58,7 @@ contract SwitchDrillPhase4 is Test {
             IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, STONKZ
         );
         ladder = new StonkzLadderFactory();
+        ladder.setCarveTreasury(TREASURY);
         ladder.setSideTokenRef(STONKZ);
     }
 

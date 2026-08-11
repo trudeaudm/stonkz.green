@@ -46,6 +46,7 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts {
         settlement = new LadderSettlement(IPoolManager(address(pm)), hook, PAIR);
         settlement.setSideTokenRef(STONKZ);
         factory = new StonkzLadderFactory();
+        factory.setCarveTreasury(TREASURY);
         factory.setVaultRef(address(mockVault));
         factory.setSideTokenRef(STONKZ);
         factory.setRefPrice(STONKZ, PAIR, factory.REF_PRICE_USDG_DEFAULT());

@@ -43,7 +43,8 @@ abstract contract DeploySoftLaunchGuard is Script {
 /// ENV (required for live/fork broadcast):
 ///   PRIVATE_KEY          - deployer key (env only; never a file)
 ///   CUSTODY_ADDRESS      - ownership-transfer target (Safe); NOT a mint destination
-///   TREASURY_ADDRESS     - StonkzFeeHook protocolTreasury (R-L3CAP: genesis feeReceiver=treasury)
+///   TREASURY_ADDRESS     - FeeHook protocolTreasury = fee Safe (hook flush)
+///   CARVE_TREASURY_ADDRESS - LadderFactory carveTreasury = protocol Safe (raise carve)
 ///   HOOK_CREATE2_SALT    - from hook-vanity-mine.mjs --mode eoa
 ///   STONKZ_REF_ADDRESS   - stand-in ERC-20 on 4663 (code + totalSupply/balanceOf/decimals)
 /// Optional:
@@ -96,6 +97,7 @@ contract Deploy is DeploySoftLaunchGuard {
 
         address custody = vm.envAddress("CUSTODY_ADDRESS");
         address treasury = vm.envAddress("TREASURY_ADDRESS");
+        address carveTreasury = vm.envAddress("CARVE_TREASURY_ADDRESS");
         address sideTokenRef = vm.envAddress("STONKZ_REF_ADDRESS");
         address accKeeper = vm.envOr("ACC_KEEPER_ADDRESS", address(0));
         address buyExecutor = vm.envOr("BUY_EXECUTOR_ADDRESS", address(0));
@@ -103,6 +105,7 @@ contract Deploy is DeploySoftLaunchGuard {
         address usdg = vm.envOr("USDG_ADDRESS", address(0));
         if (custody == address(0)) revert MissingEnv("CUSTODY_ADDRESS");
         if (treasury == address(0)) revert MissingEnv("TREASURY_ADDRESS");
+        if (carveTreasury == address(0)) revert MissingEnv("CARVE_TREASURY_ADDRESS");
         if (sideTokenRef == address(0)) revert MissingEnv("STONKZ_REF_ADDRESS");
         _assertSideTokenRef(sideTokenRef);
 
@@ -121,7 +124,8 @@ contract Deploy is DeploySoftLaunchGuard {
         console2.log("Deploy chainId", block.chainid);
         console2.log("Deployer", deployer);
         console2.log("Custody (ownership only)", custody);
-        console2.log("Treasury", treasury);
+        console2.log("Fee treasury (hook flush)", treasury);
+        console2.log("Carve treasury (protocol Safe)", carveTreasury);
         console2.log("sideTokenRef stand-in", sideTokenRef);
         console2.log("RH PoolManager", RH_POOL_MANAGER);
 
@@ -254,6 +258,8 @@ contract Deploy is DeploySoftLaunchGuard {
         StonkzLadderFactory(book.ladder).setVaultRef(book.vault);
         StonkzLadderFactory(book.ladder).setSettlementRef(book.settlement);
         StonkzLadderFactory(book.ladder).setSideTokenRef(book.sideTokenRef); // seeds (side,ETH)=2.5e11
+        StonkzLadderFactory(book.ladder).setCarveTreasury(carveTreasury);
+        console2.log("ladder carveTreasury", carveTreasury);
 
         if (usdg != address(0)) {
             StonkzLadderFactory(book.ladder).setRefPrice(book.sideTokenRef, usdg, REF_USDG);
@@ -279,8 +285,8 @@ contract Deploy is DeploySoftLaunchGuard {
 
         vm.stopBroadcast();
 
-        _assertWiring(book, deployer, custody, pairToken, usdg, ethRef);
-        _writeBook(bookPath, book, deployer, custody, treasury, pairToken, usdg);
+        _assertWiring(book, deployer, custody, treasury, carveTreasury, pairToken, usdg, ethRef);
+        _writeBook(bookPath, book, deployer, custody, treasury, carveTreasury, pairToken, usdg);
 
         console2.log("=== DEPLOY COMPLETE ===");
         console2.log("sideTokenRef stand-in", book.sideTokenRef);
@@ -320,7 +326,7 @@ contract Deploy is DeploySoftLaunchGuard {
         );
     }
 
-    /// @dev CREATE order: adapter → governor → hook(CREATE2). No protocol token deploy.
+    /// @dev CREATE order: adapter ? governor ? hook(CREATE2). No protocol token deploy.
     function _predictAdapterGov(address deployer, bool deployAdapter, bool deployGov, Book memory book)
         internal
         view
@@ -405,6 +411,7 @@ contract Deploy is DeploySoftLaunchGuard {
         address deployer,
         address custody,
         address treasury,
+        address carveTreasury,
         address pairToken,
         address usdg
     ) internal {
@@ -431,6 +438,7 @@ contract Deploy is DeploySoftLaunchGuard {
         string memory config = "config";
         vm.serializeAddress(config, "custody", custody);
         vm.serializeAddress(config, "treasury", treasury);
+        vm.serializeAddress(config, "carveTreasury", carveTreasury);
         vm.serializeAddress(config, "pairToken", pairToken);
         vm.serializeAddress(config, "usdg", usdg);
         vm.serializeAddress(config, "sideTokenRefStandIn", book.sideTokenRef);
@@ -439,7 +447,7 @@ contract Deploy is DeploySoftLaunchGuard {
         string memory configJson = vm.serializeString(
             config,
             "poolManagerNote",
-            "Robinhood PoolManager singleton 0x8366a39C via V4Adapter; MockPoolManager not in official manifest; no StonkzToken in manifest"
+            "Robinhood PoolManager singleton 0x8366a39C via V4Adapter; MockPoolManager not in official manifest; no StonkzToken in manifest; treasury=fee Safe, carveTreasury=protocol Safe"
         );
 
         string memory wiring = "wiring";
@@ -473,6 +481,8 @@ contract Deploy is DeploySoftLaunchGuard {
         Book memory book,
         address deployer,
         address custody,
+        address treasury,
+        address carveTreasury,
         address pairToken,
         address usdg,
         uint256 ethRef
@@ -496,6 +506,7 @@ contract Deploy is DeploySoftLaunchGuard {
         if (ladder.vaultRef() != book.vault) revert WiringFailed("ladder.vaultRef");
         if (ladder.settlementRef() != book.settlement) revert WiringFailed("ladder.settlementRef");
         if (ladder.sideTokenRef() != book.sideTokenRef) revert WiringFailed("ladder.sideTokenRef");
+        if (ladder.carveTreasury() != carveTreasury) revert WiringFailed("ladder.carveTreasury");
 
         LadderSettlement settlement = LadderSettlement(payable(book.settlement));
         if (settlement.sideTokenRef() != book.sideTokenRef) revert WiringFailed("settlement.sideTokenRef");
@@ -507,6 +518,7 @@ contract Deploy is DeploySoftLaunchGuard {
         if (!HookVanity.matches(book.hook)) revert HookVanityBad(book.hook);
         if (address(hook.canonManager()) != RH_POOL_MANAGER) revert WiringFailed("hook.canonManager");
         if (address(hook.poolManager()) != book.v4Adapter) revert WiringFailed("hook.poolManager");
+        if (hook.protocolTreasury() != treasury) revert WiringFailed("hook.protocolTreasury");
 
         uint256 ethExpress = express.refPriceWad(book.sideTokenRef, address(0));
         uint256 ethLadder = ladder.refPriceWad(book.sideTokenRef, address(0));
