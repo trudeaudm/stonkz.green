@@ -1,47 +1,36 @@
-# STOP — LAUNCH-DEPLOY Phase 3 (runbook + SECURITY)
+# STOP — LAUNCH-DEPLOY Phase 3 (stand-in re-proof / GENESIS VIA PLATFORM)
 
 **Branch:** `feat/launch-deploy`  
 **Remote:** `https://github.com/trudeaudm/stonkz.green.git`  
-**After:** V4-CANON merged to main (`f5ad0a2`); launch-deploy unfrozen + re-pointed.
+**Gate:** CLOSED — no mainnet until David **GO PHASE 4**.
 
-## Delivered
+## What changed (this STOP)
 
 | Item | Status |
 |---|---|
-| Merge `feat/v4-canon` → `main` `--no-ff` | `f5ad0a2`; branch deleted local+remote |
-| Unfreeze: merge main → `feat/launch-deploy` | conflicts **reported + resolved** (below) |
-| Re-point `Deploy.s.sol` | RH PM pin + `V4Adapter`; **no MockPoolManager** in official book |
-| Hook path | `HOOK_CREATE2_SALT` + `HookVanity` (0x4663+0x088) + `validateHookAddress` |
-| Address book | PM / UR / Permit2 recorded; `V4Adapter` + mined hook |
-| Fork re-proof | PASS — `file()` **29,305,993** vs Phase4 **29,274,312** (Δ +31,681 / ~0.11%) |
-| `docs/16-launch-runbook.md` | local (gitignored); line items below |
-| `SECURITY.md` + bounty tiers | repo root |
-| CI on main after merge | failed 5× `poolHook==0`; fixed by stamping `hooks[id]=key.hooks` in `MockPoolManager.initialize` |
+| Ledger `[D] 2026-08-10 GENESIS VIA PLATFORM` | local docs/03 |
+| `Deploy.s.sol` — delete StonkzToken mint | done |
+| `STONKZ_REF_ADDRESS` required + `StonkzRefInvalid` | done |
+| Delete `StonkzNotParked` / custody mint checks | done |
+| Address book — `StonkzRefStandIn`, no StonkzToken | done |
+| Runbook — custody ownership-only; stand-in input; cast checks | docs/16 (local) |
+| Fork re-proof graduating Ladder + side vs stand-in | see below |
 
-## Conflicts on unfreeze (not silent)
+## Fork re-proof
 
-1. **`StonkzExpressFactory.list`** — launch-deploy: 0x4663 vanity predict/require; main/v4-canon: `{value: msg.value}` ETH buffer. **Resolution:** both.
-2. **`StonkzToken`** — add/add; encoding/NatSpec only. **Resolution:** ASCII NatSpec, identical semantics.
+Run: `forge test --match-contract DeployScriptForkProof -vvv --gas-limit 20000000000`
 
-## Runbook line items (David checklist)
+| Metric | Value |
+|---|---|
+| `file()` gas (excl. vanity) | **29,306,017** |
+| Phase4 ref | 29,274,312 (Δ +31,705 / ~0.11%) |
+| Prior script-parity (mint era) | 29,305,993 (Δ +24 — noise) |
+| Side pool | pairs vs stand-in; stand-in supply unchanged (dormant) |
 
-- [ ] Safe custody address input + **test transaction** (round-trip on 4663)
-- [ ] ETH refprice re-check vs spot before first side-pool launch
-- [ ] Blockscout source verification (all address-book deploys)
-- [ ] Hook mined-address verification (`0x4663` + `0x088` + `validateHookAddress`)
+## Manifest (final)
 
-## Revision (runbook four additions)
-
-SECURITY.md accepted as-is. Runbook revised with: (1) abort/rollback, (2) independent
-`cast` verification checklist, (3) blocking ETH refprice gate + formula, (4) ownership
-gap **closed in `Deploy.s.sol`** — final step transfers Express/Ladder/Hook/Settlement/Vault
-`owner` → `CUSTODY_ADDRESS` (allowlist stays deployer-only for soft-launch file/list).
+Factories + DeployControls, FeeHook (mined), V4Adapter, Settlement, Vault, refprices, soft-launch closed + deployer-only, ownership → Safe. **NO StonkzToken.**
 
 ## Ruling requested
 
-**Accept revised Phase 3 runbook?** (SECURITY.md already accepted.)
-
-- **YES** → Phase 4 mainnet execution (explicit GO still required per send)
-- **NO** → state gaps
-
-Phases 4–5 remain gated on this review. No mainnet broadcast in this STOP.
+**Accept revised script + runbook?** Gate stays CLOSED; **GO PHASE 4** is a separate message after Safe 2-of-3 drill + spot `ETH_REF_PRICE_WAD`.

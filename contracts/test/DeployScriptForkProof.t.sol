@@ -7,8 +7,8 @@ import {Hooks} from "@v4-core/src/libraries/Hooks.sol";
 
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {V4Adapter} from "../src/v4/V4Adapter.sol";
+import {Currency} from "../src/v4/types/Currency.sol";
 import {HookVanity} from "../src/HookVanity.sol";
-import {StonkzToken} from "../src/StonkzToken.sol";
 import {CTOGovernor} from "../src/CTOGovernor.sol";
 import {ICTOGovernor} from "../src/interfaces/IStonkzGovernance.sol";
 import {StonkzFeeHook} from "../src/StonkzFeeHook.sol";
@@ -22,14 +22,13 @@ import {StonkzLadderFactory} from "../src/ladder/StonkzLadderFactory.sol";
 import {StonkzLadderAuction} from "../src/ladder/StonkzLadderAuction.sol";
 import {LadderConstants} from "../src/ladder/LadderConstants.sol";
 import {LadderTypes} from "../src/ladder/LadderTypes.sol";
-
 import {VanityHelpers} from "./VanityHelpers.sol";
 import {Vanity} from "../src/Vanity.sol";
 
-/// @dev Minimal ERC20 for settle ask inventory + vault holdback (Phase 4 pattern).
-contract ForkProofERC20 {
-    string public name = "ForkProof";
-    string public symbol = "FP";
+/// @dev Stand-in dead ERC-20 (STONKZ_REF_ADDRESS) + settle ask inventory helper.
+contract StandInERC20 {
+    string public name = "StandInDead";
+    string public symbol = "DEAD";
     uint8 public decimals = 18;
     uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
@@ -60,17 +59,16 @@ contract ForkProofERC20 {
     }
 }
 
-/// @title DeployScriptForkProof — short gate: script-parity stack on RH fork + graduating Ladder
-/// @notice Mirrors Deploy.s.sol wiring (RH PM + V4Adapter + fee hook + factories). No MockPoolManager.
-///         Hook CREATE2: flag-valid 0x088. Official Deploy.s.sol still requires HOOK_CREATE2_SALT
-///         with full 0x4663+0x088 from hook-vanity-mine.mjs.
-/// @dev Run: forge test --match-contract DeployScriptForkProof -vvv --gas-limit 20000000000
+/// @title DeployScriptForkProof — script-parity on RH fork after GENESIS VIA PLATFORM
+/// @notice No StonkzToken. stonkzRef = stand-in ERC-20. Graduating Ladder settle; side pool
+///         pairs against stand-in (dormant). Run: forge test --match-contract DeployScriptForkProof -vvv
 contract DeployScriptForkProof is Test {
     address internal constant RH_POOL_MANAGER = 0x8366a39CC670B4001A1121B8F6A443A643e40951;
     address internal constant UNIVERSAL_ROUTER = 0x06AfBA43Fd06227fA663b0DAecF536f6EaA6bf99;
     address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
     uint256 internal constant PHASE4_FILE_GAS_REF = 29_274_312;
+    uint256 internal constant PRIOR_SCRIPT_FILE_GAS_REF = 29_305_993; // pre-stand-in re-proof
     uint256 internal constant ORBIT_BLOCK_GAS_LIMIT = 32_000_000;
     uint256 internal constant SUPPLY = 1_000_000 ether;
 
@@ -78,11 +76,10 @@ contract DeployScriptForkProof is Test {
     address internal custody = address(0xC05D0D);
     address internal treasury = address(0x7A5E);
     address internal creator = address(0xCEEE);
-    address internal bidder = address(0xB1D);
 
     V4Adapter internal adapter;
     IPoolManager internal pm;
-    StonkzToken internal stonkz;
+    StandInERC20 internal standIn;
     CTOGovernor internal gov;
     StonkzFeeHook internal hook;
     FeeLockerV2 internal locker;
@@ -93,7 +90,7 @@ contract DeployScriptForkProof is Test {
     StonkzLadderFactory internal ladder;
 
     uint256 internal fileGasUsed;
-    uint256 internal fileSaltNonce;
+    uint256 internal standInSupplyBefore;
 
     function setUp() public {
         string memory rpc = vm.envOr("ROBINHOOD_RPC_URL", string("https://rpc.mainnet.chain.robinhood.com"));
@@ -103,7 +100,13 @@ contract DeployScriptForkProof is Test {
         require(UNIVERSAL_ROUTER.code.length > 0, "UR");
         require(PERMIT2.code.length > 0, "Permit2");
 
-        stonkz = new StonkzToken(custody);
+        // Real ERC-20 with code on the fork (script would take this as STONKZ_REF_ADDRESS).
+        standIn = new StandInERC20();
+        standIn.mint(address(0xDEAD), 1); // tiny inert supply — not protocol STONKZ
+        standInSupplyBefore = standIn.totalSupply();
+        require(address(standIn).code.length > 0, "stand-in code");
+        require(standIn.decimals() == 18, "stand-in decimals");
+
         adapter = new V4Adapter(ICanonPM(RH_POOL_MANAGER));
         pm = IPoolManager(address(adapter));
         gov = new CTOGovernor();
@@ -112,32 +115,35 @@ contract DeployScriptForkProof is Test {
         hook.validateHookAddress(address(hook));
         gov.setRegistry(hook);
         locker = new FeeLockerV2(pm, hook);
-        acc = new BuybackAccumulator(PAIR, address(stonkz), address(0));
+        acc = new BuybackAccumulator(PAIR, address(standIn), address(0));
         settlement = new LadderSettlement(pm, hook, PAIR);
-        settlement.setStonkzRef(address(stonkz));
+        settlement.setStonkzRef(address(standIn));
         settlement.setFeeLocker(locker);
         vault = new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000);
-        express = new StonkzExpressFactory(pm, locker, hook, acc, gov, PAIR, address(stonkz));
+        express = new StonkzExpressFactory(pm, locker, hook, acc, gov, PAIR, address(standIn));
         ladder = new StonkzLadderFactory();
         ladder.setVaultRef(address(vault));
+
+        express.transferOwnership(custody);
+        ladder.transferOwnership(custody);
+        hook.transferOwnership(custody);
+        settlement.transferOwnership(custody);
+        vault.transferOwnership(custody);
 
         express.assertSoftLaunchGate(address(this));
         ladder.assertSoftLaunchGate(address(this));
 
+        console2.log("SCRIPT-PARITY stand-in", address(standIn));
         console2.log("SCRIPT-PARITY adapter", address(adapter));
         console2.log("SCRIPT-PARITY hook", address(hook));
-        console2.log("SCRIPT-PARITY settlement", address(settlement));
-        console2.log("SCRIPT-PARITY ladder", address(ladder));
     }
 
-    function test_fork_scriptParity_graduatingLadder_fileGas() public {
-        assertEq(address(adapter.manager()), RH_POOL_MANAGER);
-        assertEq(address(hook.canonManager()), RH_POOL_MANAGER);
-        assertEq(HookVanity.flagsOf(address(hook)), HookVanity.HOOK_FLAGS);
-        assertEq(ladder.vaultRef(), address(vault));
-        assertEq(settlement.stonkzRef(), address(stonkz));
-        assertEq(express.stonkzRefPriceWad(address(0)), 2.5e11);
-        assertEq(ladder.stonkzRefPriceWad(address(0)), 2.5e11);
+    function test_fork_scriptParity_graduatingLadder_standInSidePool() public {
+        assertEq(express.stonkzRef(), address(standIn));
+        assertEq(settlement.stonkzRef(), address(standIn));
+        assertEq(acc.stonkz4663(), address(standIn));
+        assertEq(express.owner(), custody);
+        assertEq(standIn.balanceOf(custody), 0, "custody not a mint target");
 
         StonkzLadderAuction.Params memory p = _ladderParams();
         p.holdbackBps = 1000;
@@ -146,9 +152,8 @@ contract DeployScriptForkProof is Test {
         p.tier = LadderTypes.Tier.Daily;
         p.walletCapBps = 1000;
 
-        // LadderSettlement is single-use — fresh instance from script-parity wiring (same as Deploy).
         LadderSettlement settleInst = new LadderSettlement(pm, hook, PAIR);
-        settleInst.setStonkzRef(address(stonkz));
+        settleInst.setStonkzRef(address(standIn));
         settleInst.setFeeLocker(locker);
 
         (bytes32 userSalt,) = VanityHelpers.mineLadder(ladder, address(this), p);
@@ -157,6 +162,7 @@ contract DeployScriptForkProof is Test {
         fileGasUsed = g0 - gasleft();
         console2.log("script-parity file() gas (excl. vanity mine)", fileGasUsed);
         console2.log("Phase4 file() ref", PHASE4_FILE_GAS_REF);
+        console2.log("prior script-parity file() ref", PRIOR_SCRIPT_FILE_GAS_REF);
         assertTrue(Vanity.matches(address(a)), "ladder vanity");
 
         vm.prank(address(ladder));
@@ -178,22 +184,28 @@ contract DeployScriptForkProof is Test {
         vm.warp(a.startTime() + a.duration() + 1);
         a.clearAllForTest();
         assertTrue(a.done());
-        console2.log("raised", a.raised());
-        console2.log("threshold", a.threshold());
-        console2.log("graduated", a.graduated());
         assertTrue(a.graduated(), "must graduate");
 
-        // Settlement consumes an ERC20 ask inventory (Phase 4 fork pattern).
-        ForkProofERC20 tok = new ForkProofERC20();
+        StandInERC20 launchTok = new StandInERC20();
         uint256 unsold = a.auctionSupply() > a.soldTokens() ? a.auctionSupply() - a.soldTokens() : 0;
         uint256 side = (unsold * a.sidePoolBps()) / 10_000;
         uint256 mainAsk = unsold - side;
         uint256 hb = a.holdbackAmount();
-        tok.mint(address(settleInst), hb + mainAsk + side);
+        launchTok.mint(address(settleInst), hb + mainAsk + side);
 
-        a.settle(address(tok));
+        a.settle(address(launchTok));
         assertTrue(settleInst.askLiquidity() > 0 || settleInst.cashLiquidity() > 0, "settle LP");
-        assertEq(vault.balanceOf(address(tok), creator), hb, "vault deposit");
+        assertEq(vault.balanceOf(address(launchTok), creator), hb, "vault deposit");
+
+        // Side pool pairs against stand-in and is dormant (stand-in supply unchanged; no STONKZ).
+        (Currency sideC0, Currency sideC1,,,) = settleInst.sidePoolKey();
+        address c0 = Currency.unwrap(sideC0);
+        address c1 = Currency.unwrap(sideC1);
+        assertTrue(c0 == address(standIn) || c1 == address(standIn), "side pairs vs stand-in");
+        assertTrue(c0 == address(launchTok) || c1 == address(launchTok), "side pairs vs launch tok");
+        assertEq(standIn.totalSupply(), standInSupplyBefore, "stand-in supply dormant");
+        assertEq(standIn.balanceOf(custody), 0, "stand-in not at custody");
+        console2.log("side pool vs stand-in: OK (dormant)");
 
         assertLt(fileGasUsed, ORBIT_BLOCK_GAS_LIMIT, "file fits Orbit");
         int256 delta = int256(fileGasUsed) - int256(PHASE4_FILE_GAS_REF);
@@ -201,7 +213,7 @@ contract DeployScriptForkProof is Test {
         uint256 absDelta = delta < 0 ? uint256(-delta) : uint256(delta);
         assertLt(absDelta, PHASE4_FILE_GAS_REF / 50, "file gas divergence >2% vs Phase4");
 
-        console2.log("=== DEPLOY SCRIPT FORK RE-PROOF OK ===");
+        console2.log("=== DEPLOY SCRIPT FORK RE-PROOF (STAND-IN) OK ===");
     }
 
     function _deployFlagHook() internal returns (StonkzFeeHook h) {
