@@ -2,6 +2,7 @@
 
 **Branch:** `feat/launch-deploy` @ tip (post-merge)  
 **Main merge:** `ce99764` (`Merge branch 'feat/predeploy-refit'`)  
+**CI hotfix on main:** `08fdca3` (SidePoolRefPrice tick assert)  
 **Held posture:** Phase-3 gate — **no broadcast**. GO PHASE 4 awaits David.
 
 ## 1) Main merge
@@ -11,7 +12,8 @@
 | Merge | `feat/predeploy-refit` → `main` `--no-ff` |
 | Merge hash | **`ce99764d02e892b6c046e58aaca41b76deaa4faa`** |
 | Branch deleted | `feat/predeploy-refit` local + `origin` |
-| CI | https://github.com/trudeaudm/stonkz.green/actions/runs/31509794944 (confirm green) |
+| CI on merge | **RED** — https://github.com/trudeaudm/stonkz.green/actions/runs/31509794944 — 251 pass / 1 fail: `SidePoolRefPrice.test_ref_express_eth_initTick_knownValue` (`sideTickLower` −887220 ≠ naive `tickAbovePrice` 96900 after Phase-4 Express real-PM orientation) |
+| Hotfix | **`08fdca3`** — soften to arithmetic + `sidePoolDeployed` / `sideLiquidity`; https://github.com/trudeaudm/stonkz.green/actions/runs/31511289268 (await green) |
 
 ## 2) Conflicts reported (merge main → launch-deploy)
 
@@ -21,9 +23,15 @@
 | `contracts/src/StonkzExpressFactory.sol` | **Merged:** main settable refs + `sideTokenRef` + main's stamp/`refPriceWad(side,pair)` **plus** launch-deploy `Vanity` / `listingInitCodeHash` / `requirePrefix` on `list`. |
 | `contracts/src/ladder/StonkzLadderFactory.sol` | **Merged:** main `settlementRef` / `sideTokenRef` / loud-unset / `refPriceWad` **plus** CREATE2 vanity `file(p,userSalt)`. Added non-vanity `file(p)` overload for unit-test compat. |
 | `contracts/test/DeployControlsPhase1.t.sol` | Kept FactoryVanity (launch-deploy); `createSidePool=false` in setUp so loud-unset does not mask gate tests; `refPriceWad` field names. |
-| `contracts/test/SidePoolRefPrice.t.sol` | **Took main** API (`refPriceWad(side,pair)`, `setRefPrice(side,pair,…)`) + FactoryVanity for Express lists; softened tick assert vs real-PM side geometry. |
+| `contracts/test/SidePoolRefPrice.t.sol` | **Took main** API (`refPriceWad(side,pair)`, `setRefPrice(side,pair,…)`) + FactoryVanity for Express lists; softened tick assert vs real-PM side geometry (same soften later landed on main as `08fdca3`). |
 | `contracts/test/SwitchDrillPhase4.t.sol` | **Took launch-deploy** FactoryVanity drill; renamed to `setRefPrice(STONKZ,PAIR,…)` / `refPriceWad`; etch + `ladder.setSideTokenRef`. |
 | `deploys/official/addresses.json` | **Took main** naming (`sideTokenRefStandIn`, settlementRef / accumulatorPoolManager wiring flags). |
+
+### Second merge (main hotfix → launch-deploy)
+
+| File | Resolution |
+|---|---|
+| `contracts/test/SidePoolRefPrice.t.sol` | Kept launch-deploy `_list` / FactoryVanity; took main comment on Phase-4 orientation (behavior already matched). |
 
 ### Auto-merged (no conflict) but reconciled afterward
 
