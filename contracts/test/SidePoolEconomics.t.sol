@@ -36,7 +36,7 @@ contract SidePoolEconomics is Test {
         accumulator = new BuybackAccumulator(PAIR, STONKZ, address(0));
         feeLocker = new FeeLocker(pm, accumulator, address(0));
         CTOGovernor gov = new CTOGovernor();
-        hook = new StonkzFeeHook(pm, TREASURY, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(pm, TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
         strategy = new StonkzLiquidityStrategy(pm, accumulator, feeLocker, hook, PAIR, STONKZ);
     }

@@ -44,7 +44,7 @@ contract FeeHookPhase1 is Test, Deployers {
         // Tests mine flags only (~2^14). Production miner adds 0x4663 prefix (~2^30).
         bytes memory creation = abi.encodePacked(
             type(StonkzFeeHook).creationCode,
-            abi.encode(IPoolManager(address(manager)), TREASURY, ICTOGovernor(address(gov)))
+            abi.encode(IPoolManager(address(manager)), TREASURY, ICTOGovernor(address(gov)), address(this))
         );
         bytes32 initCodeHash = keccak256(creation);
         bytes32 salt;
@@ -71,8 +71,7 @@ contract FeeHookPhase1 is Test, Deployers {
         }
         require(found, "no flag salt");
         hook = new StonkzFeeHook{salt: salt}(
-            IPoolManager(address(manager)), TREASURY, ICTOGovernor(address(gov))
-        );
+            IPoolManager(address(manager)), TREASURY, ICTOGovernor(address(gov)), address(this));
         hookAddr = address(hook);
         require(hookAddr == predicted, "create2");
         hook.validateHookAddress(hookAddr);
@@ -210,7 +209,7 @@ contract FeeHookPhase1 is Test, Deployers {
     function test_mock_still_afterSwap_path() public {
         MockPoolManager mpm = new MockPoolManager();
         CTOGovernor g = new CTOGovernor();
-        StonkzFeeHook sh = new StonkzFeeHook(IPoolManager(address(mpm)), TREASURY, ICTOGovernor(address(g)));
+        StonkzFeeHook sh = new StonkzFeeHook(IPoolManager(address(mpm)), TREASURY, ICTOGovernor(address(g)), address(this));
         address pair = address(0xB111);
         OurPoolKey memory mkey = OurPoolKey({
             currency0: OurCurrency.wrap(pair),

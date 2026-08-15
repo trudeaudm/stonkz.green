@@ -75,7 +75,7 @@ contract MockVsRealV4Fees is Test, Deployers {
     function _mockFee(uint256 amountIn) internal returns (uint256 feeTotal) {
         MockPoolManager mpm = new MockPoolManager();
         CTOGovernor gov = new CTOGovernor();
-        StonkzFeeHook sh = new StonkzFeeHook(IMockPM(address(mpm)), TREASURY, ICTOGovernor(address(gov)));
+        StonkzFeeHook sh = new StonkzFeeHook(IMockPM(address(mpm)), TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(sh);
 
         address pairAddr = Currency.unwrap(currency0);

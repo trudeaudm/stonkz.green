@@ -33,7 +33,7 @@ contract FeeCanary is Test {
     function setUp() public {
         pm = new MockPoolManager();
         gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
 
         // docs/06 main pool: LP fee 0 pips, hook attached, hook fee 100 bps = 1%

@@ -113,7 +113,7 @@ contract ForkProofPhase2 is Test, FactoryVanity {
         stonkz = new StonkzToken(custody);
         pm = new MockPoolManager();
         gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), treasury, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), treasury, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
         locker = new FeeLockerV2(IPoolManager(address(pm)), hook);
         acc = new BuybackAccumulator(PAIR, address(stonkz), address(0));
@@ -121,8 +121,7 @@ contract ForkProofPhase2 is Test, FactoryVanity {
         settlement.setSideTokenRef(address(stonkz));
         settlement.setFeeLocker(locker);
         vault = new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000);
-        express = new StonkzExpressFactory(
-            IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(stonkz)
+        express = new StonkzExpressFactory(IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(stonkz)
         );
         ladder = new StonkzLadderFactory();
         ladder.setCarveTreasury(treasury);

@@ -41,7 +41,7 @@ contract FeechainE2E is Test {
         vm.deal(creator, 0);
 
         gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), treasury, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), treasury, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
         acc = new BuybackAccumulator(PAIR, STONKZ, address(0));
         locker = new FeeLocker(IPoolManager(address(pm)), acc, address(0));

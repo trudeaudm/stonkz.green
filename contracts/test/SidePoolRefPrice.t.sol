@@ -50,14 +50,12 @@ contract SidePoolRefPrice is Test, FactoryVanity {
         pm = new MockPoolManager();
         acc = new BuybackAccumulator(ETH, STONKZ, address(0));
         gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
         locker = new FeeLockerV2(IPoolManager(address(pm)), hook);
-        expressEth = new StonkzExpressFactory(
-            IPoolManager(address(pm)), locker, hook, acc, gov, ETH, STONKZ
+        expressEth = new StonkzExpressFactory(IPoolManager(address(pm)), locker, hook, acc, gov, ETH, STONKZ
         );
-        expressUsdg = new StonkzExpressFactory(
-            IPoolManager(address(pm)), locker, hook, acc, gov, USDG, STONKZ
+        expressUsdg = new StonkzExpressFactory(IPoolManager(address(pm)), locker, hook, acc, gov, USDG, STONKZ
         );
         ladder = new StonkzLadderFactory();
         ladder.setCarveTreasury(TREASURY);

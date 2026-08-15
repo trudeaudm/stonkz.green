@@ -5,12 +5,14 @@ import {StonkzLadderAuction} from "./StonkzLadderAuction.sol";
 import {LadderConstants} from "./LadderConstants.sol";
 import {DeployControls} from "../DeployControls.sol";
 import {Vanity} from "../Vanity.sol";
+import {CreationCodeStore} from "../CreationCodeStore.sol";
 
 /// @title StonkzLadderFactory — filing gate for ladder auctions (modularity)
 /// @notice Owner-settable vault + settlement + sideTokenRef + carveTreasury + carve default.
 ///         HoldbackPct > 0 reverts while vault unset. carveBps + carveTreasury stamped immutably
 ///         per auction at filing (FEECHAIN stamp pattern). DeployControls gate every `file` (docs/03).
 ///         CREATE2 + 0x4663 vanity (docs/03 VANITY PREFIX): salt = keccak256(deployer, userSalt).
+/// @dev Auction creation bytecode lives in SSTORE2 (EIP-170) — not embedded in this factory.
 contract StonkzLadderFactory is DeployControls {
     address public vaultRef;
     /// @notice Optional settlement stamped into new filings (may be address(0); auction can wire later).
@@ -22,6 +24,9 @@ contract StonkzLadderFactory is DeployControls {
     address public carveTreasury;
     /// @notice Mutable default carve for new filings. Bounds [0, CARVE_BPS_MAX]. Unit: bps of raised.
     uint16 public defaultCarveBps = LadderConstants.DEFAULT_CARVE_BPS; // bps of raised
+    /// @notice SSTORE2 pointer(s) for `StonkzLadderAuction` creation bytecode.
+    address public immutable auctionCreationPtr0;
+    address public immutable auctionCreationPtr1; // address(0) if single chunk
 
     event VaultRefSet(address indexed vault);
     event SettlementRefSet(address indexed settlement);
@@ -42,8 +47,13 @@ contract StonkzLadderFactory is DeployControls {
     error CarveTreasuryZero();
     error HoldbackCeiling();
     error CarveBounds();
+    error AuctionCreateFailed();
 
-    constructor() DeployControls() {}
+    constructor() DeployControls() {
+        // SSTORE2 from this factory (not the EOA) so pointer CREATEs never occupy deployer nonces.
+        (auctionCreationPtr0, auctionCreationPtr1) =
+            CreationCodeStore.writeSplit(type(StonkzLadderAuction).creationCode);
+    }
 
     /// @notice Set the Management Vault ref. Target MUST have code (EOA/empty reverts).
     function setVaultRef(address vault) external onlyOwner {
@@ -88,7 +98,7 @@ contract StonkzLadderFactory is DeployControls {
     /// @notice Init-code hash AFTER factory stamps (vanity miner input).
     function auctionInitCodeHash(StonkzLadderAuction.Params memory p) public view returns (bytes32) {
         _stampAuctionParams(p);
-        return keccak256(abi.encodePacked(type(StonkzLadderAuction).creationCode, abi.encode(p)));
+        return keccak256(abi.encodePacked(_auctionCreationCode(), abi.encode(p)));
     }
 
     /// @notice Predict CREATE2 address for a filed auction.
@@ -106,7 +116,10 @@ contract StonkzLadderFactory is DeployControls {
     function file(StonkzLadderAuction.Params memory p) external returns (StonkzLadderAuction auction) {
         _requireDeployAllowed(msg.sender);
         _stampAuctionParams(p);
-        auction = new StonkzLadderAuction(p);
+        address deployed =
+            CreationCodeStore.create(auctionCreationPtr0, auctionCreationPtr1, abi.encode(p), 0);
+        if (deployed == address(0)) revert AuctionCreateFailed();
+        auction = StonkzLadderAuction(deployed);
         emit AuctionFiled(address(auction), p.creator, p.holdbackBps, p.carveBps, bytes32(0), bytes32(0));
     }
 
@@ -122,13 +135,20 @@ contract StonkzLadderFactory is DeployControls {
         _stampAuctionParams(p);
 
         bytes32 salt = auctionSalt(msg.sender, userSalt);
-        bytes32 initHash = keccak256(abi.encodePacked(type(StonkzLadderAuction).creationCode, abi.encode(p)));
+        bytes memory args = abi.encode(p);
+        bytes32 initHash = keccak256(abi.encodePacked(_auctionCreationCode(), args));
         address predicted = Vanity.predict(address(this), salt, initHash);
         Vanity.requirePrefix(predicted);
 
-        auction = new StonkzLadderAuction{salt: salt}(p);
-        assert(address(auction) == predicted);
+        address deployed =
+            CreationCodeStore.create2(auctionCreationPtr0, auctionCreationPtr1, args, salt, 0);
+        if (deployed == address(0) || deployed != predicted) revert AuctionCreateFailed();
+        auction = StonkzLadderAuction(deployed);
         emit AuctionFiled(address(auction), p.creator, p.holdbackBps, p.carveBps, userSalt, salt);
+    }
+
+    function _auctionCreationCode() internal view returns (bytes memory) {
+        return CreationCodeStore.readSplit(auctionCreationPtr0, auctionCreationPtr1);
     }
 
     function _stampAuctionParams(StonkzLadderAuction.Params memory p) internal view {

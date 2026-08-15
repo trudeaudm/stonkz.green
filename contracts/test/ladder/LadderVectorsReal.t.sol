@@ -61,7 +61,7 @@ contract LadderVectorsReal is Test, Deployers, LadderVectorLoader, LadderAsserts
     function _deployFlagHook(CTOGovernor gov) internal returns (StonkzFeeHook h) {
         bytes memory creation = abi.encodePacked(
             type(StonkzFeeHook).creationCode,
-            abi.encode(pm, TREASURY, ICTOGovernor(address(gov)))
+            abi.encode(pm, TREASURY, ICTOGovernor(address(gov)), address(this))
         );
         bytes32 initCodeHash = keccak256(creation);
         bytes32 salt;
@@ -85,7 +85,7 @@ contract LadderVectorsReal is Test, Deployers, LadderVectorLoader, LadderAsserts
             }
         }
         require(found, "flag salt");
-        h = new StonkzFeeHook{salt: salt}(pm, TREASURY, ICTOGovernor(address(gov)));
+        h = new StonkzFeeHook{salt: salt}(pm, TREASURY, ICTOGovernor(address(gov)), address(this));
         require(address(h) == predicted, "create2");
     }
 

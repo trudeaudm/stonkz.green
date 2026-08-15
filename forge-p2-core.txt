@@ -1,0 +1,101 @@
+﻿Compiling 6 files with Solc 0.8.26
+Solc 0.8.26 finished in 178.67s
+Compiler run successful!
+
+Ran 8 tests for test/DirectListing.t.sol:DirectListing
+[PASS] test_C2_conservationWeiExact() (gas: 5027079)
+[PASS] test_C2_creatorReserveInstantTimelock() (gas: 5130786)
+[PASS] test_C2_maxTickRange() (gas: 4940078)
+[PASS] test_C2_onlyValidTiers() (gas: 59143)
+[PASS] test_C2_registeredInHookAndGovernor() (gas: 4947411)
+[PASS] test_C2_rugImpossible_noPrincipalWithdraw() (gas: 4948503)
+[PASS] test_C2_sideTokenRefUnset_revertsWhenCreateSidePool() (gas: 59552)
+[PASS] test_C2_tierVolatility_4kSteeperThan8k() (gas: 9832487)
+Suite result: ok. 8 passed; 0 failed; 0 skipped; finished in 49.56ms (11.71ms CPU time)
+
+Ran 19 tests for test/DeployControlsPhase1.t.sol:DeployControlsPhase1
+[PASS] test_P1_assertSoftLaunchGate_revertsWhenOff() (gas: 15859)
+[PASS] test_P1_assertSoftLaunchGate_revertsWhenOpenEmpty() (gas: 14935)
+[PASS] test_P1_birth_softLaunchGateClosed_express() (gas: 16093)
+[PASS] test_P1_birth_softLaunchGateClosed_ladder() (gas: 15953)
+[PASS] test_P1_express_allowlistedOnly_whenNonempty() (gas: 5010654)
+[PASS] test_P1_express_create2_predictMatchesDeploy() (gas: 9928118)
+[PASS] test_P1_express_create2_saltBindsDeployer() (gas: 39837)
+[PASS] test_P1_express_deployerCanList_atBirth() (gas: 4975448)
+[PASS] test_P1_express_events() (gas: 39441)
+[PASS] test_P1_express_offBlocksEveryone() (gas: 19402)
+[PASS] test_P1_express_openWhenEmptyAndOn() (gas: 4977774)
+[PASS] test_P1_express_revokeRemovesAccess() (gas: 34585)
+[PASS] test_P1_express_strangerBlocked_atBirth() (gas: 19618)
+[PASS] test_P1_ladder_allowlistedOnly_whenNonempty() (gas: 36878306)
+[PASS] test_P1_ladder_deployerCanFile_atBirth() (gas: 33085261)
+[PASS] test_P1_ladder_offBlocksEveryone() (gas: 3781776)
+[PASS] test_P1_ladder_openWhenEmptyAndOn() (gas: 33087079)
+[PASS] test_P1_ladder_ownerNotImplicitlyAllowlistedAfterRevoke() (gas: 3813859)
+[PASS] test_P1_ladder_strangerBlocked_atBirth() (gas: 3781970)
+Suite result: ok. 19 passed; 0 failed; 0 skipped; finished in 226.11ms (77.92ms CPU time)
+
+Ran 12 tests for test/SidePoolSwitchesPhase2.t.sol:SidePoolSwitchesPhase2
+[PASS] test_P2_bounds_accept0_and_2000() (gas: 19105)
+[PASS] test_P2_bounds_rejectAbove2000() (gas: 68172)
+[PASS] test_P2_events_loudOnDefaultChange() (gas: 22245)
+[PASS] test_P2_express_customRatio1000() (gas: 4980307)
+[PASS] test_P2_express_genesis_createSidePoolFalse_allMassToMain() (gas: 4610118)
+[PASS] test_P2_express_stampSurvivesDefaultChange() (gas: 9511120)
+[PASS] test_P2_express_stampsFactoryDefaults() (gas: 4978261)
+[PASS] test_P2_ladder_factoryStampsDefaults() (gas: 33086873)
+[PASS] test_P2_ladder_settlement_createSidePoolFalse_allMassToMain() (gas: 5492292)
+[PASS] test_P2_ladder_settlement_createSidePoolTrue_usesBps() (gas: 5757878)
+[PASS] test_P2_ladder_stampSurvivesDefaultChange() (gas: 66153004)
+[PASS] test_P2_units_sidePoolBps_default500_ofListingSupply() (gas: 10978)
+Suite result: ok. 12 passed; 0 failed; 0 skipped; finished in 249.27ms (80.75ms CPU time)
+
+Ran 4 tests for test/SettableRefsPhase1.t.sol:SettableRefsPhase1
+[PASS] test_P1_express_refChange_neverAffectsPriorLaunch() (gas: 12669616)
+[PASS] test_P1_express_settableRefs_rejectEOA() (gas: 26545)
+[PASS] test_P1_genesisDay_sideTokenSwap_nextPairsNew_priorUnchanged() (gas: 9956379)
+[PASS] test_P1_ladder_settlementRef_and_sideToken_stampIsolation() (gas: 66287483)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 260.49ms (46.80ms CPU time)
+
+Ran 12 tests for test/SidePoolRefPrice.t.sol:SidePoolRefPrice
+[PASS] test_ref_bounds_eth() (gas: 34514)
+[PASS] test_ref_bounds_usdg() (gas: 29929)
+[PASS] test_ref_event_loud() (gas: 22824)
+[PASS] test_ref_express_eth_initTick_knownValue() (gas: 4990416)
+[PASS] test_ref_express_stampSurvivesRefChange() (gas: 9892960)
+[PASS] test_ref_express_usdg_initTick_knownValue() (gas: 5076800)
+[PASS] test_ref_ladder_file_stamps() (gas: 36870220)
+[PASS] test_ref_ladder_stampSurvivesRefChange() (gas: 73696938)
+[PASS] test_ref_units_ethDefault_pairWeiPerSideToken() (gas: 15678)
+[PASS] test_ref_units_usdgDefault_pairWeiPerSideToken() (gas: 14954)
+[PASS] test_ref_unset_okWhenCreateSidePoolFalse() (gas: 33110869)
+[PASS] test_ref_unset_revertsWhenCreateSidePool() (gas: 3813811)
+Suite result: ok. 12 passed; 0 failed; 0 skipped; finished in 259.96ms (98.59ms CPU time)
+
+Ran 8 tests for test/BuybackAccumulator.t.sol:BuybackAccumulatorTest
+[PASS] testFuzz_hostileKeeper_bounded(uint8,uint16) (runs: 2048, ╬╝: 460501, ~: 399105)
+[PASS] test_bandHardBounds() (gas: 24837)
+[PASS] test_crank_onlyKeeperOrOwner() (gas: 44886)
+[PASS] test_crank_pctBand_and_interval() (gas: 231106)
+[PASS] test_fund_and_crank_burnsToDead() (gas: 198152)
+[PASS] test_hostileKeeper_drainBoundedByMaxPct() (gas: 506508)
+[PASS] test_parkSurface_gone() (gas: 10241)
+[PASS] test_slippage_revertsWhenHostileExecutor() (gas: 161287)
+Suite result: ok. 8 passed; 0 failed; 0 skipped; finished in 260.59ms (264.99ms CPU time)
+
+Γò¡------------------------+--------+--------+---------Γò«
+| Test Suite             | Passed | Failed | Skipped |
++====================================================+
+| BuybackAccumulatorTest | 8      | 0      | 0       |
+|------------------------+--------+--------+---------|
+| DeployControlsPhase1   | 19     | 0      | 0       |
+|------------------------+--------+--------+---------|
+| DirectListing          | 8      | 0      | 0       |
+|------------------------+--------+--------+---------|
+| SettableRefsPhase1     | 4      | 0      | 0       |
+|------------------------+--------+--------+---------|
+| SidePoolRefPrice       | 12     | 0      | 0       |
+|------------------------+--------+--------+---------|
+| SidePoolSwitchesPhase2 | 12     | 0      | 0       |
+Γò░------------------------+--------+--------+---------Γò»
+

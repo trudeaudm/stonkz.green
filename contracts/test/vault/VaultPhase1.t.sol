@@ -41,7 +41,7 @@ contract VaultPhase1 is LadderVectorLoader, FactoryVanity {
         factory.setSideTokenRef(STONKZ);
         pm = new MockPoolManager();
         CTOGovernor gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
     }
 

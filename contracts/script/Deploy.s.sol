@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {Script, console2} from "forge-std/Script.sol";
+import {VmSafe} from "forge-std/Vm.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {IPoolManager as ICanonPM} from "@v4-core/src/interfaces/IPoolManager.sol";
 
@@ -45,7 +46,8 @@ abstract contract DeploySoftLaunchGuard is Script {
 ///   CUSTODY_ADDRESS      - ownership-transfer target (Safe); NOT a mint destination
 ///   TREASURY_ADDRESS     - FeeHook protocolTreasury = fee Safe (hook flush)
 ///   CARVE_TREASURY_ADDRESS - LadderFactory carveTreasury = protocol Safe (raise carve)
-///   HOOK_CREATE2_SALT    - from hook-vanity-mine.mjs --mode eoa
+///   HOOK_CREATE2_SALT    - from hook-vanity-mine.mjs --mode eoa --deployer CREATE2_FACTORY
+///                          (Foundry Arachnid proxy 0x4e59…; NOT the EOA — forge routes salted new via it)
 ///   STONKZ_REF_ADDRESS   - stand-in ERC-20 on 4663 (code + totalSupply/balanceOf/decimals)
 /// Optional:
 ///   ETH_REF_PRICE_WAD    - pair-wei/side-token; default 2.5e11. Formula: 0.001e18 / spotEthUsd
@@ -141,8 +143,9 @@ contract Deploy is DeploySoftLaunchGuard {
 
             (address adapterPred, address govPred) =
                 _predictAdapterGov(deployer, deployAdapter, deployGov, book);
-            bytes32 initHash = _hookInitCodeHash(adapterPred, treasury, govPred);
-            hookPredicted = HookVanity.predict(deployer, hookSalt, initHash);
+            bytes32 initHash = _hookInitCodeHash(adapterPred, treasury, govPred, deployer);
+            // forge script: `new C{salt}` → Create2Deployer (CREATE2_FACTORY), salt as-is.
+            hookPredicted = HookVanity.predict(CREATE2_FACTORY, hookSalt, initHash);
             if (!HookVanity.matches(hookPredicted)) revert HookVanityBad(hookPredicted);
             console2.log("hook initCodeHash");
             console2.logBytes32(initHash);
@@ -170,11 +173,14 @@ contract Deploy is DeploySoftLaunchGuard {
 
         if (deployHook) {
             book.hook = address(
-                new StonkzFeeHook{salt: hookSalt}(pm, treasury, ICTOGovernor(book.governor))
+                new StonkzFeeHook{salt: hookSalt}(pm, treasury, ICTOGovernor(book.governor), deployer)
             );
             if (book.hook != hookPredicted) revert PredictMismatch("hook", book.hook, hookPredicted);
             StonkzFeeHook(payable(book.hook)).validateHookAddress(book.hook);
-            StonkzFeeHook(payable(book.hook)).bindCanonManager(ICanonPM(RH_POOL_MANAGER));
+            // Constructor auto-binds canonManager from V4Adapter.manager(); reinforce if unset.
+            if (address(StonkzFeeHook(payable(book.hook)).canonManager()) != RH_POOL_MANAGER) {
+                StonkzFeeHook(payable(book.hook)).bindCanonManager(ICanonPM(RH_POOL_MANAGER));
+            }
             console2.log("deployed StonkzFeeHook", book.hook);
         } else {
             console2.log("skip StonkzFeeHook", book.hook);
@@ -230,8 +236,8 @@ contract Deploy is DeploySoftLaunchGuard {
             console2.log("skip StonkzVault", book.vault);
         }
 
-        // 6) Express factory (sideTokenRef = stand-in)
-        if (!_hasCode(book.express)) {
+        // 6) Express factory (sideTokenRef = stand-in). Child creation code via SSTORE2 in ctor.
+        if (!_isExpressFactory(book.express)) {
             book.express = address(
                 new StonkzExpressFactory(
                     pm,
@@ -244,14 +250,18 @@ contract Deploy is DeploySoftLaunchGuard {
                 )
             );
             console2.log("deployed StonkzExpressFactory", book.express);
+            console2.log("listingCreationPtr0", StonkzExpressFactory(book.express).listingCreationPtr0());
+            console2.log("listingCreationPtr1", StonkzExpressFactory(book.express).listingCreationPtr1());
         } else {
             console2.log("skip StonkzExpressFactory", book.express);
         }
 
         // 7) Ladder factory + vaultRef + optional USDG ref
-        if (!_hasCode(book.ladder)) {
+        if (!_isLadderFactory(book.ladder)) {
             book.ladder = address(new StonkzLadderFactory());
             console2.log("deployed StonkzLadderFactory", book.ladder);
+            console2.log("auctionCreationPtr0", StonkzLadderFactory(book.ladder).auctionCreationPtr0());
+            console2.log("auctionCreationPtr1", StonkzLadderFactory(book.ladder).auctionCreationPtr1());
         } else {
             console2.log("skip StonkzLadderFactory", book.ladder);
         }
@@ -286,7 +296,12 @@ contract Deploy is DeploySoftLaunchGuard {
         vm.stopBroadcast();
 
         _assertWiring(book, deployer, custody, treasury, carveTreasury, pairToken, usdg, ethRef);
-        _writeBook(bookPath, book, deployer, custody, treasury, carveTreasury, pairToken, usdg);
+        // Dry-run must not pollute the official book (prior write caused SSTORE2/factory skip).
+        if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast) || vm.isContext(VmSafe.ForgeContext.ScriptResume)) {
+            _writeBook(bookPath, book, deployer, custody, treasury, carveTreasury, pairToken, usdg);
+        } else {
+            console2.log("dry-run: address book not written", bookPath);
+        }
 
         console2.log("=== DEPLOY COMPLETE ===");
         console2.log("sideTokenRef stand-in", book.sideTokenRef);
@@ -310,18 +325,26 @@ contract Deploy is DeploySoftLaunchGuard {
         bool deployGov = !_hasCode(book.governor);
         (address adapterPred, address govPred) = _predictAdapterGov(deployer, deployAdapter, deployGov, book);
 
-        bytes32 initHash = _hookInitCodeHash(adapterPred, treasury, govPred);
-        console2.log("deployer", deployer);
+        bytes32 initHash = _hookInitCodeHash(adapterPred, treasury, govPred, deployer);
+        console2.log("deployer (hook initialOwner)", deployer);
         console2.log("adapterPred", adapterPred);
         console2.log("govPred", govPred);
+        console2.log("CREATE2_FACTORY (hook mine --deployer)", CREATE2_FACTORY);
         console2.logBytes32(initHash);
-        console2.log("mine: node contracts/scripts/hook-vanity-mine.mjs --mode eoa --deployer", deployer);
+        console2.log(
+            "mine: node contracts/scripts/hook-vanity-mine.mjs --mode eoa --deployer", CREATE2_FACTORY
+        );
     }
 
-    function _hookInitCodeHash(address adapter, address treasury, address gov) internal pure returns (bytes32) {
+    function _hookInitCodeHash(address adapter, address treasury, address gov, address initialOwner)
+        internal
+        pure
+        returns (bytes32)
+    {
         return keccak256(
             abi.encodePacked(
-                type(StonkzFeeHook).creationCode, abi.encode(IPoolManager(adapter), treasury, ICTOGovernor(gov))
+                type(StonkzFeeHook).creationCode,
+                abi.encode(IPoolManager(adapter), treasury, ICTOGovernor(gov), initialOwner)
             )
         );
     }
@@ -379,6 +402,26 @@ contract Deploy is DeploySoftLaunchGuard {
 
     function _hasCode(address a) internal view returns (bool) {
         return a != address(0) && a.code.length > 0;
+    }
+
+    /// @dev Code-at-address is not enough: SSTORE2 stores have code but no factory ABI.
+    ///      A stale book slot that collides with a pointer must NOT skip a real factory deploy.
+    function _isExpressFactory(address a) internal view returns (bool) {
+        if (!_hasCode(a)) return false;
+        try StonkzExpressFactory(a).listingCreationPtr0() returns (address p0) {
+            return p0 != address(0);
+        } catch {
+            return false;
+        }
+    }
+
+    function _isLadderFactory(address a) internal view returns (bool) {
+        if (!_hasCode(a)) return false;
+        try StonkzLadderFactory(a).vaultRef() returns (address) {
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     function _loadBook(string memory path) internal view returns (Book memory b) {

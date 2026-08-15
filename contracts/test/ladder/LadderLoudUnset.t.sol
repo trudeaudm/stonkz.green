@@ -32,7 +32,7 @@ contract LadderLoudUnset is Test {
         vm.etch(SIDE, hex"00");
         pm = new MockPoolManager();
         CTOGovernor gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
         factory = new StonkzLadderFactory();
         factory.setCarveTreasury(TREASURY);

@@ -1,0 +1,8 @@
+{
+  "name": "stonkz-scripts",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@noble/hashes": "^2.3.0"
+  }
+}

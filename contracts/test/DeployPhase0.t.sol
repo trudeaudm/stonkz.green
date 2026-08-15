@@ -110,7 +110,7 @@ contract DeployPhase0 is Test {
 
     function _deployVanityHook(IPoolManager pm, address gov) internal returns (StonkzFeeHook h) {
         bytes memory creation =
-            abi.encodePacked(type(StonkzFeeHook).creationCode, abi.encode(pm, TREASURY, ICTOGovernor(gov)));
+            abi.encodePacked(type(StonkzFeeHook).creationCode, abi.encode(pm, TREASURY, ICTOGovernor(gov), address(this)));
         bytes32 initCodeHash = keccak256(creation);
         bytes32 salt;
         address predicted;
@@ -131,7 +131,7 @@ contract DeployPhase0 is Test {
             }
         }
         require(found, "no flag salt");
-        h = new StonkzFeeHook{salt: salt}(pm, TREASURY, ICTOGovernor(gov));
+        h = new StonkzFeeHook{salt: salt}(pm, TREASURY, ICTOGovernor(gov), address(this));
         require(address(h) == predicted, "hook create2");
         h.validateHookAddress(address(h));
     }

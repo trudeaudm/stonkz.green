@@ -1,0 +1,66 @@
+﻿Compiling 7 files with Solc 0.8.26
+Solc 0.8.26 finished in 99.18s
+Compiler run successful with warnings:
+Warning (6133): Statement has no effect.
+  --> test/SettlementConservation.t.sol:51:9:
+   |
+51 |         WAD;
+   |         ^^^
+
+
+Ran 2 tests for test/PoolSeamAttacks.t.sol:PoolSeamAttacks_MockBackend
+[PASS] test_C1_provisional_mockBackend() (gas: 49210)
+[PASS] test_C1_syncBudgetExceededIsRetryable() (gas: 64694)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 1.87ms (538.00┬╡s CPU time)
+
+Ran 1 test for test/PoolSeamAttacks.t.sol:PoolSeamAttacks
+[PASS] test_C1_syncBudgetExceededIsRetryable() (gas: 64672)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 1.76ms (265.00┬╡s CPU time)
+
+Ran 2 tests for test/SidePoolEconomics.t.sol:SidePoolEconomics
+[PASS] test_C2_provisional_mockBackend() (gas: 1161958)
+[PASS] test_C2_rangeTopIs1000xBottom() (gas: 1158602)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 2.12ms (879.10┬╡s CPU time)
+
+Ran 1 test for test/FeechainE2E.t.sol:FeechainE2E
+[PASS] test_e2e_settle_swap_flush_sideCompound() (gas: 1346353)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 2.40ms (923.70┬╡s CPU time)
+
+Ran 4 tests for test/PoolKeyInvariants.t.sol:PoolKeyInvariants
+[PASS] testFuzz_noNakedMain_auctionSettle(uint256,uint256) (runs: 2048, ╬╝: 12387899, ~: 12395155)
+[PASS] testFuzz_noNakedMain_directListing(bool) (runs: 2048, ╬╝: 5045011, ~: 5044976)
+[PASS] test_noNakedMain_auctionSettle() (gas: 4311985)
+[PASS] test_noNakedMain_directListing() (gas: 5046378)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 686.72ms (1.37s CPU time)
+
+Ran 3 tests for test/SettlementConservation.t.sol:SettlementConservation
+[PASS] test_C5_conservationAtSettle_100pctLp() (gas: 1139097)
+[PASS] test_C5_naiveFullRangeUnreachable() (gas: 9263)
+[PASS] test_C5_priceSettingInvariant() (gas: 1142557)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 3.46s (1.60ms CPU time)
+
+Ran 4 tests for test/ladder/LadderLoudUnset.t.sol:LadderLoudUnset
+[PASS] test_file_revertsWhenCreateSidePoolAndSideTokenUnset() (gas: 25612)
+[PASS] test_file_succeedsWhenSideTokenSet() (gas: 33183385)
+[PASS] test_genesis_createSidePoolFalse_filesAndSettlesWithRefUnset() (gas: 981231995)
+[PASS] test_settle_backstop_unsetMidAuction_recoveryState() (gas: 981775295)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 3.46s (6.90s CPU time)
+
+Γò¡-----------------------------+--------+--------+---------Γò«
+| Test Suite                  | Passed | Failed | Skipped |
++=========================================================+
+| FeechainE2E                 | 1      | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| PoolKeyInvariants           | 4      | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| PoolSeamAttacks             | 1      | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| PoolSeamAttacks_MockBackend | 2      | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| SettlementConservation      | 3      | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| SidePoolEconomics           | 2      | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| LadderLoudUnset             | 4      | 0      | 0       |
+Γò░-----------------------------+--------+--------+---------Γò»
+

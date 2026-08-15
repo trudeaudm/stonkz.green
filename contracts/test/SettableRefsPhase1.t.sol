@@ -44,11 +44,10 @@ contract SettableRefsPhase1 is Test {
         pm = new MockPoolManager();
         acc = new BuybackAccumulator(ETH, STAND_IN, address(0));
         gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
         locker = new FeeLockerV2(IPoolManager(address(pm)), hook);
-        express = new StonkzExpressFactory(
-            IPoolManager(address(pm)), locker, hook, acc, gov, ETH, STAND_IN
+        express = new StonkzExpressFactory(IPoolManager(address(pm)), locker, hook, acc, gov, ETH, STAND_IN
         );
         ladder = new StonkzLadderFactory();
         ladder.setCarveTreasury(TREASURY);

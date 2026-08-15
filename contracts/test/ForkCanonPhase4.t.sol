@@ -569,7 +569,7 @@ contract ForkCanonPhase4 is Test {
 
     function _deployFlagHook() internal returns (StonkzFeeHook h) {
         bytes memory creation = abi.encodePacked(
-            type(StonkzFeeHook).creationCode, abi.encode(pm, treasury, ICTOGovernor(address(gov)))
+            type(StonkzFeeHook).creationCode, abi.encode(pm, treasury, ICTOGovernor(address(gov)), address(this))
         );
         bytes32 initCodeHash = keccak256(creation);
         bytes32 salt;
@@ -593,7 +593,7 @@ contract ForkCanonPhase4 is Test {
             }
         }
         require(found, "no flag salt");
-        h = new StonkzFeeHook{salt: salt}(pm, treasury, ICTOGovernor(address(gov)));
+        h = new StonkzFeeHook{salt: salt}(pm, treasury, ICTOGovernor(address(gov)), address(this));
         require(address(h) == predicted, "flag create2");
         h.validateHookAddress(address(h));
     }

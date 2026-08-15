@@ -30,7 +30,7 @@ contract CTOAdversarial is Test {
     function setUp() public {
         pm = new MockPoolManager();
         gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
     }
 

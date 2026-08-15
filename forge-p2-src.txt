@@ -1,0 +1,925 @@
+﻿Compiling 4 files with Solc 0.8.26
+Solc 0.8.26 finished in 21.85s
+Compiler run successful!
+forge : warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    + CategoryInfo          : NotSpecified: (warning[unsafe-...ould be checked:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   Γò¡Γû╕ src\HookVanity.sol:22:16
+   Γöé
+22 Γöé         return uint16(uint160(a) >> 144);
+   Γöé                ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'uint16' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   Γò¡Γû╕ src\FeeLocker.sol:91:27
+   Γöé
+91 Γöé         int256 liqDelta = int256(fee0 + fee1);
+   Γöé                           ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'int256' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   Γò¡Γû╕ src\StonkzLaunchToken.sol:97:38
+   Γöé
+97 Γöé             ckpts[len - 1].balance = uint208(bal);
+   Γöé                                      ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'uint208' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   Γò¡Γû╕ src\v4\types\BalanceDelta.sol:19:64
+   Γöé
+19 Γöé         return BalanceDelta.wrap((int256(a0) << 128) | (int256(uint256(uint128(a1)))));
+   Γöé                                                                
+ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'uint256' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   Γò¡Γû╕ src\v4\LiquidityAmounts.sol:44:16
+   Γöé
+44 Γöé         return uint128(liq);
+   Γöé                ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'uint128' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   Γò¡Γû╕ src\v4\LiquidityAmounts.sol:57:16
+   Γöé
+57 Γöé         return uint128(liq);
+   Γöé                ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'uint128' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\FeeLockerV2.sol:160:27
+    Γöé
+160 Γöé         int256 liqDelta = int256(fee0 + fee1);
+    Γöé                           ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'int256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   Γò¡Γû╕ src\StonkzLaunchToken.sol:99:61
+   Γöé
+99 Γöé             ckpts.push(Checkpoint({fromBlock: blk, balance: uint208(bal)}));
+   Γöé                                                             ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'uint208' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\ladder\LadderSettlement.sol:303:52
+    Γöé
+303 Γöé             if (liqCash == 0) revert LiquidityDust(bytes32("cash"), cash);
+    Γöé                                                    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'bytes32' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\ladder\LadderSettlement.sol:336:51
+    Γöé
+336 Γöé             if (liqAsk == 0) revert LiquidityDust(bytes32("ask"), askTokens);
+    Γöé                                                   ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'bytes32' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:345:30
+    Γöé
+345 Γöé             spent = d0 < 0 ? uint256(uint128(-d0)) : 0;
+    Γöé                              ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:345:38
+    Γöé
+345 Γöé             spent = d0 < 0 ? uint256(uint128(-d0)) : 0;
+    Γöé                                      ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\vault\StonkzVault.sol:219:27
+    Γöé
+219 Γöé         uint64 duration = uint64(bps * uint256(directRateSecondsPerBps)); // stamped (┬º5)
+    Γöé                           ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓ
+öüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint64' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\StonkzDirectListing.sol:332:24
+    Γöé
+332 Γöé         bytes32 salt = bytes32("directside");
+    Γöé                        ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'bytes32' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\ladder\LadderSettlement.sol:404:44
+    Γöé
+404 Γöé         if (liq == 0) revert LiquidityDust(bytes32("side"), tokens);
+    Γöé                                            ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'bytes32' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\mock\MockPoolManager.sol:148:46
+    Γöé
+148 Γöé         swapDelta = BalanceDeltaLibrary.from(int128(a0), int128(a1));
+    Γöé                                              ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'int128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\mock\MockPoolManager.sol:148:58
+    Γöé
+148 Γöé         swapDelta = BalanceDeltaLibrary.from(int128(a0), int128(a1));
+    Γöé                                                          ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'int128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\vault\StonkzVault.sol:231:21
+    Γöé
+231 Γöé             amount: uint128(amount),
+    Γöé                     ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\StonkzDirectListing.sol:400:24
+    Γöé
+400 Γöé         bytes32 salt = bytes32("directside");
+    Γöé                        ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'bytes32' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:347:30
+    Γöé
+347 Γöé             spent = d1 < 0 ? uint256(uint128(-d1)) : 0;
+    Γöé                              ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   Γò¡Γû╕ src\v4\TickMath.sol:14:38
+   Γöé
+14 Γöé         uint256 absTick = tick < 0 ? uint256(uint24(-tick)) : uint256(uint24(tick));
+   Γöé                                      ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'uint256' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   Γò¡Γû╕ src\v4\TickMath.sol:14:46
+   Γöé
+14 Γöé         uint256 absTick = tick < 0 ? uint256(uint24(-tick)) : uint256(uint24(tick));
+   Γöé                                              ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'uint24' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   Γò¡Γû╕ src\v4\TickMath.sol:14:63
+   Γöé
+14 Γöé         uint256 absTick = tick < 0 ? uint256(uint24(-tick)) : uint256(uint24(tick));
+   Γöé                                                               
+ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'uint256' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\ladder\StonkzLadderAuction.sol:276:20
+    Γöé
+276 Γöé         _catchUpTo(uint16(target));
+    Γöé                    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint16' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\StonkzFeeHook.sol:262:33
+    Γöé
+262 Γöé             ? toBeforeSwapDelta(int128(uint128(fee)), 0)
+    Γöé                                 ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'int128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\StonkzFeeHook.sol:262:40
+    Γöé
+262 Γöé             ? toBeforeSwapDelta(int128(uint128(fee)), 0)
+    Γöé                                        ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\ladder\LadderSettlement.sol:472:72
+    Γöé
+472 Γöé             emit LiquidityWithdrawn(userTokenSettled, unlockRecipient, bytes32("cash"), liq);
+    Γöé                                                                        
+ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'bytes32' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\ladder\LadderSettlement.sol:488:72
+    Γöé
+488 Γöé             emit LiquidityWithdrawn(userTokenSettled, unlockRecipient, bytes32("ask"), liq);
+    Γöé                                                                        
+ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'bytes32' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\ladder\LadderSettlement.sol:508:68
+    Γöé
+508 Γöé         emit LiquidityWithdrawn(userTokenSettled, unlockRecipient, bytes32("side"), liq);
+    Γöé                                                                    
+ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'bytes32' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\ladder\StonkzLadderAuction.sol:374:45
+    Γöé
+374 Γöé             alpha = FixedPointMathLib.lnWad(int256(onePlus)) * 1e18 / FixedPointMathLib.lnWad(2 ether);
+    Γöé                                             ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'int256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\StonkzFeeHook.sol:263:36
+    Γöé
+263 Γöé             : toBeforeSwapDelta(0, int128(uint128(fee)));
+    Γöé                                    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'int128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\StonkzFeeHook.sol:263:43
+    Γöé
+263 Γöé             : toBeforeSwapDelta(0, int128(uint128(fee)));
+    Γöé                                           ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[erc20-unchecked-transfer]: ERC20 'transfer' and 'transferFrom' calls should check the return value
+    Γò¡Γû╕ src\StonkzDirectListing.sol:429:9
+    Γöé
+429 Γöé         token.transfer(creator, amount);
+    Γöé         ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#erc20-unchecked-transfer
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\ladder\StonkzLadderAuction.sol:376:49
+    Γöé
+376 Γöé         return uint256(FixedPointMathLib.powWad(int256(base), alpha));
+    Γöé                                                 ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'int256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   Γò¡Γû╕ src\v4\types\BalanceDelta.sol:19:72
+   Γöé
+19 Γöé         return BalanceDelta.wrap((int256(a0) << 128) | (int256(uint256(uint128(a1)))));
+   Γöé                                                                        ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'uint128' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   Γò¡Γû╕ src\v4\TickMath.sol:14:71
+   Γöé
+14 Γöé         uint256 absTick = tick < 0 ? uint256(uint24(-tick)) : uint256(uint24(tick));
+   Γöé                                                                       ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'uint24' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\ladder\LadderSettlement.sol:557:16
+    Γöé
+557 Γöé         return uint160(sqrtX96);
+    Γöé                ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint160' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:347:38
+    Γöé
+347 Γöé             spent = d1 < 0 ? uint256(uint128(-d1)) : 0;
+    Γöé                                      ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\StonkzDirectListing.sol:506:16
+    Γöé
+506 Γöé         return uint160(sqrtX96);
+    Γöé                ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint160' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:381:66
+    Γöé
+381 Γöé             if (f0 > 0) ckey.currency0.take(manager, data.payer, uint256(uint128(f0)), false);
+    Γöé                                                                  
+ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\vault\StonkzVault.sol:352:27
+    Γöé
+352 Γöé         uint64 duration = uint64(bps * uint256(p.rateSecondsPerBps)); // 0 if instant
+    Γöé                           ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓ
+öüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint64' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\vault\StonkzVault.sol:364:21
+    Γöé
+364 Γöé             amount: uint128(amount),
+    Γöé                     ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   Γò¡Γû╕ src\v4\TickMath.sol:15:28
+   Γöé
+15 Γöé         require(absTick <= uint256(uint24(MAX_TICK)), "T");
+   Γöé                            ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'uint256' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:381:74
+    Γöé
+381 Γöé             if (f0 > 0) ckey.currency0.take(manager, data.payer, uint256(uint128(f0)), false);
+    Γöé                                                                          ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:382:66
+    Γöé
+382 Γöé             if (f1 > 0) ckey.currency1.take(manager, data.payer, uint256(uint128(f1)), false);
+    Γöé                                                                  
+ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:382:74
+    Γöé
+382 Γöé             if (f1 > 0) ckey.currency1.take(manager, data.payer, uint256(uint128(f1)), false);
+    Γöé                                                                          ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:384:68
+    Γöé
+384 Γöé             if (f0 < 0) ckey.currency0.settle(manager, data.payer, uint256(uint128(-f0)), false);
+    Γöé                                                                    
+ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:384:76
+    Γöé
+384 Γöé             if (f0 < 0) ckey.currency0.settle(manager, data.payer, uint256(uint128(-f0)), false);
+    Γöé                                                                            ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   Γò¡Γû╕ src\v4\TickMath.sol:15:36
+   Γöé
+15 Γöé         require(absTick <= uint256(uint24(MAX_TICK)), "T");
+   Γöé                                    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'uint24' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:385:68
+    Γöé
+385 Γöé             if (f1 < 0) ckey.currency1.settle(manager, data.payer, uint256(uint128(-f1)), false);
+    Γöé                                                                    
+ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   Γò¡Γû╕ src\v4\TickMath.sol:96:25
+   Γöé
+96 Γöé         int256 log_2 = (int256(msb) - 128) << 64;
+   Γöé                         ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+   Γöé
+   Γö£ note: consider disabling this lint if you're certain the cast is safe
+   Γöé       
+   Γöé       // casting to 'int256' is safe because [explain why]
+   Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+   Γöé       
+   Γöé       
+   Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\TickMath.sol:196:38
+    Γöé
+196 Γöé         int24 t = getTickAtSqrtRatio(uint160(sqrtPrice));
+    Γöé                                      ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint160' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:385:76
+    Γöé
+385 Γöé             if (f1 < 0) ckey.currency1.settle(manager, data.payer, uint256(uint128(-f1)), false);
+    Γöé                                                                            ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:387:33
+    Γöé
+387 Γöé         uint256 fee0 = f0 > 0 ? uint256(uint128(f0)) : 0;
+    Γöé                                 ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:387:41
+    Γöé
+387 Γöé         uint256 fee0 = f0 > 0 ? uint256(uint128(f0)) : 0;
+    Γöé                                         ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:388:33
+    Γöé
+388 Γöé         uint256 fee1 = f1 > 0 ? uint256(uint128(f1)) : 0;
+    Γöé                                 ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:388:41
+    Γöé
+388 Γöé         uint256 fee1 = f1 > 0 ? uint256(uint128(f1)) : 0;
+    Γöé                                         ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:395:59
+    Γöé
+395 Γöé         if (d0 < 0) ckey.currency0.settle(manager, payer, uint256(uint128(-d0)), false);
+    Γöé                                                           
+ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:395:67
+    Γöé
+395 Γöé         if (d0 < 0) ckey.currency0.settle(manager, payer, uint256(uint128(-d0)), false);
+    Γöé                                                                   ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:396:59
+    Γöé
+396 Γöé         if (d1 < 0) ckey.currency1.settle(manager, payer, uint256(uint128(-d1)), false);
+    Γöé                                                           
+ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:396:67
+    Γöé
+396 Γöé         if (d1 < 0) ckey.currency1.settle(manager, payer, uint256(uint128(-d1)), false);
+    Γöé                                                                   ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:397:57
+    Γöé
+397 Γöé         if (d0 > 0) ckey.currency0.take(manager, payer, uint256(uint128(d0)), false);
+    Γöé                                                         
+ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:397:65
+    Γöé
+397 Γöé         if (d0 > 0) ckey.currency0.take(manager, payer, uint256(uint128(d0)), false);
+    Γöé                                                                 ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:398:57
+    Γöé
+398 Γöé         if (d1 > 0) ckey.currency1.take(manager, payer, uint256(uint128(d1)), false);
+    Γöé                                                         
+ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint256' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    Γò¡Γû╕ src\v4\V4Adapter.sol:398:65
+    Γöé
+398 Γöé         if (d1 > 0) ckey.currency1.take(manager, payer, uint256(uint128(d1)), false);
+    Γöé                                                                 ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+    Γöé
+    Γö£ note: consider disabling this lint if you're certain the cast is safe
+    Γöé       
+    Γöé       // casting to 'uint128' is safe because [explain why]
+    Γöé       // forge-lint: disable-next-line(unsafe-typecast)
+    Γöé       
+    Γöé       
+    Γò░ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+

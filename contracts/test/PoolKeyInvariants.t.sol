@@ -41,7 +41,7 @@ contract PoolKeyInvariants is Test {
         vm.etch(STONKZ, hex"00");
         pm = new MockPoolManager();
         gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
         acc = new BuybackAccumulator(PAIR, STONKZ, address(0));
         lockerV2 = new FeeLockerV2(IPoolManager(address(pm)), hook);
@@ -122,7 +122,7 @@ contract PoolKeyInvariants is Test {
 
         MockPoolManager pm2 = new MockPoolManager();
         CTOGovernor gov2 = new CTOGovernor();
-        StonkzFeeHook hook2 = new StonkzFeeHook(IPoolManager(address(pm2)), TREASURY, ICTOGovernor(address(gov2)));
+        StonkzFeeHook hook2 = new StonkzFeeHook(IPoolManager(address(pm2)), TREASURY, ICTOGovernor(address(gov2)), address(this));
         gov2.setRegistry(hook2);
         BuybackAccumulator acc2 = new BuybackAccumulator(PAIR, STONKZ, address(0));
         FeeLocker locker2 = new FeeLocker(IPoolManager(address(pm2)), acc2, address(0));

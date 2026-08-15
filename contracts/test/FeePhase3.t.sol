@@ -32,7 +32,7 @@ contract FeePhase3 is Test {
         treasury = payable(address(0x7A5E));
         vm.deal(treasury, 0);
         gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), treasury, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), treasury, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
         badReceiver = new RevertingReceiver();
     }

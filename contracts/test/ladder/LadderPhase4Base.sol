@@ -32,7 +32,7 @@ abstract contract LadderPhase4Base is Test {
         VAULT = address(mockVault);
         pm = new MockPoolManager();
         CTOGovernor gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
     }
 

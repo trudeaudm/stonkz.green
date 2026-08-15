@@ -43,11 +43,10 @@ contract SidePoolSwitchesPhase2 is Test, FactoryVanity {
         pm = new MockPoolManager();
         acc = new BuybackAccumulator(PAIR, STONKZ, address(0));
         gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
         locker = new FeeLockerV2(IPoolManager(address(pm)), hook);
-        express = new StonkzExpressFactory(
-            IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, STONKZ
+        express = new StonkzExpressFactory(IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, STONKZ
         );
         ladder = new StonkzLadderFactory();
         ladder.setCarveTreasury(TREASURY);

@@ -1,0 +1,21 @@
+﻿Compiling 4 files with Solc 0.8.26
+Solc 0.8.26 finished in 32.93s
+Compiler run successful!
+
+Ran 4 tests for test/ladder/LadderLoudUnset.t.sol:LadderLoudUnset
+[PASS] test_file_revertsWhenCreateSidePoolAndSideTokenUnset() (gas: 25612)
+[PASS] test_file_succeedsWhenSideTokenSet() (gas: 33183385)
+[FAIL: assertion failed] test_genesis_createSidePoolFalse_filesAndSettlesWithRefUnset() (gas: 75431032)
+[FAIL: assertion failed] test_settle_backstop_unsetMidAuction_recoveryState() (gas: 75502079)
+Suite result: FAILED. 2 passed; 2 failed; 0 skipped; finished in 44.30ms (99.67ms CPU time)
+
+Ran 1 test suite in 46.06ms (44.30ms CPU time): 2 tests passed, 2 failed, 0 skipped (4 total tests)
+
+Failing tests:
+Encountered 2 failing tests in test/ladder/LadderLoudUnset.t.sol:LadderLoudUnset
+[FAIL: assertion failed] test_genesis_createSidePoolFalse_filesAndSettlesWithRefUnset() (gas: 75431032)
+[FAIL: assertion failed] test_settle_backstop_unsetMidAuction_recoveryState() (gas: 75502079)
+
+Encountered a total of 2 failing tests, 2 tests succeeded
+
+Tip: Run `forge test --rerun` to retry only the 2 failed tests

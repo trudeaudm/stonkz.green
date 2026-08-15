@@ -94,16 +94,34 @@ contract StonkzFeeHook is IHooks, ISwapHook, IFeeReceiverRegistry {
     }
 
     /// @param poolManager_ Mock or V4Adapter (or in-test canon PM when used directly).
-    constructor(IPoolManager poolManager_, address protocolTreasury_, ICTOGovernor ctoGovernor_) {
+    /// @param initialOwner_ Explicit owner — required when CREATE2 goes through Foundry's
+    ///        CREATE2_FACTORY (Arachnid proxy): msg.sender there is the proxy, not the EOA.
+    constructor(
+        IPoolManager poolManager_,
+        address protocolTreasury_,
+        ICTOGovernor ctoGovernor_,
+        address initialOwner_
+    ) {
         require(protocolTreasury_ != address(0), "treasury");
         require(address(poolManager_) != address(0), "pm");
+        require(initialOwner_ != address(0), "owner");
         poolManager = poolManager_;
-        // Default: treat poolManager as the beforeSwap authority (mock ignores beforeSwap;
-        // real-in-test Deployers manager IS the canon PM). Adapter wiring calls bindCanonManager.
-        canonManager = ICanonPM(address(poolManager_));
         protocolTreasury = protocolTreasury_;
         ctoGovernor = ctoGovernor_;
-        owner = msg.sender;
+        owner = initialOwner_;
+
+        // Default: treat poolManager as beforeSwap authority (mock / in-test canon PM).
+        // V4Adapter exposes immutable `manager()` — bind it here so Create2Deployer deploys
+        // do not need a post-create onlyOwner call from the proxy.
+        canonManager = ICanonPM(address(poolManager_));
+        (bool ok, bytes memory ret) = address(poolManager_).staticcall(abi.encodeWithSignature("manager()"));
+        if (ok && ret.length >= 32) {
+            address m = abi.decode(ret, (address));
+            if (m != address(0)) {
+                canonManager = ICanonPM(m);
+                emit CanonManagerBound(m);
+            }
+        }
     }
 
     /// @notice Point beforeSwap auth at the singleton / Deployers manager when using V4Adapter.

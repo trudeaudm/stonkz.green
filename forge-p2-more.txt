@@ -1,0 +1,111 @@
+﻿Compiling 10 files with Solc 0.8.26
+Solc 0.8.26 finished in 302.75s
+Compiler run successful with warnings:
+Warning (6133): Statement has no effect.
+  --> test/SettlementConservation.t.sol:51:9:
+   |
+51 |         WAD;
+   |         ^^^
+
+
+Ran 1 test for test/FeechainE2E.t.sol:FeechainE2E
+[PASS] test_e2e_settle_swap_flush_sideCompound() (gas: 1346353)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 3.77ms (1.27ms CPU time)
+
+Ran 1 test for test/PoolSeamAttacks.t.sol:PoolSeamAttacks
+[PASS] test_C1_syncBudgetExceededIsRetryable() (gas: 64672)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 3.73ms (302.70┬╡s CPU time)
+
+Ran 2 tests for test/PoolSeamAttacks.t.sol:PoolSeamAttacks_MockBackend
+[PASS] test_C1_provisional_mockBackend() (gas: 49210)
+[PASS] test_C1_syncBudgetExceededIsRetryable() (gas: 64694)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 3.01ms (453.20┬╡s CPU time)
+
+Ran 2 tests for test/CrossModelParity.t.sol:CrossModelParity
+[FAIL: SideTokenRefUnset()] test_C4_ctoParity_manualAndDirect() (gas: 1832247)
+[FAIL: SideTokenRefUnset()] test_C4_feeSplitParity_directAndManual() (gas: 56474)
+Suite result: FAILED. 0 passed; 2 failed; 0 skipped; finished in 4.85ms (4.00ms CPU time)
+
+Ran 2 tests for test/SidePoolEconomics.t.sol:SidePoolEconomics
+[PASS] test_C2_provisional_mockBackend() (gas: 1161958)
+[PASS] test_C2_rangeTopIs1000xBottom() (gas: 1158602)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 5.82ms (1.08ms CPU time)
+
+Ran 1 test for test/ListingAdapterPhase2.t.sol:ListingAdapterPhase2Mock
+[PASS] test_list_lockStamp_mainPool() (gas: 4570084)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 5.86ms (3.70ms CPU time)
+
+Ran 1 test for test/SwitchDrillPhase4.t.sol:SwitchDrillPhase4
+[PASS] test_P4_switchDrill_full() (gas: 95899112)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 90.46ms (86.99ms CPU time)
+
+Ran 1 test for test/ListingAdapterPhase2.t.sol:ListingAdapterPhase2Real
+[PASS] test_list_lockStamp_mainPool() (gas: 4691675)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 112.59ms (1.08ms CPU time)
+
+Ran 4 tests for test/PoolKeyInvariants.t.sol:PoolKeyInvariants
+[PASS] testFuzz_noNakedMain_auctionSettle(uint256,uint256) (runs: 2048, ╬╝: 12388509, ~: 12395155)
+[PASS] testFuzz_noNakedMain_directListing(bool) (runs: 2048, ╬╝: 5045012, ~: 5045048)
+[PASS] test_noNakedMain_auctionSettle() (gas: 4311985)
+[PASS] test_noNakedMain_directListing() (gas: 5046378)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 930.63ms (1.85s CPU time)
+
+Ran 3 tests for test/SettlementConservation.t.sol:SettlementConservation
+[PASS] test_C5_conservationAtSettle_100pctLp() (gas: 1139097)
+[PASS] test_C5_naiveFullRangeUnreachable() (gas: 9263)
+[PASS] test_C5_priceSettingInvariant() (gas: 1142557)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 932.80ms (5.19ms CPU time)
+
+Ran 15 tests for test/LockStampPhase3.t.sol:LockStampPhase3
+[PASS] test_P3_birth_defaultLiquidityLockedTrue() (gas: 16020)
+[PASS] test_P3_coexistence_lockedAndUnlocked() (gas: 9891096)
+[PASS] test_P3_events_loudOnLockDefaultChange() (gas: 18376)
+[PASS] test_P3_express_lockedStamp_withdrawReverts() (gas: 4986462)
+[PASS] test_P3_express_readOnce_lockedSurvivesFactoryUnlock() (gas: 4988678)
+[PASS] test_P3_express_readOnce_unlockedSurvivesFactoryRelock() (gas: 4980468)
+[PASS] test_P3_express_unlocked_creatorWithdraws() (gas: 4985859)
+[PASS] test_P3_invariantFuzz_lockedNeverWithdraws(uint8,bool) (runs: 2048, ╬╝: 4980368, ~: 4980609)
+[PASS] test_P3_ladder_directDeployDefaultsLocked() (gas: 33054489)
+[PASS] test_P3_ladder_factoryStampsLockedFromControls() (gas: 66149544)
+[PASS] test_P3_ladder_readOnce_lockedSurvivesFactoryUnlock() (gas: 33094243)
+[PASS] test_P3_ladder_settlement_readOnce_lockedSurvivesFactoryUnlock() (gas: 6019672)
+[PASS] test_P3_ladder_settlement_readOnce_unlockedSurvivesFactoryRelock() (gas: 6004172)
+[PASS] test_P3_ladder_settlement_withdrawGate_notSettled() (gas: 3767595)
+[PASS] test_P3_stampSurvivesDefaultChange() (gas: 9868834)
+Suite result: ok. 15 passed; 0 failed; 0 skipped; finished in 931.51ms (1.13s CPU time)
+
+Γò¡-----------------------------+--------+--------+---------Γò«
+| Test Suite                  | Passed | Failed | Skipped |
++=========================================================+
+| CrossModelParity            | 0      | 2      | 0       |
+|-----------------------------+--------+--------+---------|
+| FeechainE2E                 | 1      | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| ListingAdapterPhase2Mock    | 1      | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| ListingAdapterPhase2Real    | 1      | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| LockStampPhase3             | 15     | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| PoolKeyInvariants           | 4      | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| PoolSeamAttacks             | 1      | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| PoolSeamAttacks_MockBackend | 2      | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| SettlementConservation      | 3      | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| SidePoolEconomics           | 2      | 0      | 0       |
+|-----------------------------+--------+--------+---------|
+| SwitchDrillPhase4           | 1      | 0      | 0       |
+Γò░-----------------------------+--------+--------+---------Γò»
+
+
+Failing tests:
+Encountered 2 failing tests in test/CrossModelParity.t.sol:CrossModelParity
+[FAIL: SideTokenRefUnset()] test_C4_ctoParity_manualAndDirect() (gas: 1832247)
+[FAIL: SideTokenRefUnset()] test_C4_feeSplitParity_directAndManual() (gas: 56474)
+
+Encountered a total of 2 failing tests, 31 tests succeeded
+
+Tip: Run `forge test --rerun` to retry only the 2 failed tests

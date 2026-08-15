@@ -37,7 +37,7 @@ contract CarveTreasuryStamp is Test {
         vm.etch(SIDE, hex"00");
         pm = new MockPoolManager();
         CTOGovernor gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), FEE_SAFE, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), FEE_SAFE, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
         locker = new FeeLockerV2(IPoolManager(address(pm)), hook);
         factory = new StonkzLadderFactory();

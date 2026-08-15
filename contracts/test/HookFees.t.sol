@@ -29,7 +29,7 @@ abstract contract HookHarness is Test {
     function _deployBackend(IPoolManager pm) internal {
         poolManager = pm;
         gov = new CTOGovernor();
-        hook = new StonkzFeeHook(pm, TREASURY, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(pm, TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
 
         key = _mainPoolKey(PAIR, TOKEN);

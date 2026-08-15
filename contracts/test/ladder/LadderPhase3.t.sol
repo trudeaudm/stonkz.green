@@ -42,7 +42,7 @@ contract LadderPhase3 is LadderVectorLoader, LadderAsserts, FactoryVanity {
         mockVault = new MockVault();
         pm = new MockPoolManager();
         CTOGovernor gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
         settlement = new LadderSettlement(IPoolManager(address(pm)), hook, PAIR);
         settlement.setSideTokenRef(STONKZ);

@@ -30,7 +30,7 @@ abstract contract ListingAdapterPhase2Base is V4DualBackend {
     function _wire() internal {
         gov = new CTOGovernor();
         if (backend == Backend.Mock) {
-            hook = new StonkzFeeHook(pm, TREASURY, ICTOGovernor(address(gov)));
+            hook = new StonkzFeeHook(pm, TREASURY, ICTOGovernor(address(gov)), address(this));
         } else {
             hook = _deployFlagHook();
             hook.bindCanonManager(manager);
@@ -43,7 +43,7 @@ abstract contract ListingAdapterPhase2Base is V4DualBackend {
     function _deployFlagHook() internal returns (StonkzFeeHook h) {
         bytes memory creation = abi.encodePacked(
             type(StonkzFeeHook).creationCode,
-            abi.encode(pm, TREASURY, ICTOGovernor(address(gov)))
+            abi.encode(pm, TREASURY, ICTOGovernor(address(gov)), address(this))
         );
         bytes32 initCodeHash = keccak256(creation);
         bytes32 salt;
@@ -67,7 +67,7 @@ abstract contract ListingAdapterPhase2Base is V4DualBackend {
             }
         }
         require(found, "no flag salt");
-        h = new StonkzFeeHook{salt: salt}(pm, TREASURY, ICTOGovernor(address(gov)));
+        h = new StonkzFeeHook{salt: salt}(pm, TREASURY, ICTOGovernor(address(gov)), address(this));
         require(address(h) == predicted, "flag create2");
     }
 

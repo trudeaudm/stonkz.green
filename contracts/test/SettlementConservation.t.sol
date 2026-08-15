@@ -22,7 +22,7 @@ contract SettlementConservation is Test {
         BuybackAccumulator acc = new BuybackAccumulator(address(0), address(0x4663), address(0));
         FeeLocker fl = new FeeLocker(IPoolManager(address(pm)), acc, address(0));
         CTOGovernor gov = new CTOGovernor();
-        StonkzFeeHook hook = new StonkzFeeHook(IPoolManager(address(pm)), address(0x7A5E), ICTOGovernor(address(gov)));
+        StonkzFeeHook hook = new StonkzFeeHook(IPoolManager(address(pm)), address(0x7A5E), ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
         strategy = new StonkzLiquidityStrategy(IPoolManager(address(pm)), acc, fl, hook, address(0xB111), address(0x4663));
     }

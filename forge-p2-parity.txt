@@ -1,0 +1,15 @@
+﻿Compiling 1 files with Solc 0.8.26
+Solc 0.8.26 finished in 31.53s
+Compiler run successful!
+
+Ran 2 tests for test/CrossModelParity.t.sol:CrossModelParity
+[PASS] test_C4_ctoParity_manualAndDirect() (gas: 7467782)
+[PASS] test_C4_feeSplitParity_directAndManual() (gas: 6580560)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 5.84ms (4.97ms CPU time)
+
+Γò¡------------------+--------+--------+---------Γò«
+| Test Suite       | Passed | Failed | Skipped |
++==============================================+
+| CrossModelParity | 2      | 0      | 0       |
+Γò░------------------+--------+--------+---------Γò»
+

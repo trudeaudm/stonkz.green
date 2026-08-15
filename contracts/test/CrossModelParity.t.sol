@@ -35,7 +35,7 @@ contract CrossModelParity is Test {
         pm = new MockPoolManager();
         acc = new BuybackAccumulator(PAIR, address(0x4663), address(0));
         gov = new CTOGovernor();
-        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)));
+        hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
         locker = new FeeLockerV2(IPoolManager(address(pm)), hook);
     }

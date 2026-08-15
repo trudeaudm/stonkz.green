@@ -9,6 +9,7 @@ import {CTOGovernor} from "./CTOGovernor.sol";
 import {StonkzDirectListing} from "./StonkzDirectListing.sol";
 import {DeployControls} from "./DeployControls.sol";
 import {Vanity} from "./Vanity.sol";
+import {CreationCodeStore} from "./CreationCodeStore.sol";
 
 /// @title StonkzExpressFactory — gated Express (direct listing) deploy path
 /// @notice Sole production entry for Express launches. CREATE2 salt =
@@ -16,6 +17,7 @@ import {Vanity} from "./Vanity.sol";
 ///         (docs/03 VANITY PREFIX; docs/04).
 /// @dev Child refs are owner-settable (stamp pattern): new lists copy current refs; prior
 ///      listings keep their immutable stamps (PREDEPLOY-REFIT Phase 1).
+///      Listing creation bytecode lives in SSTORE2 pointers (EIP-170) — not embedded here.
 contract StonkzExpressFactory is DeployControls {
     IPoolManager public poolManager; // V4 adapter / PM
     FeeLockerV2 public feeLocker;
@@ -25,6 +27,9 @@ contract StonkzExpressFactory is DeployControls {
     address public pairToken;
     /// @notice Protocol-token ref for side pools. address(0) until genesis stand-in is set.
     address public sideTokenRef;
+    /// @notice SSTORE2 pointer(s) for `StonkzDirectListing` creation bytecode.
+    address public immutable listingCreationPtr0;
+    address public immutable listingCreationPtr1; // address(0) if single chunk
 
     event ExpressListed(
         address indexed listing, address indexed token, address indexed creator, bytes32 userSalt, bytes32 salt
@@ -43,6 +48,7 @@ contract StonkzExpressFactory is DeployControls {
     error AccumulatorNotContract();
     error GovernorNotContract();
     error SideTokenRefNotContract();
+    error ListingCreateFailed();
 
     constructor(
         IPoolManager poolManager_,
@@ -53,6 +59,9 @@ contract StonkzExpressFactory is DeployControls {
         address pairToken_,
         address sideTokenRef_
     ) DeployControls() {
+        // SSTORE2 from this factory (not the EOA) so pointer CREATEs never occupy deployer nonces.
+        (listingCreationPtr0, listingCreationPtr1) =
+            CreationCodeStore.writeSplit(type(StonkzDirectListing).creationCode);
         _setPoolManager(address(poolManager_));
         _setFeeLocker(address(feeLocker_));
         _setHook(address(hook_));
@@ -103,12 +112,7 @@ contract StonkzExpressFactory is DeployControls {
     /// @dev Must match the bytecode `list` deploys — stamps applied here identically.
     function listingInitCodeHash(StonkzDirectListing.ListingParams memory p) public view returns (bytes32) {
         _stampListingParams(p);
-        return keccak256(
-            abi.encodePacked(
-                type(StonkzDirectListing).creationCode,
-                abi.encode(poolManager, feeLocker, hook, accumulator, ctoGovernor, pairToken, sideTokenRef, p)
-            )
-        );
+        return keccak256(abi.encodePacked(_listingCreationCode(), _listingArgs(p)));
     }
 
     /// @notice Predict CREATE2 address for a listing given init-code hash (vanity miner input).
@@ -134,20 +138,24 @@ contract StonkzExpressFactory is DeployControls {
         _requireDeployAllowed(msg.sender);
         _stampListingParams(p);
         bytes32 salt = listingSalt(msg.sender, userSalt);
-        bytes32 initHash = keccak256(
-            abi.encodePacked(
-                type(StonkzDirectListing).creationCode,
-                abi.encode(poolManager, feeLocker, hook, accumulator, ctoGovernor, pairToken, sideTokenRef, p)
-            )
-        );
+        bytes memory args = _listingArgs(p);
+        bytes32 initHash = keccak256(abi.encodePacked(_listingCreationCode(), args));
         address predicted = Vanity.predict(address(this), salt, initHash);
         Vanity.requirePrefix(predicted);
 
-        listing = new StonkzDirectListing{salt: salt, value: msg.value}(
-            poolManager, feeLocker, hook, accumulator, ctoGovernor, pairToken, sideTokenRef, p
-        );
-        assert(address(listing) == predicted);
+        address deployed =
+            CreationCodeStore.create2(listingCreationPtr0, listingCreationPtr1, args, salt, msg.value);
+        if (deployed == address(0) || deployed != predicted) revert ListingCreateFailed();
+        listing = StonkzDirectListing(payable(deployed));
         emit ExpressListed(address(listing), address(listing.token()), p.creator, userSalt, salt);
+    }
+
+    function _listingCreationCode() internal view returns (bytes memory) {
+        return CreationCodeStore.readSplit(listingCreationPtr0, listingCreationPtr1);
+    }
+
+    function _listingArgs(StonkzDirectListing.ListingParams memory p) internal view returns (bytes memory) {
+        return abi.encode(poolManager, feeLocker, hook, accumulator, ctoGovernor, pairToken, sideTokenRef, p);
     }
 
     function _stampListingParams(StonkzDirectListing.ListingParams memory p) internal view {

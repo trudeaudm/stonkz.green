@@ -6,6 +6,8 @@ solc_version = "0.8.26"
 # Uniswap v4-core requires Cancun (transient storage).
 evm_version = "cancun"
 optimizer = true
+# High runs: runtime gas. Factory EIP-170 fixed by SSTORE2 creation-code store (not by
+# lowering runs — that would change StonkzFeeHook initcode / invalidate mined salt).
 optimizer_runs = 10000
 via_ir = true
 # Bare `forge test` MemoryOOG without this — CI historically passed --gas-limit
