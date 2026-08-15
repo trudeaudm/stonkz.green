@@ -26,6 +26,7 @@ import {StonkzVault} from "../src/vault/StonkzVault.sol";
 import {VaultConstants} from "../src/vault/VaultConstants.sol";
 import {DeployControls} from "../src/DeployControls.sol";
 import {Vanity} from "../src/Vanity.sol";
+import {EthUsdRefHelpers} from "./EthUsdRefHelpers.sol";
 
 /// @dev Reverting ETH receiver - flush must not brick treasury path (hostile probe).
 contract ForkHostileReceiver {
@@ -123,9 +124,11 @@ contract ForkProofPhase2 is Test, FactoryVanity {
         vault = new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000);
         express = new StonkzExpressFactory(IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(stonkz)
         );
+        EthUsdRefHelpers.wireExpressRef(express, 1880e18);
         ladder = new StonkzLadderFactory();
         ladder.setCarveTreasury(treasury);
         ladder.setVaultRef(address(vault));
+        ladder.setSideTokenRef(address(stonkz));
         hostile = new ForkHostileReceiver();
 
         express.assertSoftLaunchGate(address(this));
@@ -161,7 +164,7 @@ contract ForkProofPhase2 is Test, FactoryVanity {
         express.setDefaultLiquidityLocked(true);
         StonkzDirectListing listing = _list(express, _expressParams());
         assertTrue(listing.liquidityLocked(), "expected locked=true");
-        assertTrue(Vanity.matches(address(listing)), "expected 0x4663 listing");
+        assertTrue(Vanity.matches(address(listing.token())), "expected 0x4663 token");
 
         // Swaps both ways on main pool (MockPoolManager on fork gas schedule).
         PoolKey memory key = listing.mainKey();
@@ -342,7 +345,7 @@ contract ForkProofPhase2 is Test, FactoryVanity {
         vm.expectRevert(DeployControls.DeployerNotAllowed.selector);
         express.list(_expressParams(), bytes32(0));
         StonkzDirectListing listed = _listAs(express, friend, _expressParams());
-        assertTrue(Vanity.matches(address(listed)));
+        assertTrue(Vanity.matches(address(listed.token())));
         console2.log("allowlist: OK");
 
         // side-pool toggle + genesis case (createSidePool=false)
@@ -425,6 +428,7 @@ contract ForkProofPhase2 is Test, FactoryVanity {
         p.sidePoolBps = 500;
         p.liquidityLocked = true;
         p.refPriceWad = 2.5e11;
+        p.ethUsdWad = 1880e18;
     }
 
     function _ladderParams() internal view returns (StonkzLadderAuction.Params memory p) {

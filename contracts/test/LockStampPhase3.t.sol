@@ -273,7 +273,8 @@ contract LockStampPhase3 is Test, FactoryVanity {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            refPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+            ethUsdWad: 1880e18
         });
     }
 

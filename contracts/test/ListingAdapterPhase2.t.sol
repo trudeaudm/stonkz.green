@@ -85,7 +85,8 @@ abstract contract ListingAdapterPhase2Base is V4DualBackend {
             createSidePool: side,
             sidePoolBps: side ? 500 : 0,
             liquidityLocked: true,
-            refPriceWad: side ? 2.5e11 : 0
+            refPriceWad: side ? 2.5e11 : 0,
+            ethUsdWad: 1880e18
         });
     }
 

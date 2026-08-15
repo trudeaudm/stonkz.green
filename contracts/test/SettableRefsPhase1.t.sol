@@ -17,9 +17,10 @@ import {LadderConstants} from "../src/ladder/LadderConstants.sol";
 import {LadderTypes} from "../src/ladder/LadderTypes.sol";
 import {LadderSettlement} from "../src/ladder/LadderSettlement.sol";
 import {StonkzLaunchToken} from "../src/StonkzLaunchToken.sol";
+import {FactoryVanity} from "./FactoryVanity.sol";
 
 /// @title SettableRefsPhase1 — stamp isolation + genesis-day sideTokenRef swap (PREDEPLOY-REFIT)
-contract SettableRefsPhase1 is Test {
+contract SettableRefsPhase1 is Test, FactoryVanity {
 
     MockPoolManager internal pm;
     BuybackAccumulator internal acc;
@@ -56,7 +57,7 @@ contract SettableRefsPhase1 is Test {
     }
 
     function test_P1_express_refChange_neverAffectsPriorLaunch() public {
-        StonkzDirectListing prior = express.list(_params(), bytes32(uint256(1)));
+        StonkzDirectListing prior = _list(express, _params());
         address stampedSide = prior.sideTokenRef();
         address stampedHook = address(prior.hook());
         address stampedLocker = address(prior.feeLocker());
@@ -71,7 +72,7 @@ contract SettableRefsPhase1 is Test {
         express.setSideTokenRef(address(genesisToken));
         express.setRefPrice(address(genesisToken), ETH, 5e11);
 
-        StonkzDirectListing next = express.list(_params(), bytes32(uint256(2)));
+        StonkzDirectListing next = _list(express, _params());
         assertEq(next.sideTokenRef(), address(genesisToken));
         assertEq(address(next.feeLocker()), address(locker2));
         assertEq(next.refPriceWad(), 5e11);
@@ -94,7 +95,7 @@ contract SettableRefsPhase1 is Test {
     }
 
     function test_P1_genesisDay_sideTokenSwap_nextPairsNew_priorUnchanged() public {
-        StonkzDirectListing prior = express.list(_params(), bytes32(uint256(10)));
+        StonkzDirectListing prior = _list(express, _params());
         assertEq(prior.sideTokenRef(), STAND_IN);
         assertTrue(prior.sidePoolDeployed());
         address priorLaunchToken = address(prior.token());
@@ -103,7 +104,7 @@ contract SettableRefsPhase1 is Test {
         express.setSideTokenRef(address(genesisToken));
         express.setRefPrice(address(genesisToken), ETH, express.REF_PRICE_ETH_DEFAULT());
 
-        StonkzDirectListing next = express.list(_params(), bytes32(uint256(11)));
+        StonkzDirectListing next = _list(express, _params());
         assertEq(next.sideTokenRef(), address(genesisToken));
         assertTrue(next.sidePoolDeployed());
         assertTrue(address(next.token()) != priorLaunchToken);
@@ -151,7 +152,8 @@ contract SettableRefsPhase1 is Test {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            refPriceWad: 0
+            refPriceWad: 0,
+            ethUsdWad: 1880e18
         });
     }
 

@@ -32,6 +32,7 @@ contract StonkzDirectListing {
     using FixedPointMathLib for uint256;
 
     uint256 internal constant WAD = 1e18;
+    /// @dev USD mcap tiers (product $4k / $8k). Converted to ETH via ethUsdWad at list.
     uint256 internal constant TIER_4K = 4000e18;
     uint256 internal constant TIER_8K = 8000e18;
     int24 internal constant TICK_SPACING = 60;
@@ -62,6 +63,8 @@ contract StonkzDirectListing {
     address public immutable unlockRecipient;
     /// @notice Stamped at deploy. Unit: pair-wei per STONKZ token, WAD. 0 when createSidePool=false.
     uint256 public immutable refPriceWad;
+    /// @notice Stamped at deploy. USD-per-ETH WAD used to convert $ tier mcap → pair-wei.
+    uint256 public immutable ethUsdWad;
 
     uint256 public immutable startMcap;
     uint256 public immutable totalSupply;
@@ -109,6 +112,8 @@ contract StonkzDirectListing {
         bool liquidityLocked;
         /// @dev Unit: pair-wei per STONKZ token, WAD. Factory stamps from DeployControls; 0 if !createSidePool.
         uint256 refPriceWad;
+        /// @dev USD-per-ETH WAD. Express factory overwrites via currentEthUsdWad(); direct tests set explicitly.
+        uint256 ethUsdWad;
     }
 
     event DirectListed(
@@ -178,6 +183,7 @@ contract StonkzDirectListing {
         liquidityLocked = p.liquidityLocked;
         unlockRecipient = p.creator; // stamped immutable — never mutable (Phase 0 rider 4)
         refPriceWad = p.createSidePool ? p.refPriceWad : 0;
+        ethUsdWad = p.ethUsdWad;
         startMcap = p.startMcap;
         totalSupply = p.totalSupply;
 
@@ -210,10 +216,14 @@ contract StonkzDirectListing {
             listed = listingSupply;
         }
 
-        // Start price = mcap / supply (pair per token), WAD.
-        startPriceWad = FixedPointMathLib.mulDiv(p.startMcap, WAD, p.totalSupply);
+        // Was (BONZI bug): startPriceWad = mulDiv(p.startMcap, WAD, p.totalSupply); // treated $ mcap as ETH
+        // Start price = ($ mcap / ethUsd) / supply → pair-wei per token, WAD.
+        uint256 ethMcapWad = FixedPointMathLib.mulDiv(p.startMcap, WAD, p.ethUsdWad); // $ -> ETH
+        startPriceWad = FixedPointMathLib.mulDiv(ethMcapWad, WAD, p.totalSupply);
         bool pairIsToken0 = pairToken_ < address(token);
-        startSqrtPriceX96 = _sqrtPriceFromPriceWad(startPriceWad, pairIsToken0);
+        uint8 decPair = _tokenDecimals(pairToken_);
+        uint8 decTok = _tokenDecimals(address(token));
+        startSqrtPriceX96 = _sqrtPriceFromPriceWad(startPriceWad, pairIsToken0, decPair, decTok);
         startTick = _align(TickMath.getTickAtSqrtRatio(startSqrtPriceX96), TICK_SPACING);
 
         _createMainPool(pairIsToken0);
@@ -316,7 +326,12 @@ contract StonkzDirectListing {
         sidePoolKey = _sidePoolKey(sideTokenRef, address(token));
         bool tokIs0 = address(token) < sideTokenRef;
 
-        uint160 priceSqrt = _sqrtPriceFromPriceWad(priceInStonkz, !tokIs0);
+        uint8 decTok = _tokenDecimals(address(token));
+        uint8 decSide = _tokenDecimals(sideTokenRef);
+        // tokIs0 ⇒ token=c0, side=c1; flag !tokIs0 maps priceInStonkz into token1/token0 orientation.
+        uint160 priceSqrt = _sqrtPriceFromPriceWad(
+            priceInStonkz, !tokIs0, tokIs0 ? decTok : decSide, tokIs0 ? decSide : decTok
+        );
         int24 spotAligned = _align(TickMath.getTickAtSqrtRatio(priceSqrt), TICK_SPACING);
         int24 maxTick = _alignDown(TickMath.MAX_TICK, TICK_SPACING);
         int24 minTick = _alignUp(TickMath.MIN_TICK, TICK_SPACING);
@@ -518,16 +533,41 @@ contract StonkzDirectListing {
         });
     }
 
-    function _sqrtPriceFromPriceWad(uint256 priceWad, bool pairIsToken0) internal pure returns (uint160) {
+    /// @dev Convert WAD human price to sqrtPriceX96. Scales by 10^(dec1−dec0) before sqrt so
+    ///      6-dec stables (USDG) land decimals-correct (was decimals-blind → ×1e12 on USDG).
+    function _sqrtPriceFromPriceWad(uint256 priceWad, bool pairIsToken0, uint8 dec0, uint8 dec1)
+        internal
+        pure
+        returns (uint160)
+    {
         uint256 px = priceWad;
         if (pairIsToken0) {
             px = priceWad == 0 ? WAD : FixedPointMathLib.mulDiv(WAD, WAD, priceWad);
+        }
+        // Raw token1/token0 = human * 10^(dec1 − dec0). Apply before sqrt.
+        if (dec1 >= dec0) {
+            unchecked {
+                px = px * (10 ** (dec1 - dec0));
+            }
+        } else {
+            px = px / (10 ** (dec0 - dec1));
         }
         uint256 sqrtP = _sqrt(px);
         uint256 sqrtX96 = FixedPointMathLib.fullMulDiv(sqrtP, uint256(1) << 96, 1e9);
         if (sqrtX96 <= TickMath.MIN_SQRT_RATIO) return TickMath.MIN_SQRT_RATIO + 1;
         if (sqrtX96 >= TickMath.MAX_SQRT_RATIO) return TickMath.MAX_SQRT_RATIO - 1;
         return uint160(sqrtX96);
+    }
+
+    /// @dev Native ETH = 18; ERC20 via decimals() with 18 fallback (etched stand-ins).
+    function _tokenDecimals(address t) internal view returns (uint8) {
+        if (t == address(0)) return 18;
+        (bool ok, bytes memory ret) = t.staticcall(abi.encodeWithSignature("decimals()"));
+        if (ok && ret.length >= 32) {
+            uint256 d = abi.decode(ret, (uint256));
+            if (d <= 18) return uint8(d);
+        }
+        return 18;
     }
 
     function _align(int24 tick, int24 spacing) internal pure returns (int24) {

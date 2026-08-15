@@ -85,14 +85,14 @@ contract SidePoolRefPrice is Test, FactoryVanity {
     // ─── known-value arithmetic (Express) ──────────────────────────────────
 
     function test_ref_express_eth_initTick_knownValue() public {
-        // startPriceWad = 4000e18 * WAD / 1e24 = 4e15 pair-wei/token
-        // priceInStonkz = 4e15 * WAD / 2.5e11 = 1.6e22 side-token/token
+        // startPriceWad = ($4000 / $1880) / 1e6 supply ≈ 2.127e12 pair-wei/token
+        // priceInStonkz = 2.127e12 * WAD / 2.5e11 ≈ 8.51e18 side-token/token
         StonkzDirectListing l = _list(expressEth, _params());
         assertEq(l.refPriceWad(), 2.5e11);
-        assertEq(l.startPriceWad(), 4e15);
+        assertEq(l.startPriceWad(), 2127659574468);
 
         uint256 priceInStonkz = FixedPointMathLib.mulDiv(l.startPriceWad(), WAD, l.refPriceWad());
-        assertEq(priceInStonkz, 1.6e22);
+        assertEq(priceInStonkz, 8510638297872000000);
         // Phase-4 Express real-PM orientation: sideTickLower is currency-order
         // dependent (not naive tickAbovePrice(priceInStonkz)); lock arithmetic + deploy.
         assertTrue(l.sidePoolDeployed());
@@ -105,7 +105,7 @@ contract SidePoolRefPrice is Test, FactoryVanity {
         StonkzDirectListing l = _list(expressUsdg, _params());
         assertEq(l.refPriceWad(), 1e15);
         uint256 priceInStonkz = FixedPointMathLib.mulDiv(l.startPriceWad(), WAD, l.refPriceWad());
-        assertEq(priceInStonkz, 4e18);
+        assertEq(priceInStonkz, 2127659574468000);
         assertTrue(l.sidePoolDeployed());
         _assertSidePoolOnPoolPrice(l, priceInStonkz);
     }
@@ -259,7 +259,8 @@ contract SidePoolRefPrice is Test, FactoryVanity {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            refPriceWad: 0 // factory overwrites
+            refPriceWad: 0, // factory overwrites
+            ethUsdWad: 1880e18
         });
     }
 

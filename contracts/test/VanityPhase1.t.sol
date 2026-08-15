@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 import {Test} from "forge-std/Test.sol";
 import {Vanity} from "../src/Vanity.sol";
 import {VanityHelpers} from "./VanityHelpers.sol";
+import {EthUsdRefHelpers} from "./EthUsdRefHelpers.sol";
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {MockPoolManager} from "../src/mock/MockPoolManager.sol";
 import {BuybackAccumulator} from "../src/BuybackAccumulator.sol";
@@ -19,6 +20,7 @@ import {LadderConstants} from "../src/ladder/LadderConstants.sol";
 import {LadderTypes} from "../src/ladder/LadderTypes.sol";
 
 /// @title VanityPhase1 — 0x4663 CREATE2 vanity (docs/03; docs/04)
+/// @dev Express vanity is on the TOKEN (listing nonce=1); ladder vanity remains on the auction.
 contract VanityPhase1 is Test {
     MockPoolManager internal pm;
     BuybackAccumulator internal acc;
@@ -44,37 +46,47 @@ contract VanityPhase1 is Test {
         hook = new StonkzFeeHook(IPoolManager(address(pm)), TREASURY, ICTOGovernor(address(gov)), address(this));
         gov.setRegistry(hook);
         locker = new FeeLockerV2(IPoolManager(address(pm)), hook);
-        express = new StonkzExpressFactory(IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, STONKZ
-        );
+        express = new StonkzExpressFactory(IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, STONKZ);
+        EthUsdRefHelpers.wireExpressRef(express, 1880e18);
         ladder = new StonkzLadderFactory();
         ladder.setCarveTreasury(TREASURY);
         ladder.setSideTokenRef(STONKZ);
     }
 
-    function test_P1_minedSalt_deploysAtPredicted_0x4663() public {
+    function test_P1_minedSalt_deploysTokenAtPredicted_0x4663() public {
         StonkzDirectListing.ListingParams memory p = _params();
-        (bytes32 userSalt, address predicted) = VanityHelpers.mineExpress(express, address(this), p);
-        assertTrue(Vanity.matches(predicted), "prefix");
-        assertEq(Vanity.prefixOf(predicted), Vanity.PREFIX);
+        (bytes32 userSalt, address predictedListing) = VanityHelpers.mineExpress(express, address(this), p);
+        address predictedToken = express.predictTokenAddress(predictedListing);
+        assertTrue(Vanity.matches(predictedToken), "token prefix");
+        assertEq(Vanity.prefixOf(predictedToken), Vanity.PREFIX);
+        // Listing itself is not required to be vanity.
+        assertTrue(predictedListing != address(0));
 
         StonkzDirectListing listing = express.list(p, userSalt);
-        assertEq(address(listing), predicted, "deployed == predicted");
-        assertTrue(Vanity.matches(address(listing)));
+        assertEq(address(listing), predictedListing, "deployed listing == predicted");
+        assertEq(address(listing.token()), predictedToken, "deployed token == predicted");
+        assertTrue(Vanity.matches(address(listing.token())));
     }
 
-    function test_P1_wrongSalt_reverts_VanityPrefixMismatch() public {
+    function test_P1_predictTokenAddress_matches_vm_computeCreateAddress() public {
+        address listing = address(0x1234567890123456789012345678901234567890);
+        assertEq(express.predictTokenAddress(listing), vm.computeCreateAddress(listing, 1));
+    }
+
+    function test_P1_wrongSalt_reverts_VanityPrefixMismatch_onToken() public {
         StonkzDirectListing.ListingParams memory p = _params();
-        // Mine a good salt then flip a bit so prefix fails (or use salt 0 if unlucky match — loop).
         bytes32 bad;
-        address predicted;
+        address predictedListing;
+        address predictedToken;
         for (uint256 i; i < 1000; ++i) {
             bad = bytes32(i);
-            predicted = express.predictListingAddress(address(this), bad, express.listingInitCodeHash(p));
-            if (!Vanity.matches(predicted)) break;
+            predictedListing = express.predictListingAddress(address(this), bad, express.listingInitCodeHash(p));
+            predictedToken = express.predictTokenAddress(predictedListing);
+            if (!Vanity.matches(predictedToken)) break;
         }
-        assertFalse(Vanity.matches(predicted), "need non-vanity salt");
+        assertFalse(Vanity.matches(predictedToken), "need non-vanity token salt");
 
-        vm.expectRevert(abi.encodeWithSelector(Vanity.VanityPrefixMismatch.selector, predicted));
+        vm.expectRevert(abi.encodeWithSelector(Vanity.VanityPrefixMismatch.selector, predictedToken));
         express.list(p, bad);
     }
 
@@ -82,22 +94,18 @@ contract VanityPhase1 is Test {
         express.allowDeployer(FRIEND);
         StonkzDirectListing.ListingParams memory p = _params();
 
-        // Mine for this (test contract as deployer).
         (bytes32 userSalt, address predThis) = VanityHelpers.mineExpress(express, address(this), p);
         StonkzDirectListing a = express.list(p, userSalt);
         assertEq(address(a), predThis);
+        assertTrue(Vanity.matches(address(a.token())));
 
-        // Same userSalt from FRIEND → different CREATE2 address (deployer binding).
-        // That address may or may not be vanity — if not, FRIEND must mine their own.
         (bytes32 friendSalt, address predFriend) = VanityHelpers.mineExpress(express, FRIEND, p);
-        // Prove binding: same userSalt yields different effective salts / addresses.
         assertTrue(express.listingSalt(address(this), userSalt) != express.listingSalt(FRIEND, userSalt));
 
         vm.prank(FRIEND);
         StonkzDirectListing b = express.list(p, friendSalt);
         assertEq(address(b), predFriend);
         assertTrue(address(a) != address(b));
-        // Same userSalt across deployers cannot both be the mined vanity for each other.
         address cross = express.predictListingAddress(FRIEND, userSalt, express.listingInitCodeHash(p));
         assertTrue(cross != address(a));
     }
@@ -137,6 +145,7 @@ contract VanityPhase1 is Test {
         p.sidePoolBps = 500;
         p.liquidityLocked = true;
         p.refPriceWad = 2.5e11;
+        p.ethUsdWad = 1880e18;
     }
 
     function _ladderParams() internal pure returns (StonkzLadderAuction.Params memory p) {

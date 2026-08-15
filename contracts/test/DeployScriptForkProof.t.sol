@@ -140,6 +140,15 @@ contract DeployScriptForkProof is Test {
         settlement.setFeeLocker(locker);
         vault = new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000);
         express = new StonkzExpressFactory(pm, locker, hook, acc, gov, PAIR, address(standIn));
+        express.setRefPools(
+            RH_POOL_MANAGER,
+            bytes32(0x30dac7167c36242d1bacfd30561d444cf014529ee55978991d03e4ee178e725a),
+            true,
+            6,
+            bytes32(0x54f7883914619af9105355bf83ed678bcf9f63560218ac61c9963b9503d0ba32),
+            true,
+            6
+        );
         ladder = new StonkzLadderFactory();
         ladder.setCarveTreasury(custody); // protocol carve Safe stand-in (script uses CARVE_TREASURY_ADDRESS)
         ladder.setVaultRef(address(vault));

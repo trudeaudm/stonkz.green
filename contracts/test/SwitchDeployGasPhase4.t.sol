@@ -62,7 +62,8 @@ contract SwitchDeployGasPhase4 is Test, FactoryVanity {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            refPriceWad: 0
+            refPriceWad: 0,
+            ethUsdWad: 1880e18
         });
         uint256 g = gasleft();
         _list(express, p);

@@ -149,7 +149,8 @@ contract SwitchDrillPhase4 is Test, FactoryVanity {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            refPriceWad: 0
+            refPriceWad: 0,
+            ethUsdWad: 1880e18
         });
     }
 

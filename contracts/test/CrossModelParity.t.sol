@@ -56,7 +56,8 @@ contract CrossModelParity is Test {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            refPriceWad: 1e15 // pair-wei per STONKZ token, WAD (USDG-style pair)
+            refPriceWad: 1e15, // pair-wei per STONKZ token, WAD (USDG-style pair)
+            ethUsdWad: 1880e18
         });
         l = new StonkzDirectListing(IPoolManager(address(pm)), locker, hook, acc, gov, PAIR, address(0x4663), p);
     }

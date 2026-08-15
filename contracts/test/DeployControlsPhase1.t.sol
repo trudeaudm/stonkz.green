@@ -20,6 +20,7 @@ import {LadderConstants} from "../src/ladder/LadderConstants.sol";
 import {LadderTypes} from "../src/ladder/LadderTypes.sol";
 import {LadderSettlement} from "../src/ladder/LadderSettlement.sol";
 import {DeployControls} from "../src/DeployControls.sol";
+import {EthUsdRefHelpers} from "./EthUsdRefHelpers.sol";
 
 /// @title DeployControlsPhase1 — deploysEnabled + allowlist on Express AND Ladder
 /// @notice Semantics (docs/stop-task-switches-plan §3.2):
@@ -56,6 +57,7 @@ contract DeployControlsPhase1 is Test, FactoryVanity {
         );
         // Gate drills do not need side pools; loud-unset would mask DeployControls reverts.
         express.setDefaultCreateSidePool(false);
+        EthUsdRefHelpers.wireExpressRef(express, 1880e18);
         ladder = new StonkzLadderFactory();
         ladder.setCarveTreasury(TREASURY);
         ladder.setDefaultCreateSidePool(false);
@@ -165,21 +167,23 @@ contract DeployControlsPhase1 is Test, FactoryVanity {
         StonkzDirectListing first = express.list(p, userSalt);
         assertEq(address(first), predicted, "CREATE2 predict == deploy");
 
-        // Second vanity salt (skip the one already used by first deploy).
+        // Second vanity salt (TOKEN prefix; skip the one already used by first deploy).
         bytes32 otherSalt;
         address otherPred;
         bool found;
         for (uint256 i = uint256(userSalt) + 1; i < uint256(userSalt) + 500_000; ++i) {
             otherSalt = bytes32(i);
             otherPred = express.predictListingAddress(address(this), otherSalt, initCodeHash);
-            if (Vanity.matches(otherPred) && otherPred != predicted) {
+            address otherTok = express.predictTokenAddress(otherPred);
+            if (Vanity.matches(otherTok) && otherPred != predicted && otherPred.code.length == 0) {
                 found = true;
                 break;
             }
         }
-        assertTrue(found, "second vanity salt");
+        assertTrue(found, "second token-vanity salt");
         StonkzDirectListing second = express.list(p, otherSalt);
         assertEq(address(second), otherPred, "second CREATE2 predict == deploy");
+        assertTrue(Vanity.matches(address(second.token())));
         assertTrue(address(first) != address(second));
     }
 
@@ -259,7 +263,8 @@ contract DeployControlsPhase1 is Test, FactoryVanity {
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            refPriceWad: 2.5e11 // pair-wei per STONKZ token, WAD
+            refPriceWad: 2.5e11, // pair-wei per STONKZ token, WAD
+            ethUsdWad: 1880e18
         });
     }
 

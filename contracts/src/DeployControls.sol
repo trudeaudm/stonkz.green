@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.26;
 
+import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
+import {IExtsload} from "@v4-core/src/interfaces/IExtsload.sol";
+
 /// @title DeployControls — factory switches (docs/03 Factory switches)
 /// @notice Mutable on each factory instance; gate checked at file/list. Side-pool defaults
 ///         stamped immutably per token at deploy (Phase 2). Lock stamp is Phase 3.
@@ -24,6 +27,21 @@ abstract contract DeployControls {
     /// @dev Unit: pair-wei per side-token, WAD. Bounds ±6 orders from launch.
     uint256 public constant REF_PRICE_USDG_MIN = 1e12; // pair-wei per side-token, WAD
     uint256 public constant REF_PRICE_USDG_MAX = 1e21; // pair-wei per side-token, WAD
+
+    // ─── ETH/USD two-pool spot (owner-set; no constructor coupling) ───────────
+    // StateLibrary layout (v4-core): POOLS_SLOT=6, LIQUIDITY_OFFSET=3; slot0 via extsload.
+    uint256 internal constant _REF_POOLS_SLOT = 6;
+    uint256 internal constant _REF_LIQUIDITY_OFFSET = 3;
+
+    address public refPoolManager;
+    bytes32 public refPoolPrimary;
+    bytes32 public refPoolCheck;
+    bool public refPrimaryEthIs0;
+    bool public refCheckEthIs0;
+    uint8 public refPrimaryStableDecimals;
+    uint8 public refCheckStableDecimals;
+    /// @notice Max |primary−check|/primary in bps. Default 500 = 5%.
+    uint16 public refAgreementBps = 500;
 
     address public owner;
 
@@ -61,6 +79,16 @@ abstract contract DeployControls {
     event DefaultLiquidityLockedSet(bool locked);
     /// @notice Fired on seed defaults and every owner update/clear.
     event RefPriceChanged(address indexed sideToken, address indexed pairCurrency, uint256 refPriceWad_);
+    event RefPoolsSet(
+        address indexed poolManager,
+        bytes32 primaryId,
+        bool primaryEthIs0,
+        uint8 primaryStableDec,
+        bytes32 checkId,
+        bool checkEthIs0,
+        uint8 checkStableDec
+    );
+    event RefAgreementBpsSet(uint16 bps);
 
     error NotOwner();
     error DeploysOff();
@@ -71,6 +99,10 @@ abstract contract DeployControls {
     error SidePoolBpsOutOfBounds(uint16 bps);
     error RefPriceOutOfBounds(address pairCurrency, uint256 price);
     error RefPriceUnset(address sideToken, address pairCurrency);
+    error RefPoolUnset();
+    error RefPoolEmpty(bytes32 poolId);
+    error RefPoolsDisagree(uint256 primaryWad, uint256 checkWad);
+    error RefAgreementBpsOutOfBounds(uint16 bps);
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
@@ -199,5 +231,95 @@ abstract contract DeployControls {
         } else if (priceWad < REF_PRICE_USDG_MIN || priceWad > REF_PRICE_USDG_MAX) {
             revert RefPriceOutOfBounds(pairCurrency, priceWad);
         }
+    }
+
+    /// @notice Owner-designates the two ETH/USD reference pools (initial values set post-deploy).
+    function setRefPools(
+        address pm,
+        bytes32 primaryId,
+        bool primaryEthIs0,
+        uint8 primaryStableDec,
+        bytes32 checkId,
+        bool checkEthIs0,
+        uint8 checkStableDec
+    ) external onlyOwner {
+        if (pm == address(0) || primaryId == bytes32(0) || checkId == bytes32(0)) revert ZeroAddress();
+        if (primaryStableDec == 0 || checkStableDec == 0) revert ZeroAddress();
+        refPoolManager = pm;
+        refPoolPrimary = primaryId;
+        refPrimaryEthIs0 = primaryEthIs0;
+        refPrimaryStableDecimals = primaryStableDec;
+        refPoolCheck = checkId;
+        refCheckEthIs0 = checkEthIs0;
+        refCheckStableDecimals = checkStableDec;
+        emit RefPoolsSet(pm, primaryId, primaryEthIs0, primaryStableDec, checkId, checkEthIs0, checkStableDec);
+    }
+
+    /// @notice Max relative disagreement between primary and check, in bps of primary. Bounds [1, 2000].
+    function setRefAgreementBps(uint16 bps) external onlyOwner {
+        if (bps == 0 || bps > 2000) revert RefAgreementBpsOutOfBounds(bps);
+        refAgreementBps = bps;
+        emit RefAgreementBpsSet(bps);
+    }
+
+    /// @notice USD-per-ETH WAD from two-pool spot agreement. Returns PRIMARY's price.
+    /// @dev StateLibrary (v4-core): POOLS_SLOT=6, LIQUIDITY_OFFSET=3; slot0 + liquidity via extsload.
+    function currentEthUsdWad() public view returns (uint256) {
+        if (refPoolManager == address(0) || refPoolPrimary == bytes32(0) || refPoolCheck == bytes32(0)) {
+            revert RefPoolUnset();
+        }
+        uint256 primaryWad = _ethUsdWadFromPool(refPoolPrimary, refPrimaryEthIs0, refPrimaryStableDecimals);
+        uint256 checkWad = _ethUsdWadFromPool(refPoolCheck, refCheckEthIs0, refCheckStableDecimals);
+        uint256 diff = primaryWad > checkWad ? primaryWad - checkWad : checkWad - primaryWad;
+        if (diff > FixedPointMathLib.mulDiv(primaryWad, refAgreementBps, 10_000)) {
+            revert RefPoolsDisagree(primaryWad, checkWad);
+        }
+        return primaryWad;
+    }
+
+    /// @dev Reads slot0 + in-range liquidity; empty pool ⇒ spot freely settable ⇒ never price from it.
+    function _ethUsdWadFromPool(bytes32 poolId, bool ethIs0, uint8 stableDecimals)
+        internal
+        view
+        returns (uint256 ethUsdWad)
+    {
+        // pools[poolId] state slot = keccak256(abi.encodePacked(poolId, POOLS_SLOT))
+        bytes32 stateSlot = keccak256(abi.encodePacked(poolId, bytes32(_REF_POOLS_SLOT)));
+        IExtsload pm = IExtsload(refPoolManager);
+        bytes32 slot0Data = pm.extsload(stateSlot);
+        uint128 liquidity = uint128(uint256(pm.extsload(bytes32(uint256(stateSlot) + _REF_LIQUIDITY_OFFSET))));
+        if (liquidity == 0) revert RefPoolEmpty(poolId);
+
+        uint160 sqrtPriceX96;
+        assembly ("memory-safe") {
+            sqrtPriceX96 := and(slot0Data, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+        }
+        ethUsdWad = _sqrtPriceToEthUsdWad(sqrtPriceX96, ethIs0, stableDecimals);
+    }
+
+    /// @dev USD-per-ETH WAD from Uniswap v4 sqrtPriceX96.
+    ///
+    /// Scaling derivation (ETH 18-dec, stable `stableDecimals`, e.g. USDG=6):
+    ///   price_raw = token1/token0 = sqrtPriceX96² / 2^192
+    ///   If ethIs0 (ETH=c0, stable=c1):
+    ///     human_stable_per_ETH = price_raw * 10^(dec0 − dec1) = price_raw * 10^(18 − stableDecimals)
+    ///     ethUsdWad = human * 1e18 = sqrtP² * 10^(36 − stableDecimals) / 2^192
+    ///   If !ethIs0 (stable=c0, ETH=c1):
+    ///     human_ETH_per_stable = price_raw * 10^(stableDecimals − 18)
+    ///     ethUsdWad = 1e18 / human = 10^(36 − stableDecimals) * 2^192 / sqrtP²
+    function _sqrtPriceToEthUsdWad(uint160 sqrtPriceX96, bool ethIs0, uint8 stableDecimals)
+        internal
+        pure
+        returns (uint256)
+    {
+        uint256 sqrtP = uint256(sqrtPriceX96);
+        // 10^(36 - stableDecimals): combines 10^(18-stableDec) human scale with WAD (1e18).
+        uint256 scale = 10 ** (36 - uint256(stableDecimals));
+        // Split 2^192 across two 2^96 steps so sub-1 price_raw does not truncate to 0.
+        uint256 mid = FixedPointMathLib.fullMulDiv(sqrtP, sqrtP, uint256(1) << 96);
+        if (ethIs0) {
+            return FixedPointMathLib.fullMulDiv(mid, scale, uint256(1) << 96);
+        }
+        return FixedPointMathLib.fullMulDiv(scale, uint256(1) << 96, mid);
     }
 }

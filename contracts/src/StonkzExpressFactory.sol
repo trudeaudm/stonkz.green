@@ -13,8 +13,8 @@ import {CreationCodeStore} from "./CreationCodeStore.sol";
 
 /// @title StonkzExpressFactory — gated Express (direct listing) deploy path
 /// @notice Sole production entry for Express launches. CREATE2 salt =
-///         keccak256(deployer, userSalt). Vanity: predicted address top bytes == 0x4663
-///         (docs/03 VANITY PREFIX; docs/04).
+///         keccak256(deployer, userSalt). Vanity: predicted TOKEN top bytes == 0x4663
+///         (docs/03 VANITY PREFIX; docs/04). Token = CREATE(listing, nonce=1).
 /// @dev Child refs are owner-settable (stamp pattern): new lists copy current refs; prior
 ///      listings keep their immutable stamps (PREDEPLOY-REFIT Phase 1).
 ///      Listing creation bytecode lives in SSTORE2 pointers (EIP-170) — not embedded here.
@@ -125,9 +125,21 @@ contract StonkzExpressFactory is DeployControls {
         predicted = Vanity.predict(address(this), salt, initCodeHash);
     }
 
+    /// @notice Predict the launch token address: CREATE at listing nonce 1 (constructor `new Token`).
+    /// @dev Explicit RLP([listing, 1]) = 0xd6 || 0x94 || listing || 0x01 (20-byte addr, nonce=1).
+    function predictTokenAddress(address predictedListing) public pure returns (address) {
+        return address(
+            uint160(
+                uint256(
+                    keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), predictedListing, bytes1(0x01)))
+                )
+            )
+        );
+    }
+
     /// @notice Deploy an Express listing. Gated by DeployControls (RIDER A birth = deployer-only).
-    /// @dev Stamps side-pool + lock + ref-price + child refs current at list (docs/03; ruling B).
-    ///      Reverts VanityPrefixMismatch if predicted address top bytes != 0x4663.
+    /// @dev Stamps side-pool + lock + ref-price + ethUsd + child refs current at list (docs/03; ruling B).
+    ///      Reverts VanityPrefixMismatch if predicted TOKEN top bytes != 0x4663.
     /// @param userSalt Caller-chosen salt half; effective salt = listingSalt(msg.sender, userSalt).
     /// @dev Native pair: pass msg.value as ETH settle buffer for real PM (adapter refunds dust).
     function list(StonkzDirectListing.ListingParams memory p, bytes32 userSalt)
@@ -141,7 +153,8 @@ contract StonkzExpressFactory is DeployControls {
         bytes memory args = _listingArgs(p);
         bytes32 initHash = keccak256(abi.encodePacked(_listingCreationCode(), args));
         address predicted = Vanity.predict(address(this), salt, initHash);
-        Vanity.requirePrefix(predicted);
+        address predictedToken = predictTokenAddress(predicted);
+        Vanity.requirePrefix(predictedToken);
 
         address deployed =
             CreationCodeStore.create2(listingCreationPtr0, listingCreationPtr1, args, salt, msg.value);
@@ -164,6 +177,8 @@ contract StonkzExpressFactory is DeployControls {
         p.liquidityLocked = defaultLiquidityLocked;
         // Ref: required when createSidePool; never a silent fallback (RefPriceUnset).
         p.refPriceWad = p.createSidePool ? _requireRefPrice(sideTokenRef, pairToken) : 0;
+        // ETH/USD spot from two-pool agreement — never caller-supplied on Express path.
+        p.ethUsdWad = currentEthUsdWad();
     }
 
     function _setPoolManager(address pm) internal {

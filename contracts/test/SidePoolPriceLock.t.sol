@@ -8,6 +8,7 @@ import {stdJson} from "forge-std/StdJson.sol";
 import {V4DualBackend} from "./V4DualBackend.sol";
 import {FactoryVanity} from "./FactoryVanity.sol";
 import {VanityHelpers} from "./VanityHelpers.sol";
+import {EthUsdRefHelpers} from "./EthUsdRefHelpers.sol";
 import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {PoolKey, PoolIdLibrary} from "../src/v4/types/PoolKey.sol";
 import {Currency} from "../src/v4/types/Currency.sol";
@@ -223,13 +224,15 @@ abstract contract SidePoolPriceLockBase is V4DualBackend, LadderVectorLoader, Fa
             createSidePool: true,
             sidePoolBps: 500,
             liquidityLocked: true,
-            refPriceWad: 0
+            refPriceWad: 0,
+            ethUsdWad: 1880e18
         });
     }
 
     function _listEth() internal returns (StonkzDirectListing l) {
         StonkzExpressFactory f =
             new StonkzExpressFactory(pm, locker, hook, acc, gov, ETH, address(sideTok));
+        EthUsdRefHelpers.wireExpressRef(f, 1880e18);
         StonkzDirectListing.ListingParams memory p = _listingParams();
         (bytes32 userSalt,) = VanityHelpers.mineExpress(f, address(this), p);
         l = f.list{value: 1 ether}(p, userSalt);
@@ -238,6 +241,7 @@ abstract contract SidePoolPriceLockBase is V4DualBackend, LadderVectorLoader, Fa
     function _listUsdg() internal returns (StonkzDirectListing l) {
         StonkzExpressFactory f =
             new StonkzExpressFactory(pm, locker, hook, acc, gov, address(usdgPair), address(sideTok));
+        EthUsdRefHelpers.wireExpressRef(f, 1880e18);
         // Non-ETH pair uses USDG-style bounds/default (pair-wei per side-token).
         f.setRefPrice(address(sideTok), address(usdgPair), f.REF_PRICE_USDG_DEFAULT());
         StonkzDirectListing.ListingParams memory p = _listingParams();
@@ -247,15 +251,15 @@ abstract contract SidePoolPriceLockBase is V4DualBackend, LadderVectorLoader, Fa
 
     // ─── Express locks ──────────────────────────────────────────────────────
 
-    /// @notice ETH side pool: ruled 2.5e11 → priceInStonkz 1.6e22; slot0 + ticks locked.
+    /// @notice ETH side pool: ruled 2.5e11 → priceInStonkz ~8.51e18; slot0 + ticks locked.
     function test_lock_express_eth_slot0_matches_refprice() public {
         StonkzDirectListing l = _listEth();
         assertEq(l.refPriceWad(), 2.5e11);
-        assertEq(l.startPriceWad(), 4e15);
+        // $4k / $1880 / 1e6 supply → ~2.127e12 ETH/token (not old 4e15).
+        assertEq(l.startPriceWad(), 2127659574468);
         bool tokIs0 = address(l.token()) < l.sideTokenRef();
-        // Orientation reported for STOP (CREATE2 token vs sideTok).
         assertTrue(tokIs0 || !tokIs0); // always true — documents both branches in coverage
-        _assertExpressOnPoolPrice(l, 1.6e22);
+        _assertExpressOnPoolPrice(l, 8510638297872000000); // start/ref = 2.127e12/2.5e11
     }
 
     /// @notice USDG side pool: same orientation rule (userToken vs sideTokenRef); pair ≠ side key.
@@ -271,15 +275,15 @@ abstract contract SidePoolPriceLockBase is V4DualBackend, LadderVectorLoader, Fa
 
         assertEq(lUsdg.refPriceWad(), 1e15);
         uint256 priceInStonkz = FixedPointMathLib.mulDiv(lUsdg.startPriceWad(), WAD, lUsdg.refPriceWad());
-        assertEq(priceInStonkz, 4e18);
-        _assertExpressOnPoolPrice(lUsdg, 4e18);
+        assertEq(priceInStonkz, 2127659574468000); // 2.127e12 * 1e18 / 1e15
+        _assertExpressOnPoolPrice(lUsdg, 2127659574468000);
     }
 
     /// @notice Vacuity: wrong expected priceInStonkz must NOT match slot0 (1000× mispricing).
     function test_lock_vacuity_wrongPriceFailsMatch() public {
         StonkzDirectListing l = _listEth();
         uint256 correct = FixedPointMathLib.mulDiv(l.startPriceWad(), WAD, l.refPriceWad());
-        assertEq(correct, 1.6e22);
+        assertEq(correct, 8510638297872000000);
         assertTrue(
             _sidePoolMatchesPrice(
                 l.sideKey(), l.sideTickLower(), l.sideTickUpper(), address(l.token()), l.sideTokenRef(), correct

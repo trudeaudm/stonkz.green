@@ -186,6 +186,16 @@ contract ForkCanonPhase4 is Test {
         // Express: production requires sideTokenRef from birth (STONKZ_REF / stand-in).
         // Park-on-unset RETIRED (PREDEPLOY-REFIT Phase 3a) — fork drills the set-ref path only.
         express = new StonkzExpressFactory(pm, locker, hook, acc, gov, PAIR, address(stonkz));
+        // Live ETH/USDG two-pool refs (stonkz-refpools.md addendum): B=primary, A=check.
+        express.setRefPools(
+            RH_POOL_MANAGER,
+            bytes32(0x30dac7167c36242d1bacfd30561d444cf014529ee55978991d03e4ee178e725a),
+            true,
+            6,
+            bytes32(0x54f7883914619af9105355bf83ed678bcf9f63560218ac61c9963b9503d0ba32),
+            true,
+            6
+        );
         ladder = new StonkzLadderFactory();
         ladder.setCarveTreasury(treasury);
         ladder.setVaultRef(address(vault));
@@ -653,6 +663,7 @@ contract ForkCanonPhase4 is Test {
         p.sidePoolBps = 500;
         p.liquidityLocked = true;
         p.refPriceWad = 2.5e11;
+        p.ethUsdWad = 1880e18;
     }
 
     function _ladderParams() internal view returns (StonkzLadderAuction.Params memory p) {
@@ -715,7 +726,7 @@ contract ForkCanonPhase4 is Test {
         vm.deal(address(this), address(this).balance + ETH_LIST_BUFFER);
         (bytes32 userSalt,) = VanityHelpers.mineExpress(factory, address(this), p);
         listing = factory.list{value: ETH_LIST_BUFFER}(p, userSalt);
-        assertTrue(Vanity.matches(address(listing)), "express vanity");
+        assertTrue(Vanity.matches(address(listing.token())), "express token vanity");
     }
 
     function _listAs(StonkzExpressFactory factory, address who, StonkzDirectListing.ListingParams memory p)
@@ -726,7 +737,7 @@ contract ForkCanonPhase4 is Test {
         (bytes32 userSalt,) = VanityHelpers.mineExpress(factory, who, p);
         vm.prank(who);
         listing = factory.list{value: ETH_LIST_BUFFER}(p, userSalt);
-        assertTrue(Vanity.matches(address(listing)), "express vanity");
+        assertTrue(Vanity.matches(address(listing.token())), "express token vanity");
     }
 
     receive() external payable {}
