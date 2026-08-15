@@ -43,6 +43,10 @@ abstract contract DeployControls {
     /// @notice Max |primary−check|/primary in bps. Default 500 = 5%.
     uint16 public refAgreementBps = 500;
 
+    /// @notice Max |supplied−live|/live ethUsdWad accepted at list(), in bps. Default 200 = 2%.
+    /// @dev Caller supplies ethUsdWad into ListingParams for CREATE2 determinism; live spot only validates.
+    uint16 public ethUsdStampBandBps = 200;
+
     address public owner;
 
     /// @notice Master deploy switch. False blocks every file/list regardless of allowlist.
@@ -89,6 +93,7 @@ abstract contract DeployControls {
         uint8 checkStableDec
     );
     event RefAgreementBpsSet(uint16 bps);
+    event EthUsdStampBandBpsSet(uint16 bps);
 
     error NotOwner();
     error DeploysOff();
@@ -103,6 +108,8 @@ abstract contract DeployControls {
     error RefPoolEmpty(bytes32 poolId);
     error RefPoolsDisagree(uint256 primaryWad, uint256 checkWad);
     error RefAgreementBpsOutOfBounds(uint16 bps);
+    error EthUsdStampBandBpsOutOfBounds(uint16 bps);
+    error EthUsdStampDrift(uint256 supplied, uint256 current);
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
@@ -260,6 +267,24 @@ abstract contract DeployControls {
         if (bps == 0 || bps > 2000) revert RefAgreementBpsOutOfBounds(bps);
         refAgreementBps = bps;
         emit RefAgreementBpsSet(bps);
+    }
+
+    /// @notice Max |supplied−live|/live ethUsd at list(), in bps of live. Bounds [1, 1000].
+    function setEthUsdStampBandBps(uint16 bps) external onlyOwner {
+        if (bps == 0 || bps > 1000) revert EthUsdStampBandBpsOutOfBounds(bps);
+        ethUsdStampBandBps = bps;
+        emit EthUsdStampBandBpsSet(bps);
+    }
+
+    /// @notice Reject caller-supplied ethUsdWad outside the stamp band of live two-pool spot.
+    /// @dev Zero supplied reverts. Live read still runs all currentEthUsdWad guards.
+    function requireEthUsdFresh(uint256 suppliedWad) public view {
+        if (suppliedWad == 0) revert EthUsdStampDrift(0, 0);
+        uint256 current = currentEthUsdWad();
+        uint256 diff = suppliedWad > current ? suppliedWad - current : current - suppliedWad;
+        if (diff > FixedPointMathLib.mulDiv(current, ethUsdStampBandBps, 10_000)) {
+            revert EthUsdStampDrift(suppliedWad, current);
+        }
     }
 
     /// @notice USD-per-ETH WAD from two-pool spot agreement. Returns PRIMARY's price.

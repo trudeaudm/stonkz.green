@@ -24,6 +24,7 @@ abstract contract FactoryVanity is Test {
         returns (StonkzDirectListing listing)
     {
         _ensureEthUsdRef(factory);
+        if (p.ethUsdWad == 0) p.ethUsdWad = factory.currentEthUsdWad();
         (bytes32 userSalt,) = VanityHelpers.mineExpress(factory, address(this), p);
         listing = factory.list(p, userSalt);
     }
@@ -33,6 +34,7 @@ abstract contract FactoryVanity is Test {
         returns (StonkzDirectListing listing)
     {
         _ensureEthUsdRef(factory);
+        if (p.ethUsdWad == 0) p.ethUsdWad = factory.currentEthUsdWad();
         (bytes32 userSalt,) = VanityHelpers.mineExpress(factory, who, p);
         vm.prank(who);
         listing = factory.list(p, userSalt);

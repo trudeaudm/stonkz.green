@@ -112,7 +112,7 @@ contract StonkzDirectListing {
         bool liquidityLocked;
         /// @dev Unit: pair-wei per STONKZ token, WAD. Factory stamps from DeployControls; 0 if !createSidePool.
         uint256 refPriceWad;
-        /// @dev USD-per-ETH WAD. Express factory overwrites via currentEthUsdWad(); direct tests set explicitly.
+        /// @dev USD-per-ETH WAD. Caller-supplied on Express (CREATE2-deterministic); factory freshness-checks only.
         uint256 ethUsdWad;
     }
 

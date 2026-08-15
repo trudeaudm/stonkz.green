@@ -266,6 +266,128 @@ contract ExpressPricingFix is Test, FactoryVanity {
         emit log_named_uint("fork currentEthUsdWad", wad);
         assertGe(wad, 1500e18);
         assertLe(wad, 2500e18);
+
+        // (d) Supply ethUsd from the same fork read; list() must pass (band 2%).
+        forkExpress.setRefPrice(address(forkUsd), PAIR, 531914893617021);
+        StonkzDirectListing.ListingParams memory p = _params();
+        p.ethUsdWad = wad; // read-and-supply in same test tx — not a stale prior-block value
+        p.creator = address(this);
+        (bytes32 salt, address predListing) = VanityHelpers.mineExpress(forkExpress, address(this), p);
+        StonkzDirectListing listed = forkExpress.list(p, salt);
+        assertEq(address(listed), predListing);
+        assertEq(listed.ethUsdWad(), wad);
+        assertTrue(Vanity.matches(address(listed.token())));
+    }
+
+    // ─── V2.1: caller-supplied ethUsdWad (CREATE2 determinism) ─────────────
+
+    /// @dev Determinism invariant: no Express code path writes `p.ethUsdWad` between caller and
+    ///      listing constructor. Grep: `_stampListingParams` must not assign ethUsdWad; only
+    ///      `requireEthUsdFresh` validates. Constructor copies `p.ethUsdWad` into immutable.
+
+    function test_v21_a_raceRegression_hashStableAcrossHalfPercentMove() public {
+        StonkzDirectListing.ListingParams memory p = _params();
+        uint256 supplied = ETH_USD;
+        p.ethUsdWad = supplied;
+
+        bytes32 hashBefore = express.listingInitCodeHash(p);
+        (bytes32 userSalt, address predictedListing) = VanityHelpers.mineExpress(express, address(this), p);
+        address predictedToken = express.predictTokenAddress(predictedListing);
+        assertTrue(Vanity.matches(predictedToken));
+        emit log_named_bytes32("hashBefore", hashBefore);
+        emit log_named_address("predictedListing", predictedListing);
+        emit log_named_address("predictedToken", predictedToken);
+
+        // MOVE mocked ref-pool price ~0.5% (well inside 2% stamp band).
+        MockExtsloadPM refPm = MockExtsloadPM(express.refPoolManager());
+        uint256 moved = ETH_USD + (ETH_USD * 50) / 10_000; // +0.5%
+        uint160 sqrtMoved = EthUsdRefHelpers.sqrtPriceX96ForEthUsd(moved);
+        uint160 sqrtCheck = EthUsdRefHelpers.sqrtPriceX96ForEthUsd(moved + moved / 10_000);
+        EthUsdRefHelpers.etchPool(refPm, EthUsdRefHelpers.PRIMARY_ID, sqrtMoved, 1e18);
+        EthUsdRefHelpers.etchPool(refPm, EthUsdRefHelpers.CHECK_ID, sqrtCheck, 1e18);
+
+        bytes32 hashAfter = express.listingInitCodeHash(p);
+        emit log_named_bytes32("hashAfter", hashAfter);
+        assertEq(hashBefore, hashAfter, "init-code hash must be stable across live price move");
+
+        uint256 liveAfter = express.currentEthUsdWad();
+        emit log_named_uint("supplied ethUsdWad", supplied);
+        emit log_named_uint("liveAfter move", liveAfter);
+        assertTrue(liveAfter != supplied); // live moved
+        // Still within band of supplied
+        uint256 diff = liveAfter > supplied ? liveAfter - supplied : supplied - liveAfter;
+        assertLe(diff, FixedPointMathLib.mulDiv(liveAfter, 200, 10_000));
+
+        StonkzDirectListing listing = express.list(p, userSalt);
+        emit log_named_address("listed", address(listing));
+        assertEq(address(listing), predictedListing);
+        assertEq(address(listing.token()), predictedToken);
+        assertTrue(Vanity.matches(address(listing.token())));
+        // Immutable equals SUPPLIED, not the moved live spot.
+        assertEq(listing.ethUsdWad(), supplied);
+        assertTrue(listing.ethUsdWad() != liveAfter);
+    }
+
+    function test_v21_b_driftBounds_and_bandSetter() public {
+        assertEq(express.ethUsdStampBandBps(), 200);
+
+        uint256 live = express.currentEthUsdWad();
+        StonkzDirectListing.ListingParams memory p = _params();
+
+        // At live — pass
+        p.ethUsdWad = live;
+        express.requireEthUsdFresh(p.ethUsdWad);
+        _list(express, p);
+
+        // ±1.9% — pass
+        p = _params();
+        p.ethUsdWad = live + FixedPointMathLib.mulDiv(live, 190, 10_000);
+        express.requireEthUsdFresh(p.ethUsdWad);
+        (bytes32 s1,) = VanityHelpers.mineExpress(express, address(this), p);
+        express.list(p, s1);
+
+        p = _params();
+        p.name = "BONZI2";
+        p.symbol = "BONZI2";
+        p.ethUsdWad = live - FixedPointMathLib.mulDiv(live, 190, 10_000);
+        express.requireEthUsdFresh(p.ethUsdWad);
+        (bytes32 s2,) = VanityHelpers.mineExpress(express, address(this), p);
+        express.list(p, s2);
+
+        // ±2.1% — revert EthUsdStampDrift with both values
+        uint256 hi = live + FixedPointMathLib.mulDiv(live, 210, 10_000);
+        vm.expectRevert(abi.encodeWithSelector(DeployControls.EthUsdStampDrift.selector, hi, live));
+        express.requireEthUsdFresh(hi);
+
+        uint256 lo = live - FixedPointMathLib.mulDiv(live, 210, 10_000);
+        vm.expectRevert(abi.encodeWithSelector(DeployControls.EthUsdStampDrift.selector, lo, live));
+        express.requireEthUsdFresh(lo);
+
+        p = _params();
+        p.name = "DRIFT";
+        p.symbol = "DRIFT";
+        p.ethUsdWad = hi;
+        (bytes32 sBad,) = VanityHelpers.mineExpress(express, address(this), p);
+        vm.expectRevert(abi.encodeWithSelector(DeployControls.EthUsdStampDrift.selector, hi, live));
+        express.list(p, sBad);
+
+        // supplied = 0
+        vm.expectRevert(abi.encodeWithSelector(DeployControls.EthUsdStampDrift.selector, uint256(0), uint256(0)));
+        express.requireEthUsdFresh(0);
+
+        // Band setter bounds
+        vm.expectRevert(abi.encodeWithSelector(DeployControls.EthUsdStampBandBpsOutOfBounds.selector, uint16(0)));
+        express.setEthUsdStampBandBps(0);
+        vm.expectRevert(abi.encodeWithSelector(DeployControls.EthUsdStampBandBpsOutOfBounds.selector, uint16(1001)));
+        express.setEthUsdStampBandBps(1001);
+        express.setEthUsdStampBandBps(1);
+        assertEq(express.ethUsdStampBandBps(), 1);
+        express.setEthUsdStampBandBps(1000);
+        assertEq(express.ethUsdStampBandBps(), 1000);
+        // Owner update respected: widen to 300 so former ±2.1% passes
+        express.setEthUsdStampBandBps(300);
+        express.requireEthUsdFresh(hi);
+        express.setEthUsdStampBandBps(200); // restore default for other tests if shared
     }
 
     function _params() internal view returns (StonkzDirectListing.ListingParams memory p) {

@@ -110,6 +110,7 @@ contract StonkzExpressFactory is DeployControls {
 
     /// @notice Init-code hash for a listing AFTER factory stamps (vanity miner input).
     /// @dev Must match the bytecode `list` deploys — stamps applied here identically.
+    ///      Caller ethUsdWad is NOT overwritten (CREATE2 determinism); list() freshness-checks it.
     function listingInitCodeHash(StonkzDirectListing.ListingParams memory p) public view returns (bytes32) {
         _stampListingParams(p);
         return keccak256(abi.encodePacked(_listingCreationCode(), _listingArgs(p)));
@@ -138,7 +139,8 @@ contract StonkzExpressFactory is DeployControls {
     }
 
     /// @notice Deploy an Express listing. Gated by DeployControls (RIDER A birth = deployer-only).
-    /// @dev Stamps side-pool + lock + ref-price + ethUsd + child refs current at list (docs/03; ruling B).
+    /// @dev Stamps side-pool + lock + ref-price; ethUsdWad is CALLER-SUPPLIED (CREATE2-deterministic)
+    ///      and only freshness-checked via requireEthUsdFresh (docs/03; ruling B).
     ///      Reverts VanityPrefixMismatch if predicted TOKEN top bytes != 0x4663.
     /// @param userSalt Caller-chosen salt half; effective salt = listingSalt(msg.sender, userSalt).
     /// @dev Native pair: pass msg.value as ETH settle buffer for real PM (adapter refunds dust).
@@ -148,6 +150,8 @@ contract StonkzExpressFactory is DeployControls {
         returns (StonkzDirectListing listing)
     {
         _requireDeployAllowed(msg.sender);
+        // Freshness BEFORE stamp/hash/predict — supplied ethUsd must stay in the CREATE2 hash.
+        requireEthUsdFresh(p.ethUsdWad);
         _stampListingParams(p);
         bytes32 salt = listingSalt(msg.sender, userSalt);
         bytes memory args = _listingArgs(p);
@@ -177,8 +181,8 @@ contract StonkzExpressFactory is DeployControls {
         p.liquidityLocked = defaultLiquidityLocked;
         // Ref: required when createSidePool; never a silent fallback (RefPriceUnset).
         p.refPriceWad = p.createSidePool ? _requireRefPrice(sideTokenRef, pairToken) : 0;
-        // ETH/USD spot from two-pool agreement — never caller-supplied on Express path.
-        p.ethUsdWad = currentEthUsdWad();
+        // ethUsdWad: NOT overwritten — caller-supplied for CREATE2 hash determinism.
+        // list() validates via requireEthUsdFresh before this stamp.
     }
 
     function _setPoolManager(address pm) internal {
