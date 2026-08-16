@@ -13,6 +13,7 @@ import {IPoolManager} from "../src/v4/IPoolManager.sol";
 import {PoolKey, PoolIdLibrary} from "../src/v4/types/PoolKey.sol";
 import {Currency} from "../src/v4/types/Currency.sol";
 import {TickMath} from "../src/v4/TickMath.sol";
+import {SkipSettleCanary} from "./harness/SkipSettleCanary.sol";
 
 /// @dev Minimal ERC20 for adapter netting tests.
 contract V4CanonToken {
@@ -48,7 +49,7 @@ contract V4CanonToken {
     }
 }
 
-/// @title V4AdapterPhase0 - adapter + canary (unlock netting vacuity guard)
+/// @title V4AdapterPhase0 - adapter + SkipSettleCanary (CurrencyNotSettled vacuity guard)
 contract V4AdapterPhase0 is Test, Deployers {
     using PoolIdLibrary for PoolKey;
 
@@ -59,6 +60,7 @@ contract V4AdapterPhase0 is Test, Deployers {
     function setUp() public {
         deployFreshManagerAndRouters();
         adapter = new V4Adapter(manager);
+        adapter.setAuthorized(address(this), true);
         tok = new V4CanonToken();
         hookAddr = address(uint160(Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG));
         // Etch empty code so initialize accepts a contract at flag address (no callbacks).
@@ -113,12 +115,14 @@ contract V4AdapterPhase0 is Test, Deployers {
         assertTrue(adapter.isInitialized(key.toId()));
     }
 
-    /// @notice CANARY: broken netting must revert; fixed netting must pass.
-    function test_P0_canary_breakNetting_redThenGreen() public {
+    /// @notice CANARY: SkipSettleCanary (test harness) proves PM CurrencyNotSettled; settle path green.
+    function test_P0_canary_skipSettle_redThenGreen() public {
+        SkipSettleCanary canary = new SkipSettleCanary(manager);
         PoolKey memory key = _key();
         adapter.initialize(key, TickMath.getSqrtRatioAtTick(0));
         tok.mint(address(this), 100 ether);
-        tok.approve(address(adapter), type(uint256).max);
+        tok.approve(address(canary), type(uint256).max);
+        tok.approve(address(manager), type(uint256).max);
         vm.deal(address(this), 100 ether);
 
         IPoolManager.ModifyLiquidityParams memory params = IPoolManager.ModifyLiquidityParams({
@@ -128,14 +132,12 @@ contract V4AdapterPhase0 is Test, Deployers {
             salt: bytes32(uint256(2))
         });
 
-        // RED: skip settle → CurrencyNotSettled (canonical).
-        adapter.setBreakNetting(true);
-        vm.expectRevert(); // IPoolManager.CurrencyNotSettled or wrapped
-        adapter.modifyLiquidity{value: 100 ether}(key, params, "");
+        canary.setSkipSettle(true);
+        vm.expectRevert(); // CurrencyNotSettled
+        canary.modifyLiquidity{value: 100 ether}(key, params.tickLower, params.tickUpper, params.liquidityDelta, params.salt);
 
-        // GREEN: netting restored.
-        adapter.setBreakNetting(false);
-        adapter.modifyLiquidity{value: 100 ether}(key, params, "");
+        canary.setSkipSettle(false);
+        canary.modifyLiquidity{value: 100 ether}(key, params.tickLower, params.tickUpper, params.liquidityDelta, params.salt);
     }
 
     function test_P0_mockSeams_revert() public {

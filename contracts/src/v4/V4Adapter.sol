@@ -19,13 +19,13 @@ import {Currency} from "./types/Currency.sol";
 import {BalanceDelta, BalanceDeltaLibrary} from "./types/BalanceDelta.sol";
 
 /// @title V4Adapter - unlock-callback bridge to canonical Uniswap v4 PoolManager
-/// @notice Implements our minimal `IPoolManager` surface against a real PM (docs/03
-///         real-v4-is-a-launch-gate; V4-GAP-ANALYSIS). Owns ALL PM interaction:
-///         initialize passthrough, modifyLiquidity with settle/take netting (ERC20 + ETH),
-///         poke-collect (0-delta → feesAccrued), swap-toward-target replacing syncToPrice
-///         (budget semantics preserved - ours), StateLibrary reads for slot0/initialized.
-/// @dev `setPoolHook` / `accrueFees` are mock-era seams: revert on this adapter (Phase 1
-///      binds hooks via PoolKey.hooks at initialize).
+/// @notice Production PM surface: initialize / modifyLiquidity / pokeCollect are allowlisted
+///         (adapter-owned positions; public salts). swap and syncToPrice stay permissionless;
+///         sync never auto-inits. Ownable administers the allowlist (Safe after deploy).
+/// @dev Reentrancy: unlockCallback is onlyManager; settle/take target the canonical PM; ETH
+///      refund is a plain value-send after unlock. No extra guard — PM unlock serializes.
+///      `setPoolHook` / `accrueFees` are mock-era seams: revert. breakNetting removed —
+///      CurrencyNotSettled canary lives in test/harness/SkipSettleCanary only.
 contract V4Adapter is IPoolManager, IUnlockCallback {
     using PoolIdLibrary for PoolKey;
     using BalanceDeltaLibrary for BalanceDelta;
@@ -39,14 +39,17 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
     /// @dev Owner (deployer); transfer to Safe for prod. Matches DeployControls / FeeHook pattern.
     address public owner;
 
-    /// @dev When true, unlockCallback deliberately skips settle - canary vacuity guard.
-    bool public breakNetting;
+    /// @notice Addresses allowed for initialize / modifyLiquidity / pokeCollect / authorizeChild.
+    mapping(address => bool) public authorized;
 
     error OnlyManager();
     error NotOwner();
+    error NotAuthorized();
     error MockSeamRetired(string which);
     error UnknownAction();
     error ZeroAddress();
+
+    event Authorized(address indexed account, bool allowed);
 
     enum Action {
         ModifyLiquidity,
@@ -76,7 +79,13 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
         _;
     }
 
+    modifier onlyAuthorized() {
+        if (!authorized[msg.sender]) revert NotAuthorized();
+        _;
+    }
+
     constructor(ICanonPM manager_) {
+        if (address(manager_) == address(0)) revert ZeroAddress();
         manager = manager_;
         owner = msg.sender;
     }
@@ -86,10 +95,20 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
         owner = next;
     }
 
-    /// @notice Test/ops canary: next unlock skips currency settle → CurrencyNotSettled.
-    /// @dev Was: `function setBreakNetting(bool broken) external` (unauthed — anyone could DoS).
-    function setBreakNetting(bool broken) external onlyOwner {
-        breakNetting = broken;
+    function setAuthorized(address account, bool allowed) external onlyOwner {
+        if (account == address(0)) revert ZeroAddress();
+        authorized[account] = allowed;
+        emit Authorized(account, allowed);
+    }
+
+    /// @inheritdoc IPoolManager
+    /// @notice Allowlist a CREATE2-predicted child so its constructor can mint/initialize.
+    /// @dev Caller must already be authorized (factory). Called by `list` before CREATE2.
+    function authorizeChild(address child) external {
+        if (!authorized[msg.sender]) revert NotAuthorized();
+        if (child == address(0)) revert ZeroAddress();
+        authorized[child] = true;
+        emit Authorized(child, true);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -120,7 +139,7 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
     // IPoolManager - initialize (no unlock required)
     // ═══════════════════════════════════════════════════════════════════════
 
-    function initialize(PoolKey memory key, uint160 sqrtPriceX96) external returns (int24 tick) {
+    function initialize(PoolKey memory key, uint160 sqrtPriceX96) external onlyAuthorized returns (int24 tick) {
         return manager.initialize(_toCanonKey(key), sqrtPriceX96);
     }
 
@@ -131,8 +150,10 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
     function modifyLiquidity(PoolKey memory key, ModifyLiquidityParams memory params, bytes calldata hookData)
         external
         payable
+        onlyAuthorized
         returns (BalanceDelta callerDelta, BalanceDelta feesAccrued)
     {
+        uint256 priorEth = address(this).balance - msg.value;
         bytes memory raw = manager.unlock(
             abi.encode(
                 ModCallback({
@@ -155,7 +176,7 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
         (CanonDelta d, CanonDelta fees) = abi.decode(raw, (CanonDelta, CanonDelta));
         callerDelta = BalanceDelta.wrap(CanonDelta.unwrap(d));
         feesAccrued = BalanceDelta.wrap(CanonDelta.unwrap(fees));
-        _refundDustEth(msg.sender);
+        _refundDustEth(msg.sender, priorEth);
     }
 
     function swap(PoolKey memory key, SwapParams memory params, bytes calldata hookData)
@@ -163,6 +184,7 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
         payable
         returns (BalanceDelta swapDelta)
     {
+        uint256 priorEth = address(this).balance - msg.value;
         bytes memory raw = manager.unlock(
             abi.encode(
                 ModCallback({
@@ -184,18 +206,19 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
         );
         CanonDelta d = abi.decode(raw, (CanonDelta));
         swapDelta = BalanceDelta.wrap(CanonDelta.unwrap(d));
-        _refundDustEth(msg.sender);
+        _refundDustEth(msg.sender, priorEth);
     }
 
     /// @inheritdoc IPoolManager
     /// @dev Budget semantics (ours): spend at most `maxBudget` of pair currency (currency that
     ///      decreases when moving toward target). Exact-in swaps until sqrtPrice reaches target
-    ///      or budget exhausted → SyncBudgetExceeded. Replaces mock syncToPrice.
+    ///      or budget exhausted → SyncBudgetExceeded. Reverts if pool uninitialized (no auto-init).
     function syncToPrice(PoolKey memory key, uint160 targetSqrtPriceX96, uint256 maxBudget)
         external
         payable
         returns (uint256 spent)
     {
+        uint256 priorEth = address(this).balance - msg.value;
         bytes memory raw = manager.unlock(
             abi.encode(
                 ModCallback({
@@ -216,7 +239,7 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
             )
         );
         spent = abi.decode(raw, (uint256));
-        _refundDustEth(msg.sender);
+        _refundDustEth(msg.sender, priorEth);
     }
 
     /// @inheritdoc IPoolManager
@@ -226,11 +249,14 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
     }
 
     /// @notice Canonical fee collect: 0-delta modifyLiquidity, take positive fee deltas to `msg.sender`.
+    /// @dev Allowlisted — fees take to caller is a theft surface if ungated (Phase 0 ruling).
     function pokeCollect(PoolKey memory key, int24 tickLower, int24 tickUpper, bytes32 salt)
         external
         payable
+        onlyAuthorized
         returns (uint256 fee0, uint256 fee1)
     {
+        uint256 priorEth = address(this).balance - msg.value;
         bytes memory raw = manager.unlock(
             abi.encode(
                 ModCallback({
@@ -251,7 +277,7 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
             )
         );
         (fee0, fee1) = abi.decode(raw, (uint256, uint256));
-        _refundDustEth(msg.sender);
+        _refundDustEth(msg.sender, priorEth);
     }
 
     function accrueFees(PoolId, bytes32, uint256, uint256) external pure {
@@ -301,9 +327,7 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
             }),
             data.hookData
         );
-        if (!breakNetting) {
-            _settleDelta(ckey, delta, data.payer);
-        }
+        _settleDelta(ckey, delta, data.payer);
         // feesAccrued informational; principal path settles `delta` only (fees in delta when removing)
         return abi.encode(delta, fees);
     }
@@ -319,9 +343,7 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
             }),
             data.hookData
         );
-        if (!breakNetting) {
-            _settleDelta(ckey, delta, data.payer);
-        }
+        _settleDelta(ckey, delta, data.payer);
         return abi.encode(delta);
     }
 
@@ -331,9 +353,7 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
         (uint160 curSqrt,,,) = manager.getSlot0(id);
 
         if (curSqrt == 0) {
-            // Auto-init at target (mock parity).
-            manager.initialize(ckey, data.sqrtPriceLimitX96);
-            return abi.encode(uint256(0));
+            revert PoolNotInitialized();
         }
         if (curSqrt == data.sqrtPriceLimitX96) {
             return abi.encode(uint256(0));
@@ -364,9 +384,7 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
             spent = d1 < 0 ? uint256(uint128(-d1)) : 0;
         }
 
-        if (!breakNetting) {
-            _settleDelta(ckey, delta, data.payer);
-        }
+        _settleDelta(ckey, delta, data.payer);
 
         (uint160 afterSqrt,,,) = manager.getSlot0(id);
         if (afterSqrt != data.sqrtPriceLimitX96 && spent >= data.maxBudget) {
@@ -394,13 +412,11 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
             f0 = delta.amount0();
             f1 = delta.amount1();
         }
-        if (!breakNetting) {
-            if (f0 > 0) ckey.currency0.take(manager, data.payer, uint256(uint128(f0)), false);
-            if (f1 > 0) ckey.currency1.take(manager, data.payer, uint256(uint128(f1)), false);
-            // Settle any unexpected debts from poke.
-            if (f0 < 0) ckey.currency0.settle(manager, data.payer, uint256(uint128(-f0)), false);
-            if (f1 < 0) ckey.currency1.settle(manager, data.payer, uint256(uint128(-f1)), false);
-        }
+        if (f0 > 0) ckey.currency0.take(manager, data.payer, uint256(uint128(f0)), false);
+        if (f1 > 0) ckey.currency1.take(manager, data.payer, uint256(uint128(f1)), false);
+        // Settle any unexpected debts from poke.
+        if (f0 < 0) ckey.currency0.settle(manager, data.payer, uint256(uint128(-f0)), false);
+        if (f1 < 0) ckey.currency1.settle(manager, data.payer, uint256(uint128(-f1)), false);
         uint256 fee0 = f0 > 0 ? uint256(uint128(f0)) : 0;
         uint256 fee1 = f1 > 0 ? uint256(uint128(f1)) : 0;
         return abi.encode(fee0, fee1);
@@ -425,10 +441,12 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
         });
     }
 
-    function _refundDustEth(address to) internal {
+    /// @dev Refund only unused ETH from this call; never prior stuck balance.
+    function _refundDustEth(address to, uint256 priorEth) internal {
         uint256 bal = address(this).balance;
-        if (bal > 0) {
-            (bool ok,) = to.call{value: bal}("");
+        if (bal > priorEth) {
+            uint256 refund = bal - priorEth;
+            (bool ok,) = to.call{value: refund}("");
             require(ok, "eth refund");
         }
     }

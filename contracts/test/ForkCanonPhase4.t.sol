@@ -171,6 +171,7 @@ contract ForkCanonPhase4 is Test {
 
         adapter = new V4Adapter(manager);
         pm = IPoolManager(address(adapter));
+        adapter.setAuthorized(address(this), true);
 
         stonkz = new StonkzToken(custody);
         gov = new CTOGovernor();
@@ -178,14 +179,17 @@ contract ForkCanonPhase4 is Test {
         hook.bindCanonManager(manager);
         gov.setRegistry(hook);
         locker = new FeeLockerV2(pm, hook);
+        adapter.setAuthorized(address(locker), true);
         acc = new BuybackAccumulator(PAIR, address(stonkz), address(0));
         settlement = new LadderSettlement(pm, hook, PAIR);
+        adapter.setAuthorized(address(settlement), true);
         settlement.setSideTokenRef(address(stonkz));
         settlement.setFeeLocker(locker);
         vault = new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000);
         // Express: production requires sideTokenRef from birth (STONKZ_REF / stand-in).
         // Park-on-unset RETIRED (PREDEPLOY-REFIT Phase 3a) — fork drills the set-ref path only.
         express = new StonkzExpressFactory(pm, locker, hook, acc, gov, PAIR, address(stonkz));
+        adapter.setAuthorized(address(express), true);
         // Live ETH/USDG two-pool refs (stonkz-refpools.md addendum): B=primary, A=check.
         express.setRefPools(
             RH_POOL_MANAGER,
@@ -363,6 +367,7 @@ contract ForkCanonPhase4 is Test {
 
         // Fresh settlement instance (LadderSettlement is single-use).
         LadderSettlement settleInst = new LadderSettlement(pm, hook, PAIR);
+        adapter.setAuthorized(address(settleInst), true);
         settleInst.setSideTokenRef(address(stonkz));
         settleInst.setFeeLocker(locker);
 

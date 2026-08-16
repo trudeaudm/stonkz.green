@@ -45,12 +45,15 @@ contract LadderVectorsReal is Test, Deployers, LadderVectorLoader, LadderAsserts
         mockVault = new MockVault();
         adapter = new V4Adapter(manager);
         pm = IPoolManager(address(adapter));
+        adapter.setAuthorized(address(this), true);
         CTOGovernor gov = new CTOGovernor();
         hook = _deployFlagHook(gov);
         hook.bindCanonManager(manager);
         gov.setRegistry(hook);
         locker = new FeeLockerV2(pm, hook);
+        adapter.setAuthorized(address(locker), true);
         settlement = new LadderSettlement(pm, hook, address(0));
+        adapter.setAuthorized(address(settlement), true);
         settlement.setFeeLocker(locker);
         // Real PM needs a contract at sideTokenRef (side pool currency) — not bare 0x4663.
         stonkzToken = new MockLaunchTokenReal();

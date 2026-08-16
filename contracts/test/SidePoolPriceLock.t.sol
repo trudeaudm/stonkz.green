@@ -232,6 +232,10 @@ abstract contract SidePoolPriceLockBase is V4DualBackend, LadderVectorLoader, Fa
     function _listEth() internal returns (StonkzDirectListing l) {
         StonkzExpressFactory f =
             new StonkzExpressFactory(pm, locker, hook, acc, gov, ETH, address(sideTok));
+        if (backend == Backend.Real) {
+            adapter.setAuthorized(address(f), true);
+            adapter.setAuthorized(address(locker), true);
+        }
         EthUsdRefHelpers.wireExpressRef(f, 1880e18);
         StonkzDirectListing.ListingParams memory p = _listingParams();
         (bytes32 userSalt,) = VanityHelpers.mineExpress(f, address(this), p);
@@ -241,6 +245,10 @@ abstract contract SidePoolPriceLockBase is V4DualBackend, LadderVectorLoader, Fa
     function _listUsdg() internal returns (StonkzDirectListing l) {
         StonkzExpressFactory f =
             new StonkzExpressFactory(pm, locker, hook, acc, gov, address(usdgPair), address(sideTok));
+        if (backend == Backend.Real) {
+            adapter.setAuthorized(address(f), true);
+            adapter.setAuthorized(address(locker), true);
+        }
         EthUsdRefHelpers.wireExpressRef(f, 1880e18);
         // Non-ETH pair uses USDG-style bounds/default (pair-wei per side-token).
         f.setRefPrice(address(sideTok), address(usdgPair), f.REF_PRICE_USDG_DEFAULT());
@@ -318,6 +326,8 @@ abstract contract SidePoolPriceLockBase is V4DualBackend, LadderVectorLoader, Fa
         settlement = new LadderSettlement(pm, hook, ETH);
         settlement.setSideTokenRef(address(sideTok));
         if (backend == Backend.Real) {
+            adapter.setAuthorized(address(settlement), true);
+            adapter.setAuthorized(address(locker), true);
             settlement.setFeeLocker(locker);
         }
         MockLaunchTok tok = new MockLaunchTok();

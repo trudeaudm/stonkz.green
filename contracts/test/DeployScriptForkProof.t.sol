@@ -128,18 +128,22 @@ contract DeployScriptForkProof is Test {
 
         adapter = new V4Adapter(ICanonPM(RH_POOL_MANAGER));
         pm = IPoolManager(address(adapter));
+        adapter.setAuthorized(address(this), true);
         gov = new CTOGovernor();
         hook = _deployFlagHook();
         hook.bindCanonManager(ICanonPM(RH_POOL_MANAGER));
         hook.validateHookAddress(address(hook));
         gov.setRegistry(hook);
         locker = new FeeLockerV2(pm, hook);
+        adapter.setAuthorized(address(locker), true);
         acc = new BuybackAccumulator(PAIR, address(standIn), address(0));
         settlement = new LadderSettlement(pm, hook, PAIR);
+        adapter.setAuthorized(address(settlement), true);
         settlement.setSideTokenRef(address(standIn));
         settlement.setFeeLocker(locker);
         vault = new StonkzVault(VaultConstants.LAUNCH_RATE_SECONDS_PER_BPS, 1, 10_000);
         express = new StonkzExpressFactory(pm, locker, hook, acc, gov, PAIR, address(standIn));
+        adapter.setAuthorized(address(express), true);
         express.setRefPools(
             RH_POOL_MANAGER,
             bytes32(0x30dac7167c36242d1bacfd30561d444cf014529ee55978991d03e4ee178e725a),
@@ -184,6 +188,7 @@ contract DeployScriptForkProof is Test {
         p.walletCapBps = 1000;
 
         LadderSettlement settleInst = new LadderSettlement(pm, hook, PAIR);
+        adapter.setAuthorized(address(settleInst), true);
         settleInst.setSideTokenRef(address(standIn));
         settleInst.setFeeLocker(locker);
 

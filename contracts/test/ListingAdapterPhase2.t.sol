@@ -37,6 +37,9 @@ abstract contract ListingAdapterPhase2Base is V4DualBackend {
         }
         gov.setRegistry(hook);
         locker = new FeeLockerV2(pm, hook);
+        if (backend == Backend.Real) {
+            adapter.setAuthorized(address(locker), true);
+        }
         acc = new BuybackAccumulator(PAIR, address(0x4663), address(0));
     }
 
@@ -91,6 +94,10 @@ abstract contract ListingAdapterPhase2Base is V4DualBackend {
     }
 
     function test_list_lockStamp_mainPool() public {
+        if (backend == Backend.Real) {
+            address predicted = vm.computeCreateAddress(address(this), vm.getNonce(address(this)));
+            adapter.setAuthorized(predicted, true);
+        }
         StonkzDirectListing listing =
             new StonkzDirectListing{value: 1 ether}(pm, locker, hook, acc, gov, PAIR, address(0), _params(false));
         assertTrue(locker.liquidityLocked(address(listing.token())));

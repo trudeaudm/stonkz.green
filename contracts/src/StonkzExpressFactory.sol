@@ -142,7 +142,11 @@ contract StonkzExpressFactory is DeployControls {
     /// @dev Stamps side-pool + lock + ref-price; ethUsdWad is CALLER-SUPPLIED (CREATE2-deterministic)
     ///      and only freshness-checked via requireEthUsdFresh (docs/03; ruling B).
     ///      Reverts VanityPrefixMismatch if predicted TOKEN top bytes != 0x4663.
+    ///      Before CREATE2, calls `poolManager.authorizeChild(predicted)` so the listing ctor can
+    ///      initialize/mint under the adapter allowlist (no owner tx per launch).
+    /// @param p Listing params (caller-supplied ethUsdWad; factory stamps side/lock/ref).
     /// @param userSalt Caller-chosen salt half; effective salt = listingSalt(msg.sender, userSalt).
+    /// @return listing The CREATE2-deployed Express listing.
     /// @dev Native pair: pass msg.value as ETH settle buffer for real PM (adapter refunds dust).
     function list(StonkzDirectListing.ListingParams memory p, bytes32 userSalt)
         external
@@ -159,6 +163,9 @@ contract StonkzExpressFactory is DeployControls {
         address predicted = Vanity.predict(address(this), salt, initHash);
         address predictedToken = predictTokenAddress(predicted);
         Vanity.requirePrefix(predictedToken);
+
+        // Allowlist predicted listing before ctor mints (V4Adapter); Mock no-ops.
+        poolManager.authorizeChild(predicted);
 
         address deployed =
             CreationCodeStore.create2(listingCreationPtr0, listingCreationPtr1, args, salt, msg.value);

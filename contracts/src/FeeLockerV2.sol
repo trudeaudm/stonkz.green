@@ -71,6 +71,9 @@ contract FeeLockerV2 {
     error StampMismatch();
     error ZeroRecipient();
 
+    /// @notice Bind locker to generation adapter + hook (immutable).
+    /// @param poolManager_ V4Adapter (or Mock in tests) used for poke/compound.
+    /// @param hook_ StonkzFeeHook for the generation.
     constructor(IPoolManager poolManager_, StonkzFeeHook hook_) {
         poolManager = poolManager_;
         hook = hook_;
@@ -145,8 +148,10 @@ contract FeeLockerV2 {
         revert MainFeeCrankRetired();
     }
 
-    /// @notice Permissionless: collect side-pool fees and compound into the same position.
-    /// @dev V4-CANON: pokeCollect (0-delta) then modifyLiquidity at stored ticks/salt.
+    /// @notice Permissionless entry: collect side-pool fees into this locker and re-mint LP.
+    /// @dev FeeLocker must be adapter-authorized. `pokeCollect` pays fees here; then
+    ///      `modifyLiquidity` compounds. Hostile EOAs cannot poke directly (adapter allowlist).
+    /// @param lockId Side-pool lock to compound.
     function crankSideCompound(uint256 lockId) external {
         LockedPosition storage lp = locks[lockId];
         if (!lp.active) revert Inactive();

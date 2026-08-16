@@ -73,10 +73,15 @@ interface IPoolManager {
 
     /// @notice Canonical fee collect: 0-delta modifyLiquidity → feesAccrued (V4-CANON).
     /// @dev Mock maps this onto collectFees using the registry positionId convention.
+    ///      V4Adapter: allowlisted (fees take to caller).
     function pokeCollect(PoolKey memory key, int24 tickLower, int24 tickUpper, bytes32 salt)
         external
         payable
         returns (uint256 fee0, uint256 fee1);
+
+    /// @notice Allowlist a CREATE2-predicted child so its constructor can mint/initialize.
+    /// @dev V4Adapter: caller must already be authorized (factory). Mock: no-op.
+    function authorizeChild(address child) external;
 
     // ─── M4 hook seam (fees-and-governance.md §1) ────────────────────────────
 

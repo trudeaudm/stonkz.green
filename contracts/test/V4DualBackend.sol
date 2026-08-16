@@ -44,6 +44,7 @@ abstract contract V4DualBackend is Test, Deployers {
             deployFreshManagerAndRouters();
             deployMintAndApprove2Currencies();
             adapter = new V4Adapter(manager);
+            adapter.setAuthorized(address(this), true);
             pm = IPoolManager(address(adapter));
             mockPm = MockPoolManager(payable(address(0)));
             // Minimal flag-valid hook address for initialize (no callbacks needed for Phase 0 liq).

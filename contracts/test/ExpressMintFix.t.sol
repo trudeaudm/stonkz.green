@@ -175,6 +175,7 @@ contract ExpressMintFix is Test, Deployers {
     function test_c_tokenCurrency0_buyFills_realPm() public {
         deployFreshManagerAndRouters();
         V4Adapter adapter = new V4Adapter(manager);
+        adapter.setAuthorized(address(this), true);
         IPoolManager ipm = IPoolManager(address(adapter));
 
         CTOGovernor gov2 = new CTOGovernor();
@@ -183,6 +184,7 @@ contract ExpressMintFix is Test, Deployers {
         hook2.setDefaultHookFeeBps(0); // fee take on etched max-address pair panics; geometry is the subject
         gov2.setRegistry(hook2);
         FeeLockerV2 locker2 = new FeeLockerV2(ipm, hook2);
+        adapter.setAuthorized(address(locker2), true);
 
         MintFixToken impl = new MintFixToken();
         address hiPair = address(type(uint160).max);
@@ -191,6 +193,8 @@ contract ExpressMintFix is Test, Deployers {
         MintFixToken(hiPair).mint(address(this), 0); // no-op warm
         BuybackAccumulator acc2 = new BuybackAccumulator(hiPair, SIDE, address(0));
 
+        address predicted = vm.computeCreateAddress(address(this), vm.getNonce(address(this)));
+        adapter.setAuthorized(predicted, true);
         StonkzDirectListing l = new StonkzDirectListing(
             ipm, locker2, hook2, acc2, gov2, hiPair, SIDE, _params(SDONK_ETH_USD, 1e15)
         );
@@ -224,22 +228,31 @@ contract ExpressMintFix is Test, Deployers {
         assertGt(tickAfter, tickBefore, "tick up as c0 ask fills");
     }
 
-    // ─── (d) setBreakNetting onlyOwner ─────────────────────────────────────
+    // ─── (d) allowlist gates (replaces setBreakNetting onlyOwner) ───────────
 
-    function test_d_setBreakNetting_onlyOwner() public {
+    function test_d_allowlist_gates_hostile_modify() public {
         deployFreshManagerAndRouters();
         V4Adapter adapter = new V4Adapter(manager);
+        adapter.setAuthorized(address(this), true);
         assertEq(adapter.owner(), address(this));
 
         address stranger = address(0xBAD);
         vm.prank(stranger);
         vm.expectRevert(V4Adapter.NotOwner.selector);
-        adapter.setBreakNetting(true);
+        adapter.setAuthorized(stranger, true);
 
-        adapter.setBreakNetting(true);
-        assertTrue(adapter.breakNetting());
-        adapter.setBreakNetting(false);
-        assertFalse(adapter.breakNetting());
+        vm.prank(stranger);
+        vm.expectRevert(V4Adapter.NotAuthorized.selector);
+        adapter.initialize(
+            PoolKey({
+                currency0: Currency.wrap(address(0)),
+                currency1: Currency.wrap(address(1)),
+                fee: 3000,
+                tickSpacing: 60,
+                hooks: address(0)
+            }),
+            TickMath.getSqrtRatioAtTick(0)
+        );
     }
 
     // ─── (b) fork fill proof (acceptance) ──────────────────────────────────
@@ -251,6 +264,7 @@ contract ExpressMintFix is Test, Deployers {
 
         ICanonPM manager_ = ICanonPM(RH_POOL_MANAGER);
         V4Adapter adapter = new V4Adapter(manager_);
+        adapter.setAuthorized(address(this), true);
         IPoolManager ipm = IPoolManager(address(adapter));
 
         CTOGovernor gov2 = new CTOGovernor();
@@ -258,10 +272,13 @@ contract ExpressMintFix is Test, Deployers {
         hook2.bindCanonManager(manager_);
         gov2.setRegistry(hook2);
         FeeLockerV2 locker2 = new FeeLockerV2(ipm, hook2);
+        adapter.setAuthorized(address(locker2), true);
         vm.etch(SIDE, hex"00");
         BuybackAccumulator acc2 = new BuybackAccumulator(address(0), SIDE, address(0));
 
         vm.deal(address(this), 2 ether);
+        address predicted = vm.computeCreateAddress(address(this), vm.getNonce(address(this)));
+        adapter.setAuthorized(predicted, true);
         StonkzDirectListing l = new StonkzDirectListing{value: 1 ether}(
             ipm, locker2, hook2, acc2, gov2, address(0), SIDE, _paramsEth(SDONK_ETH_USD)
         );

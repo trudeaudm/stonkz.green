@@ -31,3 +31,8 @@ fs_permissions = [
 [rpc_endpoints]
 robinhood = "${ROBINHOOD_RPC_URL}"
 robinhood_testnet = "${ROBINHOOD_TESTNET_RPC_URL}"
+
+[doc]
+out = "docs/generated"
+title = "STONKZ Contracts"
+ignore = ["test/**", "script/**", "lib/**", "legacy/**"]

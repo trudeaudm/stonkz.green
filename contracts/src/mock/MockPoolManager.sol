@@ -266,4 +266,8 @@ contract MockPoolManager is IPoolManager {
     function positionLiquidity(PoolId id, bytes32 positionId) external view returns (uint128) {
         return positions[id][positionId].liquidity;
     }
+
+    /// @inheritdoc IPoolManager
+    /// @dev Mock has no allowlist — production gating lives on V4Adapter only.
+    function authorizeChild(address) external {}
 }
