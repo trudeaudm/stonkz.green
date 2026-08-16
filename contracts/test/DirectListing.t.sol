@@ -11,8 +11,8 @@ import {CTOGovernor} from "../src/CTOGovernor.sol";
 import {StonkzDirectListing} from "../src/StonkzDirectListing.sol";
 import {ICTOGovernor} from "../src/interfaces/IStonkzGovernance.sol";
 
-/// @title DirectListing — C2 (fees-and-governance.md §2). MAX_TICK range, rug-impossibility,
-///        emergent tier volatility, wei-exact conservation.
+/// @title DirectListing — C2 (fees-and-governance.md §2). Orientation-aware main ask,
+///        rug-impossibility, emergent tier volatility, wei-exact conservation.
 contract DirectListing is Test {
     MockPoolManager pm;
     BuybackAccumulator acc;
@@ -105,8 +105,10 @@ contract DirectListing is Test {
 
     function test_C2_maxTickRange() public {
         StonkzDirectListing l = _list(TIER_4K, 0, 0);
-        int24 alignedMax = 887220; // MAX_TICK (887272) aligned down to spacing 60
-        assertEq(l.mainTickUpper(), alignedMax, "range top == MAX_TICK");
+        // ETH pair → token = currency1 → ask BELOW spot: [MIN_TICK, startTick]
+        assertEq(l.mainTickLower(), int24(-887220), "range floor == alignUp(MIN_TICK)");
+        assertEq(l.mainTickUpper(), l.startTick(), "range top == startTick");
+        assertTrue(l.mainTickUpper() != int24(887220), "not the old MAX_TICK ask");
         assertLt(l.mainTickLower(), l.mainTickUpper());
     }
 

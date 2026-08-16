@@ -36,12 +36,17 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
     /// @dev Canonical singleton (or in-test Deployers manager).
     ICanonPM public immutable manager;
 
+    /// @dev Owner (deployer); transfer to Safe for prod. Matches DeployControls / FeeHook pattern.
+    address public owner;
+
     /// @dev When true, unlockCallback deliberately skips settle - canary vacuity guard.
     bool public breakNetting;
 
     error OnlyManager();
+    error NotOwner();
     error MockSeamRetired(string which);
     error UnknownAction();
+    error ZeroAddress();
 
     enum Action {
         ModifyLiquidity,
@@ -66,12 +71,24 @@ contract V4Adapter is IPoolManager, IUnlockCallback {
         bytes32 positionId; // collectFees poke salt encoding
     }
 
-    constructor(ICanonPM manager_) {
-        manager = manager_;
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert NotOwner();
+        _;
     }
 
-    /// @notice Test-only canary lever: next unlock skips currency settle → CurrencyNotSettled.
-    function setBreakNetting(bool broken) external {
+    constructor(ICanonPM manager_) {
+        manager = manager_;
+        owner = msg.sender;
+    }
+
+    function transferOwnership(address next) external onlyOwner {
+        if (next == address(0)) revert ZeroAddress();
+        owner = next;
+    }
+
+    /// @notice Test/ops canary: next unlock skips currency settle → CurrencyNotSettled.
+    /// @dev Was: `function setBreakNetting(bool broken) external` (unauthed — anyone could DoS).
+    function setBreakNetting(bool broken) external onlyOwner {
         breakNetting = broken;
     }
 

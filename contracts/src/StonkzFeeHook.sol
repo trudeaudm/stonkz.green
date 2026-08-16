@@ -16,10 +16,12 @@ import {PoolKey, PoolId, PoolIdLibrary} from "./v4/types/PoolKey.sol";
 import {ICTOGovernor, IFeeReceiverRegistry} from "./interfaces/IStonkzGovernance.sol";
 
 /// @title StonkzFeeHook — canonical IHooks fee take + accrue-and-flush (docs/06; V4-CANON)
-/// @notice Production: `beforeSwap` + BeforeSwapDelta pair-side take (ExactInHookFeeHarness
-///         semantics). Accrue-and-flush + per-pool stamps unchanged. Hook binds via
-///         `PoolKey.hooks` at initialize (no setPoolHook). Mock path retains `ISwapHook.afterSwap`
-///         for dual-backend vector speed until all suites are on Real.
+/// @notice Production: `beforeSwap` takes `abs(amountSpecified) * hookFeeBps / 10_000` in the
+///         pair currency on every swap (buy and sell; ExactInHookFeeHarness / BeforeSwapDelta).
+///         This is NOT docs/06's "afterSwap on output" sell path — live behavior is absSpec-based
+///         for both directions (contracts-queue if sell semantics should change). Accrue-and-flush
+///         + per-pool stamps unchanged. Hook binds via `PoolKey.hooks` at initialize (no
+///         setPoolHook). Mock path retains `ISwapHook.afterSwap` for dual-backend vector speed.
 /// @dev Address flags: BEFORE_SWAP | BEFORE_SWAP_RETURNS_DELTA (= 0x088). Production
 ///      CREATE2 mine: top bytes 0x4663 + low 0x088 (~2^30).
 contract StonkzFeeHook is IHooks, ISwapHook, IFeeReceiverRegistry {
@@ -254,6 +256,8 @@ contract StonkzFeeHook is IHooks, ISwapHook, IFeeReceiverRegistry {
 
         address pair = pairOf[token];
         bool exactIn = params.amountSpecified < 0;
+        // Fee = absSpec * bps / 10_000 for both exact-in and exact-out, both swap directions.
+        // docs/06 describes an output-side take on sells; production always uses absSpec (unchanged).
         uint256 absSpec = exactIn ? uint256(-params.amountSpecified) : uint256(params.amountSpecified);
         uint256 fee = (absSpec * uint256(bps)) / 10_000;
         if (fee == 0) {
@@ -261,7 +265,7 @@ contract StonkzFeeHook is IHooks, ISwapHook, IFeeReceiverRegistry {
         }
 
         // Specified/unspecified follow v4 BeforeSwapDelta sort (DeltaReturningHook):
-        // (zeroForOne == exactIn) ? (c0, c1) : (c1, c0). Fee always in `pair` (docs/06 pair-side).
+        // (zeroForOne == exactIn) ? (c0, c1) : (c1, c0). Fee always in `pair` (pair-side take).
         (CanonCurrency specified, CanonCurrency unspecified) = (params.zeroForOne == exactIn)
             ? (key.currency0, key.currency1)
             : (key.currency1, key.currency0);

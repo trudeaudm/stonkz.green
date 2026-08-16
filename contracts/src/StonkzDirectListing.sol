@@ -16,9 +16,13 @@ import {StonkzLaunchToken} from "./StonkzLaunchToken.sol";
 
 /// @title StonkzDirectListing — Direct-to-DEX, no auction (fees-and-governance.md §2, spec §8.8)
 /// @notice INSTANT coins: creator picks a $4k or $8k start-mcap tier; 95% of listing supply is
-///         deployed single-sided into the primary pool over `[startTick, MAX_TICK]` (start mcap →
-///         infinity) under FeeLockerV2 custody with StonkzFeeHook attached; 5% seeds the
-///         STONKZ4663 side pool at list (sideTokenRef required when createSidePool; no park).
+///         deployed as a one-sided ask into the primary pool under FeeLockerV2 custody with
+///         StonkzFeeHook attached; 5% seeds the STONKZ4663 side pool at list (sideTokenRef
+///         required when createSidePool; no park).
+/// @dev Main-ask orientation (real PM): below-range = pure token0, above-range = pure token1.
+///      When the launch token is currency1 (ETH pair), the ask sits BELOW spot in tick space
+///      (`[MIN_TICK, startTick]`) so the pool holds sellable tokens; when currency0, ABOVE spot
+///      (`[startTick+spacing, MAX_TICK]`). Mirrors LadderSettlement ask (:268-279, :333-335).
 ///
 /// @dev **Rug-impossible by construction (§2.4):** there is no raise and NO function withdraws
 ///      LP principal. The only outward token transfer is `claimCreatorReserve`, hard-capped by
@@ -148,6 +152,8 @@ contract StonkzDirectListing {
     error SideTokenRefUnset();
     /// @dev Real-PM: liq rounds to 0 for the chosen range (docs/09 §7 construction).
     error LiquidityDust(bytes32 which, uint256 tokens);
+    /// @dev Main ask L rounded to 0 while `listed > 0` — never mint a placeholder L=1.
+    error MainAskEmpty(uint256 listed);
 
     receive() external payable {}
 
@@ -252,7 +258,7 @@ contract StonkzDirectListing {
         );
     }
 
-    // ─── main pool: single-sided [startTick, MAX_TICK] (§2.2) ────────────────
+    // ─── main pool: single-sided ask, orientation-aware (§2.2) ───────────────
 
     function _createMainPool(bool pairIsToken0) internal {
         mainPoolKey = _mainPoolKey(pairToken, address(token));
@@ -260,18 +266,35 @@ contract StonkzDirectListing {
             poolManager.initialize(mainPoolKey, startSqrtPriceX96);
         }
 
-        // Range strictly ABOVE opening tick — single-sided token only (docs/02 §2.2).
-        // tickLower == currentTick would be in-range and demand both currencies (real PM).
-        int24 topTick = _alignDown(TickMath.MAX_TICK, TICK_SPACING);
-        int24 lowerTick = startTick + TICK_SPACING;
-        if (lowerTick >= topTick) lowerTick = topTick - TICK_SPACING;
+        // Real-PM composition: below-range = pure token0, above-range = pure token1.
+        // Port LadderSettlement ask (:268-279 range, :333-335 L) / side mint (:327-352).
+        // Was (mint bug): always [startTick+spacing, MAX] + amountsForSingleSided(tokenIsC1)
+        // → ETH pairs (token=c1) minted below-range → PM pulled amount0 only → listed stranded.
+        int24 maxTick = _alignDown(TickMath.MAX_TICK, TICK_SPACING);
+        int24 minTick = _alignUp(TickMath.MIN_TICK, TICK_SPACING);
+        int24 lowerTick;
+        int24 upperTick;
+        uint128 liq;
+        if (pairIsToken0) {
+            // token = currency1: ask BELOW spot → spot at/above upper → pure token1
+            lowerTick = minTick;
+            upperTick = startTick;
+            if (upperTick <= lowerTick) upperTick = lowerTick + TICK_SPACING;
+            uint160 sa = TickMath.getSqrtRatioAtTick(lowerTick);
+            uint160 sb = TickMath.getSqrtRatioAtTick(upperTick);
+            liq = LiquidityAmounts.getLiquidityForAmount1(sa, sb, listed);
+        } else {
+            // token = currency0: ask ABOVE spot → spot below lower → pure token0
+            lowerTick = startTick + TICK_SPACING;
+            upperTick = maxTick;
+            if (lowerTick >= upperTick) lowerTick = upperTick - TICK_SPACING;
+            uint160 sa = TickMath.getSqrtRatioAtTick(lowerTick);
+            uint160 sb = TickMath.getSqrtRatioAtTick(upperTick);
+            liq = LiquidityAmounts.getLiquidityForAmount0(sa, sb, listed);
+        }
+        if (liq == 0 && listed > 0) revert MainAskEmpty(listed);
         mainTickLower = lowerTick;
-        mainTickUpper = topTick;
-
-        // Single-sided token liquidity above the opening price.
-        bool tokenIsCurrency1 = pairIsToken0; // if pair is currency0, token is currency1
-        (,, uint128 liq) = LiquidityAmounts.amountsForSingleSided(lowerTick, topTick, listed, tokenIsCurrency1);
-        if (liq == 0 && listed > 0) liq = 1;
+        mainTickUpper = upperTick;
         mainLiquidity = liq;
 
         bytes32 salt = bytes32(uint256(uint160(address(this))));
@@ -282,13 +305,13 @@ contract StonkzDirectListing {
             mainPoolKey,
             IPoolManager.ModifyLiquidityParams({
                 tickLower: lowerTick,
-                tickUpper: topTick,
+                tickUpper: upperTick,
                 liquidityDelta: int256(uint256(liq)),
                 salt: salt
             }),
             ""
         );
-        mainPositionId = keccak256(abi.encode(address(this), lowerTick, topTick, salt));
+        mainPositionId = keccak256(abi.encode(address(this), lowerTick, upperTick, salt));
         mainLockId = feeLocker.lockPosition(
             mainPoolKey,
             mainPositionId,
@@ -298,10 +321,10 @@ contract StonkzDirectListing {
             liquidityLocked,
             unlockRecipient,
             lowerTick,
-            topTick,
+            upperTick,
             salt
         );
-        emit MainPoolCreated(mainPoolKey.toId(), lowerTick, topTick, liq);
+        emit MainPoolCreated(mainPoolKey.toId(), lowerTick, upperTick, liq);
     }
 
     // ─── side pool (§2.2 / §8.2a) ────────────────────────────────────────────
