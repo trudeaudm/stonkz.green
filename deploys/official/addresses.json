@@ -1,33 +1,76 @@
 {
   "chainId": 4663,
+  "mode": "official",
+  "deployer": "0x8F5077eC52543d6393F483dC2B958Bf8Cad2d232",
+  "activeGeneration": "express-v4",
   "config": {
     "carveTreasury": "0x9D116B03FA6eB7F02c232670Bc083530609c5572",
     "custody": "0x9D116B03FA6eB7F02c232670Bc083530609c5572",
     "pairToken": "0x0000000000000000000000000000000000000000",
-    "poolManagerNote": "Robinhood PoolManager singleton 0x8366a39C via V4Adapter; MockPoolManager not in official manifest; no StonkzToken in manifest; treasury=fee Safe, carveTreasury=protocol Safe",
+    "poolManagerNote": "Robinhood PoolManager singleton 0x8366a39C via generation-scoped V4Adapter; MockPoolManager not in official manifest; no StonkzToken in manifest; treasury=fee Safe, carveTreasury=protocol Safe",
     "refPriceEthWad": "250000000000",
     "refPriceUsdgWad": "1000000000000000",
     "sideTokenRefStandIn": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
     "treasury": "0xEF2F5409a5ff5D5B71f0A3B5a1D4ffEd3b5B7239",
-    "usdg": "0x0000000000000000000000000000000000000000"
+    "usdg": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168"
   },
-  "contracts": {
+  "shared": {
+    "note": "Singletons reused across Express generations (unchanged at V4 cutover).",
     "BuybackAccumulator": "0x100afE1947De681C71808Ce4b1554bEF50Adc8F1",
     "CTOGovernor": "0x3990070971595C49e1646eD5347252AB028449d0",
-    "FeeLockerV2": "0xe1e75765FC6273872EE8e8c74182D150aF5B90E0",
     "LadderSettlement": "0x6b6E777d743A97010bf2C79E9F22A9A215c1a7E1",
     "Permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3",
     "PoolManager": "0x8366a39CC670B4001A1121B8F6A443A643e40951",
-    "StonkzExpressFactory": "0xdaA8C981c3ae077741ebA78283b6c5876EB727b4",
     "StonkzFeeHook": "0x4663c4c5Cb6F826d148cD38aDaF9157f483d0088",
     "StonkzLadderFactory": "0xdfF96ADb478EB7C54ECf7a169C6B3205c7002676",
     "StonkzRefStandIn": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
     "StonkzVault": "0x6ff723f62C61292CDF776Edc76e0Da5ea6D5549c",
     "UniversalRouter": "0x06AfBA43Fd06227fA663b0DAecF536f6EaA6bf99",
-    "V4Adapter": "0xA4b41704AdD5603DE6b9ffb4C29c2978C7c4469a"
+    "USDG": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168"
   },
-  "deployer": "0x8F5077eC52543d6393F483dC2B958Bf8Cad2d232",
-  "mode": "official",
+  "contracts": {
+    "note": "Active Express V4 generation (site / new lists). Generation-scoped: Express factory, V4Adapter, FeeLockerV2.",
+    "StonkzExpressFactory": "0xEe2590c39E1485ed2F9cdaA684ab7B91d284E94a",
+    "V4Adapter": "0x97F2b8679E70962A56A56338f54A2073a37aAF6C",
+    "FeeLockerV2": "0xf7e02D3F51Fe22Fa0428821552a087cFf07f0300",
+    "BuybackAccumulator": "0x100afE1947De681C71808Ce4b1554bEF50Adc8F1",
+    "CTOGovernor": "0x3990070971595C49e1646eD5347252AB028449d0",
+    "LadderSettlement": "0x6b6E777d743A97010bf2C79E9F22A9A215c1a7E1",
+    "Permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+    "PoolManager": "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+    "StonkzFeeHook": "0x4663c4c5Cb6F826d148cD38aDaF9157f483d0088",
+    "StonkzLadderFactory": "0xdfF96ADb478EB7C54ECf7a169C6B3205c7002676",
+    "StonkzRefStandIn": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+    "StonkzVault": "0x6ff723f62C61292CDF776Edc76e0Da5ea6D5549c",
+    "UniversalRouter": "0x06AfBA43Fd06227fA663b0DAecF536f6EaA6bf99"
+  },
+  "generations": {
+    "express-v4": {
+      "status": "active",
+      "deployBlock": 38007365,
+      "deployTag": "express-v4-deploy-2026-08",
+      "sourceCommit": "5b9dd96b1e24be76cdf82f4c756d3c96caf2fe31",
+      "StonkzExpressFactory": "0xEe2590c39E1485ed2F9cdaA684ab7B91d284E94a",
+      "V4Adapter": "0x97F2b8679E70962A56A56338f54A2073a37aAF6C",
+      "FeeLockerV2": "0xf7e02D3F51Fe22Fa0428821552a087cFf07f0300",
+      "notes": "Allowlisted adapter (initialize/modifyLiquidity/pokeCollect); factory authorizeChild before CREATE2; syncToPrice no auto-init. Accumulator.setPoolManager retargeted to this adapter via Safe."
+    },
+    "express-v3": {
+      "status": "superseded",
+      "deployTag": "express-v3-deploy-2026-08",
+      "StonkzExpressFactory": "0xb5105a1954e0f4045CB902606afB4178F471A338",
+      "V4Adapter": "0xA4b41704AdD5603DE6b9ffb4C29c2978C7c4469a",
+      "FeeLockerV2": "0xe1e75765FC6273872EE8e8c74182D150aF5B90E0",
+      "notes": "USD-true pricing + CREATE2 ethUsd stamp. Orphaned for new lists; keep for historical Express launches stamped to this factory/adapter/locker."
+    },
+    "express-v1": {
+      "status": "superseded",
+      "StonkzExpressFactory": "0xdaA8C981c3ae077741ebA78283b6c5876EB727b4",
+      "V4Adapter": "0xA4b41704AdD5603DE6b9ffb4C29c2978C7c4469a",
+      "FeeLockerV2": "0xe1e75765FC6273872EE8e8c74182D150aF5B90E0",
+      "notes": "Original mainnet Express factory from addresses book. BONZI/T/SDONK and other live listings remain on this generation's stamped adapter/locker path — do not delete."
+    }
+  },
   "templates": {
     "DeployControls": "inherited-by-both-factories",
     "StonkzDirectListing": "factory-CREATE2-via-StonkzExpressFactory",
@@ -35,6 +78,7 @@
   },
   "wiring": {
     "accumulatorPoolManager": true,
+    "accumulatorPoolManagerPointsTo": "0x97F2b8679E70962A56A56338f54A2073a37aAF6C",
     "canonManagerBound": true,
     "govRegistry": true,
     "hookFlagsValidated": true,
@@ -45,6 +89,9 @@
     "sideTokenRefIsStandIn": true,
     "softLaunchExpress": true,
     "softLaunchLadder": true,
-    "vaultRef": true
+    "vaultRef": true,
+    "adapterAuthorizedFactory": true,
+    "adapterAuthorizedFeeLocker": true,
+    "adapterAuthorizedSettlement": false
   }
 }
