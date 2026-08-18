@@ -68,7 +68,7 @@
       "StonkzExpressFactory": "0xdaA8C981c3ae077741ebA78283b6c5876EB727b4",
       "V4Adapter": "0xA4b41704AdD5603DE6b9ffb4C29c2978C7c4469a",
       "FeeLockerV2": "0xe1e75765FC6273872EE8e8c74182D150aF5B90E0",
-      "notes": "Original mainnet Express factory from addresses book. BONZI/T/SDONK and other live listings remain on this generation's stamped adapter/locker path — do not delete."
+      "notes": "Original mainnet Express factory from addresses book. BONZI/T/SDONK and other live listings remain on this generation's stamped adapter/locker path - do not delete."
     }
   },
   "templates": {
