@@ -29,7 +29,7 @@ contract FeeHookPhase1 is Test, Deployers {
     address internal constant CREATOR = address(0xCE0);
     address internal constant TOKEN = address(0xC0FFEE);
 
-    /// @dev Flag-valid etch target (tests). Production mines 0x4663…088.
+    /// @dev Flag-valid etch target (tests). Production mines 0x4663…0CC.
     address internal hookAddr;
 
     StonkzFeeHook internal hook; // the etched address cast
@@ -86,9 +86,9 @@ contract FeeHookPhase1 is Test, Deployers {
 
     function test_hookVanity_constants_matchTarget() public view {
         assertEq(HookVanity.PREFIX, uint16(0x4663));
-        assertEq(HookVanity.HOOK_FLAGS, uint160(0x088));
+        assertEq(HookVanity.HOOK_FLAGS, uint160(0x0CC));
         // Synthetic address: prefix + zeros + flags
-        address synth = address((uint160(0x4663) << 144) | uint160(0x088));
+        address synth = address((uint160(0x4663) << 144) | uint160(0x0CC));
         assertTrue(HookVanity.matches(synth));
         hook.validateHookAddress(synth);
     }

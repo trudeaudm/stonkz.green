@@ -37,7 +37,7 @@ abstract contract DeploySoftLaunchGuard is Script {
 }
 
 /// @title Deploy - official full-manifest deploy (GENESIS VIA PLATFORM + V4-CANON + PREDEPLOY-REFIT)
-/// @notice Binds to Robinhood PoolManager via V4Adapter. Hook CREATE2-mined 0x4663+0x088.
+/// @notice Binds to Robinhood PoolManager via V4Adapter. Hook CREATE2-mined 0x4663+0x0CC.
 ///         NO StonkzToken deploy/mint - sideTokenRef is a stand-in ERC-20 INPUT (repoint at genesis).
 ///         NO MockPoolManager in the official address book. FeeLockerV2 only (V1 is legacy).
 ///

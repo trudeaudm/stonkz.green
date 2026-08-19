@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
  * hook-vanity-mine.mjs — grind CREATE2 salt for StonkzFeeHook:
- *   top two bytes == 0x4663 AND low 14 bits == 0x088
- *   (BEFORE_SWAP | BEFORE_SWAP_RETURNS_DELTA)
+ *   top two bytes == 0x4663 AND low 14 bits == 0x0CC
+ *   (BEFORE_SWAP | AFTER_SWAP | BEFORE_SWAP_RETURNS_DELTA | AFTER_SWAP_RETURNS_DELTA)
  *
- * Expected ~2^30 attempts. Port of launch-deploy vanity-mine + hook flags (V4-CANON Phase 1).
+ * Expected ~2^30 attempts (same search space as the previous 0x088 mine).
  *
  * Usage (forge script salted `new` — CREATE2 site is Foundry CREATE2_FACTORY, salt as-is):
  *   node contracts/scripts/hook-vanity-mine.mjs \
@@ -24,8 +24,8 @@ import { cpus } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const PREFIX = 0x4663n;
-/** BEFORE_SWAP (1<<7) | BEFORE_SWAP_RETURNS_DELTA (1<<3) = 0x88 */
-const HOOK_FLAGS = 0x088n;
+/** BEFORE_SWAP (1<<7) | AFTER_SWAP (1<<6) | BEFORE_SWAP_RETURNS_DELTA (1<<3) | AFTER_SWAP_RETURNS_DELTA (1<<2) = 0xCC */
+const HOOK_FLAGS = 0x0ccn;
 const ALL_HOOK_MASK = (1n << 14n) - 1n;
 const MAX = 1n << 32n; // hard stop; expected hit well before
 const SELF = fileURLToPath(import.meta.url);
@@ -114,7 +114,7 @@ function mineEoaRange(deploySite, ich, startI, endI, progressEveryMs = 0) {
     const hash = keccak_256(buf);
     if (hash[12] === 0x46 && hash[13] === 0x63) {
       const flags = ((hash[30] & 0x3f) << 8) | hash[31];
-      if (flags === 0x088) {
+      if (flags === Number(HOOK_FLAGS)) {
         const predicted = "0x" + Buffer.from(hash.subarray(12, 32)).toString("hex");
         const salt = "0x" + i.toString(16).padStart(64, "0");
         return {
@@ -124,7 +124,7 @@ function mineEoaRange(deploySite, ich, startI, endI, progressEveryMs = 0) {
           attempts: i + 1, // 1-based index of winning salt (same as sequential miner)
           mode: "eoa",
           prefix: "0x4663",
-          flags: "0x088",
+          flags: "0x0cc",
         };
       }
     }
@@ -160,7 +160,7 @@ function mineFactory({ factory, deployer, initCodeHash, max = MAX }) {
         attempts: Number(i + 1n),
         mode: "factory",
         prefix: "0x4663",
-        flags: "0x088",
+        flags: "0x0cc",
         elapsedMs: Date.now() - start,
       };
     }
