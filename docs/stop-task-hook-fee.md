@@ -2,7 +2,7 @@
 
 **Branch:** `fix/hook-fee` (from `deploy/mainnet-2026-08` @ `ecfa5ae`)  
 **Authoritative input:** `C:\Users\david\stonkz-hook-recon.md`  
-**Gate:** PHASE 1 DEPLOY DRY-RUN posted below. **STOP for BROADCAST GO.** No broadcast.
+**Gate:** BROADCAST COMPLETE (FeeHook + CTOGovernor). **Safe pending:** `setHook` + `setGovernor`. Settlement deferred.
 
 ---
 
@@ -163,8 +163,73 @@ Deployer balance ≈ 0.000332 ETH — **insufficient for mainnet broadcast** of 
 
 ---
 
+## Base-branch regression check (pre-broadcast)
+
+Clean checkout of `deploy/mainnet-2026-08` @ `ecfa5ae`. Same 3 suite failures — **none pass on base and fail on fix** (not a regression from this change):
+
+1. `SettableRefsPhase1.test_P1_express_refChange_neverAffectsPriorLaunch` — `VanityPrefixMismatch`
+2. `SettableRefsPhase1.test_P1_genesisDay_sideTokenSwap_nextPairsNew_priorUnchanged` — `VanityPrefixMismatch`
+3. `ForkProofPhase2.test_P2_fork_fullDrillManifest` — `SideTokenRefUnset`
+
+(Predicted vanity addresses differ vs `fix/hook-fee` because hook bytecode changed listing initcode, but all three still fail.)
+
+---
+
+## BROADCAST (2026-08-20) — FeeHook + CTOGovernor only
+
+**Scope (as ruled):** new FeeHook + `factory.setHook` + new CTOGovernor + `factory.setGovernor`.  
+**Deferred:** LadderSettlement + `setSettlementRef` + adapter `setAuthorized` (ladder generation).
+
+**Nonce drift:** dry-run mined for nonce **57**; at GO deployer was at **59** (CREATE slots 57–58 empty). Remined for nonce 59.
+
+| Field | Value |
+|---|---|
+| Script | `DeployHookFeeExpress.s.sol` |
+| Deployer nonce at send | **59** |
+| `initCodeHash` | `0x97ecae4e8582bb6187fe24ea8736bfa85573dd7e5e989a7b27bd8c4ff6359fca` |
+| Salt | `0x00000000000000000000000000000000000000000000000000000000c321d63d` |
+| Attempts (remine) | 3,273,774,654 |
+| **CTOGovernor** | **`0x355cCAeC798a935Cf94170cd49E9570A7cE23691`** |
+| **StonkzFeeHook** | **`0x4663af1beE066E1699d093EFfb61Ab53c5a880Cc`** |
+| `HOOK_FLAGS` on-chain | **204 = 0x0CC** |
+| `hook.owner` | custody `0x9D116B03…5572` |
+| `hook.canonManager` | PoolManager `0x8366a39C…0951` |
+| `gov.registry` | new hook |
+| Runtime sizes | FeeHook 11745 / Gov 7875 |
+
+### Deployer txs (on-chain SUCCESS)
+
+| Step | Tx |
+|---|---|
+| CREATE CTOGovernor | `0x888acc8b2811e43c3f9ab77f85526e115427d2bcda9c57d037ebc6eb008590a5` |
+| CREATE2 StonkzFeeHook | `0x20e6c0de6b08f94ab93bb57bf5a86a8410d4d2b535c979a1811862370f2ce5de` |
+| `gov.setRegistry(hook)` | `0x6b62ec82e1d25ee3a33425374b07cdc7b22aaa7de41af745a9ddd54da491b63b` |
+| `hook.transferOwnership(custody)` | `0xff135e1f7a6d4eadffed036763b7ce66532e2acb4a25f57e86ddf60265074e5c` |
+
+Post-broadcast deployer nonce **63**, balance ≈0.00396 ETH.
+
+### Express factory (pre-Safe — still OLD)
+
+| Ref | Live |
+|---|---|
+| `express.hook` | `0x4663c4c5…0088` (broken 0x088) |
+| `express.ctoGovernor` | `0x39900709…49d0` |
+| `express.owner` | custody Safe |
+
+### Safe payloads (custody; execute to cut over new lists)
+
+| # | Call | to | calldata |
+|---|---|---|---|
+| 1 | `Express.setHook(newHook)` | `0xEe2590c39E1485ed2F9cdaA684ab7B91d284E94a` | `0x3dfd38730000000000000000000000004663af1bee066e1699d093effb61ab53c5a880cc` |
+| 2 | `Express.setGovernor(newGovernor)` | `0xEe2590c39E1485ed2F9cdaA684ab7B91d284E94a` | `0xc42cf535000000000000000000000000355ccaec798a935cf94170cd49e9570a7ce23691` |
+
+**Not this phase:** `setSettlementRef`, `adapter.setAuthorized(settlement)`.
+
+Existing lists keep the live broken hook in `PoolKey`. New lists after Safe cutover use `0x4663…80Cc`.
+
+---
+
 ## STOP
 
-Pushed `fix/hook-fee`. Dry-run complete. **No broadcast.**  
-**Ruling requested:** only the `hookFeeBps` setter recommendation above.  
-**Await:** **BROADCAST GO** (and deployer funding) before any on-chain send.
+Deployer broadcast done. **Await Safe execution** of `setHook` + `setGovernor`.  
+Settlement rewire remains deferred to the ladder generation.
