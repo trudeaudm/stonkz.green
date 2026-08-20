@@ -119,7 +119,9 @@ contract ForkCanonPhase4 is Test {
 
     // --- RH Chain 4663 pins (docs / V4-CANON Phase 4) ---------------------
     address internal constant RH_POOL_MANAGER = 0x8366a39CC670B4001A1121B8F6A443A643e40951;
-    address internal constant UNIVERSAL_ROUTER = 0x06AfBA43Fd06227fA663b0DAecF536f6EaA6bf99;
+    // Canonical Uniswap UR on 4663 (verified, ~10.4M txs, in RH deploy maps);
+    // 0x06AfBA43…bf99 is a working non-canonical twin — do not re-pin.
+    address internal constant UNIVERSAL_ROUTER = 0x8876789976dEcBfCbBbe364623C63652db8C0904;
     address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
     uint256 internal constant ORBIT_BLOCK_GAS_LIMIT = 32_000_000;
