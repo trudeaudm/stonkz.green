@@ -1,7 +1,7 @@
 # STOP — SQRT PRECISION LOSS IN SIDE-POOL INIT
 
-**Branch:** `fix/sqrt-precision` (from `deploy/mainnet-2026-08` → FF `express-v4-deploy-2026-08` / `fix/express-mint`)  
-**Gate:** PUSHED. No deploy prep. David rules whether this bundles with ladder settlement rework.
+**Branch:** `fix/sqrt-precision` @ `c8f21f6` (from `deploy/mainnet-2026-08` → FF `express-v4-deploy-2026-08` / `fix/express-mint`)  
+**Gate:** PUSHED (`origin/fix/sqrt-precision`). No deploy prep. David rules whether this bundles with ladder settlement rework.
 
 ---
 
