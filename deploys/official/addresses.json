@@ -5,6 +5,7 @@
     "custody": "0x9D116B03FA6eB7F02c232670Bc083530609c5572",
     "pairToken": "0x0000000000000000000000000000000000000000",
     "poolManagerNote": "Robinhood PoolManager singleton 0x8366a39C via V4Adapter; MockPoolManager not in official manifest; no StonkzToken in manifest; treasury=fee Safe, carveTreasury=protocol Safe",
+    "universalRouterNote": "Canonical Uniswap UR on 4663 (RH deploy maps / Uniswap docs, ~10.4M txs). Twin 0x06AfBA43Fd06227fA663b0DAecF536f6EaA6bf99 is working but non-canonical (~43k txs); identical V4_SWAP shape + same Permit2 — do not re-pin as UniversalRouter.",
     "refPriceEthWad": "250000000000",
     "refPriceUsdgWad": "1000000000000000",
     "sideTokenRefStandIn": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
@@ -23,7 +24,7 @@
     "StonkzLadderFactory": "0xdfF96ADb478EB7C54ECf7a169C6B3205c7002676",
     "StonkzRefStandIn": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
     "StonkzVault": "0x6ff723f62C61292CDF776Edc76e0Da5ea6D5549c",
-    "UniversalRouter": "0x06AfBA43Fd06227fA663b0DAecF536f6EaA6bf99",
+    "UniversalRouter": "0x8876789976dEcBfCbBbe364623C63652db8C0904",
     "V4Adapter": "0xA4b41704AdD5603DE6b9ffb4C29c2978C7c4469a"
   },
   "deployer": "0x8F5077eC52543d6393F483dC2B958Bf8Cad2d232",
