@@ -11,6 +11,7 @@ import {StonkzFeeHook} from "../StonkzFeeHook.sol";
 import {FeeLockerV2} from "../FeeLockerV2.sol";
 import {LadderConstants} from "./LadderConstants.sol";
 import {IStonkzVault} from "../vault/IStonkzVault.sol";
+import {SqrtPriceLib} from "../SqrtPriceLib.sol";
 
 /// @title LadderSettlement — docs/09 §7 pool construction + raise split
 /// @notice Three-leg raise split; cash [floor,print] + tokens [print,inf); side pool vs STONKZ;
@@ -241,8 +242,10 @@ contract LadderSettlement {
         // Construction must satisfy real PM: below-range = pure token0, above-range = pure token1.
         bool pairIs0 = pairToken < userToken;
         mainPoolKey = _mainPoolKey(pairToken, userToken);
-        uint160 printSqrt = _sqrtPriceFromPriceWad(printP, pairIs0);
-        uint160 floorSqrt = _sqrtPriceFromPriceWad(floorP, pairIs0);
+        uint8 decPair = SqrtPriceLib.tokenDecimals(pairToken);
+        uint8 decTok = SqrtPriceLib.tokenDecimals(userToken);
+        uint160 printSqrt = SqrtPriceLib.sqrtPriceX96FromPriceWad(printP, pairIs0, decPair, decTok);
+        uint160 floorSqrt = SqrtPriceLib.sqrtPriceX96FromPriceWad(floorP, pairIs0, decPair, decTok);
 
         if (!poolManager.isInitialized(mainPoolKey.toId())) {
             poolManager.initialize(mainPoolKey, printSqrt);
@@ -368,7 +371,11 @@ contract LadderSettlement {
         bool tokIs0 = userToken < sideTokenRef;
 
         // Spot from price; range placed for pure userToken under real PM composition rules.
-        uint160 priceSqrt = _sqrtPriceFromPriceWad(priceInStonkz, !tokIs0);
+        uint8 decTok = SqrtPriceLib.tokenDecimals(userToken);
+        uint8 decSide = SqrtPriceLib.tokenDecimals(sideTokenRef);
+        uint160 priceSqrt = SqrtPriceLib.sqrtPriceX96FromPriceWad(
+            priceInStonkz, !tokIs0, tokIs0 ? decTok : decSide, tokIs0 ? decSide : decTok
+        );
         int24 spotAligned = _align(TickMath.getTickAtSqrtRatio(priceSqrt), TICK_SPACING);
         int24 maxTick = _alignDown(TickMath.MAX_TICK, TICK_SPACING);
         int24 minTick = _alignUp(TickMath.MIN_TICK, TICK_SPACING);
@@ -545,18 +552,6 @@ contract LadderSettlement {
         });
     }
 
-    function _sqrtPriceFromPriceWad(uint256 priceWad, bool pairIsToken0) internal pure returns (uint160) {
-        uint256 px = priceWad;
-        if (pairIsToken0) {
-            px = priceWad == 0 ? WAD : FixedPointMathLib.fullMulDiv(WAD, WAD, priceWad);
-        }
-        uint256 sqrtP = _sqrt(px);
-        uint256 sqrtX96 = FixedPointMathLib.fullMulDiv(sqrtP, uint256(1) << 96, 1e9);
-        if (sqrtX96 <= TickMath.MIN_SQRT_RATIO) return TickMath.MIN_SQRT_RATIO + 1;
-        if (sqrtX96 >= TickMath.MAX_SQRT_RATIO) return TickMath.MAX_SQRT_RATIO - 1;
-        return uint160(sqrtX96);
-    }
-
     function _align(int24 tick, int24 spacing) internal pure returns (int24) {
         int24 rem = tick % spacing;
         if (rem < 0) rem += spacing;
@@ -575,16 +570,6 @@ contract LadderSettlement {
         int24 rem = tick % spacing;
         if (rem < 0) rem += spacing;
         return tick - rem;
-    }
-
-    function _sqrt(uint256 x) internal pure returns (uint256 z) {
-        if (x == 0) return 0;
-        z = x;
-        uint256 y = (x + 1) / 2;
-        while (y < z) {
-            z = y;
-            y = (x / y + y) / 2;
-        }
     }
 
     function _pay(address to, uint256 amt) internal {

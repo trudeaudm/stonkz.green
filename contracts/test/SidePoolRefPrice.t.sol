@@ -21,6 +21,7 @@ import {LadderSettlement} from "../src/ladder/LadderSettlement.sol";
 import {DeployControls} from "../src/DeployControls.sol";
 import {PoolKey, PoolIdLibrary} from "../src/v4/types/PoolKey.sol";
 import {TickMath} from "../src/v4/TickMath.sol";
+import {SqrtPriceLib} from "../src/SqrtPriceLib.sol";
 
 /// @title SidePoolRefPrice — stamped pair-wei/side-token ref (ruling B) + known-value init
 contract SidePoolRefPrice is Test, FactoryVanity {
@@ -187,17 +188,12 @@ contract SidePoolRefPrice is Test, FactoryVanity {
     /// @dev Orientation-aware: init at spotAligned(priceInStonkz); range floor/ceiling by tokIs0.
     function _assertSidePoolOnPoolPrice(StonkzDirectListing l, uint256 priceInStonkz) internal view {
         bool tokIs0 = address(l.token()) < l.sideTokenRef();
-        // Mirror DirectListing._sqrtPriceFromPriceWad(priceInStonkz, !tokIs0)
-        bool pairIsToken0 = !tokIs0;
-        uint256 pxWad = priceInStonkz;
-        if (pairIsToken0) {
-            pxWad = FixedPointMathLib.mulDiv(WAD, WAD, priceInStonkz);
-        }
-        uint256 sqrtP = _sqrt(pxWad);
-        uint256 sqrtX96 = FixedPointMathLib.fullMulDiv(sqrtP, uint256(1) << 96, 1e9);
-        if (sqrtX96 <= TickMath.MIN_SQRT_RATIO) sqrtX96 = TickMath.MIN_SQRT_RATIO + 1;
-        if (sqrtX96 >= TickMath.MAX_SQRT_RATIO) sqrtX96 = TickMath.MAX_SQRT_RATIO - 1;
-        int24 spotAligned = _align(TickMath.getTickAtSqrtRatio(uint160(sqrtX96)), 60);
+        uint8 decTok = SqrtPriceLib.tokenDecimals(address(l.token()));
+        uint8 decSide = SqrtPriceLib.tokenDecimals(l.sideTokenRef());
+        uint160 priceSqrt = SqrtPriceLib.sqrtPriceX96FromPriceWad(
+            priceInStonkz, !tokIs0, tokIs0 ? decTok : decSide, tokIs0 ? decSide : decTok
+        );
+        int24 spotAligned = _align(TickMath.getTickAtSqrtRatio(priceSqrt), 60);
         uint160 expectSqrt = TickMath.getSqrtRatioAtTick(spotAligned);
         int24 minTick = _alignUp(TickMath.MIN_TICK, 60);
         int24 maxTick = _alignDown(TickMath.MAX_TICK, 60);
@@ -233,16 +229,6 @@ contract SidePoolRefPrice is Test, FactoryVanity {
         int24 rem = tick % spacing;
         if (rem < 0) rem += spacing;
         return tick - rem;
-    }
-
-    function _sqrt(uint256 x) internal pure returns (uint256 z) {
-        if (x == 0) return 0;
-        z = x;
-        uint256 y = (x + 1) / 2;
-        while (y < z) {
-            z = y;
-            y = (x / y + y) / 2;
-        }
     }
 
     function _params() internal pure returns (StonkzDirectListing.ListingParams memory p) {

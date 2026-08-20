@@ -28,6 +28,7 @@ import {LadderTypes} from "../src/ladder/LadderTypes.sol";
 import {LadderVectorLoader} from "./ladder/LadderVectorLoader.sol";
 import {LadderTolerance} from "./ladder/LadderTolerance.sol";
 import {MockVault} from "./ladder/MockVault.sol";
+import {SqrtPriceLib} from "../src/SqrtPriceLib.sol";
 
 /// @notice On-pool side-pool init price lock (orientation-aware). Closes the gap left by 08fdca3 soften.
 /// @dev On launch-deploy, Express `list` requires 0x4663 vanity — mine via VanityHelpers (FactoryVanity).
@@ -53,19 +54,7 @@ abstract contract SidePoolPriceLockBase is V4DualBackend, LadderVectorLoader, Fa
     /// @dev Contract-backed USDG stand-in (Real PM sync requires code at pair).
     MockSideToken internal usdgPair;
 
-    // ─── production-mirrored math (DirectListing / LadderSettlement) ─────────
-
-    function _sqrtPriceFromPriceWad(uint256 priceWad, bool pairIsToken0) internal pure returns (uint160) {
-        uint256 px = priceWad;
-        if (pairIsToken0) {
-            px = priceWad == 0 ? WAD : FixedPointMathLib.mulDiv(WAD, WAD, priceWad);
-        }
-        uint256 sqrtP = _sqrt(px);
-        uint256 sqrtX96 = FixedPointMathLib.fullMulDiv(sqrtP, uint256(1) << 96, 1e9);
-        if (sqrtX96 <= TickMath.MIN_SQRT_RATIO) return TickMath.MIN_SQRT_RATIO + 1;
-        if (sqrtX96 >= TickMath.MAX_SQRT_RATIO) return TickMath.MAX_SQRT_RATIO - 1;
-        return uint160(sqrtX96);
-    }
+    // ─── production-mirrored math (SqrtPriceLib — shared Express / Ladder) ───
 
     function _align(int24 tick, int24 spacing) internal pure returns (int24) {
         int24 rem = tick % spacing;
@@ -85,23 +74,15 @@ abstract contract SidePoolPriceLockBase is V4DualBackend, LadderVectorLoader, Fa
         return tick - rem;
     }
 
-    function _sqrt(uint256 x) internal pure returns (uint256 z) {
-        if (x == 0) return 0;
-        z = x;
-        uint256 y = (x + 1) / 2;
-        while (y < z) {
-            z = y;
-            y = (x / y + y) / 2;
-        }
-    }
-
     /// @dev Expected init after spacing-align (matches production: initSqrt = getSqrtRatioAtTick(spotAligned)).
-    function _expectedInit(uint256 priceInStonkz, bool tokIs0)
+    function _expectedInit(uint256 priceInStonkz, bool tokIs0, uint8 decTok, uint8 decSide)
         internal
         pure
         returns (uint160 initSqrt, int24 spotAligned, int24 expectLo, int24 expectHi)
     {
-        uint160 priceSqrt = _sqrtPriceFromPriceWad(priceInStonkz, !tokIs0);
+        uint160 priceSqrt = SqrtPriceLib.sqrtPriceX96FromPriceWad(
+            priceInStonkz, !tokIs0, tokIs0 ? decTok : decSide, tokIs0 ? decSide : decTok
+        );
         spotAligned = _align(TickMath.getTickAtSqrtRatio(priceSqrt), TICK_SPACING);
         initSqrt = TickMath.getSqrtRatioAtTick(spotAligned);
         int24 maxTick = _alignDown(TickMath.MAX_TICK, TICK_SPACING);
@@ -127,8 +108,10 @@ abstract contract SidePoolPriceLockBase is V4DualBackend, LadderVectorLoader, Fa
         uint256 priceInStonkz
     ) internal view returns (bool ok) {
         bool tokIs0 = userToken < sideToken;
+        uint8 decTok = SqrtPriceLib.tokenDecimals(userToken);
+        uint8 decSide = SqrtPriceLib.tokenDecimals(sideToken);
         (uint160 expectSqrt, int24 spotAligned, int24 expectLo, int24 expectHi) =
-            _expectedInit(priceInStonkz, tokIs0);
+            _expectedInit(priceInStonkz, tokIs0, decTok, decSide);
         if (sideLo != expectLo || sideHi != expectHi) return false;
         (uint160 sqrt, int24 tick,,) = pm.getSlot0(sideKey.toId());
         if (tick != spotAligned) return false;

@@ -12,6 +12,7 @@ import {FeeLockerV2} from "./FeeLockerV2.sol";
 import {StonkzFeeHook} from "./StonkzFeeHook.sol";
 import {CTOGovernor} from "./CTOGovernor.sol";
 import {CreatorReserveLib} from "./CreatorReserveLib.sol";
+import {SqrtPriceLib} from "./SqrtPriceLib.sol";
 import {StonkzLaunchToken} from "./StonkzLaunchToken.sol";
 
 /// @title StonkzDirectListing — Direct-to-DEX, no auction (fees-and-governance.md §2, spec §8.8)
@@ -227,9 +228,9 @@ contract StonkzDirectListing {
         uint256 ethMcapWad = FixedPointMathLib.mulDiv(p.startMcap, WAD, p.ethUsdWad); // $ -> ETH
         startPriceWad = FixedPointMathLib.mulDiv(ethMcapWad, WAD, p.totalSupply);
         bool pairIsToken0 = pairToken_ < address(token);
-        uint8 decPair = _tokenDecimals(pairToken_);
-        uint8 decTok = _tokenDecimals(address(token));
-        startSqrtPriceX96 = _sqrtPriceFromPriceWad(startPriceWad, pairIsToken0, decPair, decTok);
+        uint8 decPair = SqrtPriceLib.tokenDecimals(pairToken_);
+        uint8 decTok = SqrtPriceLib.tokenDecimals(address(token));
+        startSqrtPriceX96 = SqrtPriceLib.sqrtPriceX96FromPriceWad(startPriceWad, pairIsToken0, decPair, decTok);
         startTick = _align(TickMath.getTickAtSqrtRatio(startSqrtPriceX96), TICK_SPACING);
 
         _createMainPool(pairIsToken0);
@@ -349,10 +350,10 @@ contract StonkzDirectListing {
         sidePoolKey = _sidePoolKey(sideTokenRef, address(token));
         bool tokIs0 = address(token) < sideTokenRef;
 
-        uint8 decTok = _tokenDecimals(address(token));
-        uint8 decSide = _tokenDecimals(sideTokenRef);
+        uint8 decTok = SqrtPriceLib.tokenDecimals(address(token));
+        uint8 decSide = SqrtPriceLib.tokenDecimals(sideTokenRef);
         // tokIs0 ⇒ token=c0, side=c1; flag !tokIs0 maps priceInStonkz into token1/token0 orientation.
-        uint160 priceSqrt = _sqrtPriceFromPriceWad(
+        uint160 priceSqrt = SqrtPriceLib.sqrtPriceX96FromPriceWad(
             priceInStonkz, !tokIs0, tokIs0 ? decTok : decSide, tokIs0 ? decSide : decTok
         );
         int24 spotAligned = _align(TickMath.getTickAtSqrtRatio(priceSqrt), TICK_SPACING);
@@ -556,43 +557,6 @@ contract StonkzDirectListing {
         });
     }
 
-    /// @dev Convert WAD human price to sqrtPriceX96. Scales by 10^(dec1−dec0) before sqrt so
-    ///      6-dec stables (USDG) land decimals-correct (was decimals-blind → ×1e12 on USDG).
-    function _sqrtPriceFromPriceWad(uint256 priceWad, bool pairIsToken0, uint8 dec0, uint8 dec1)
-        internal
-        pure
-        returns (uint160)
-    {
-        uint256 px = priceWad;
-        if (pairIsToken0) {
-            px = priceWad == 0 ? WAD : FixedPointMathLib.mulDiv(WAD, WAD, priceWad);
-        }
-        // Raw token1/token0 = human * 10^(dec1 − dec0). Apply before sqrt.
-        if (dec1 >= dec0) {
-            unchecked {
-                px = px * (10 ** (dec1 - dec0));
-            }
-        } else {
-            px = px / (10 ** (dec0 - dec1));
-        }
-        uint256 sqrtP = _sqrt(px);
-        uint256 sqrtX96 = FixedPointMathLib.fullMulDiv(sqrtP, uint256(1) << 96, 1e9);
-        if (sqrtX96 <= TickMath.MIN_SQRT_RATIO) return TickMath.MIN_SQRT_RATIO + 1;
-        if (sqrtX96 >= TickMath.MAX_SQRT_RATIO) return TickMath.MAX_SQRT_RATIO - 1;
-        return uint160(sqrtX96);
-    }
-
-    /// @dev Native ETH = 18; ERC20 via decimals() with 18 fallback (etched stand-ins).
-    function _tokenDecimals(address t) internal view returns (uint8) {
-        if (t == address(0)) return 18;
-        (bool ok, bytes memory ret) = t.staticcall(abi.encodeWithSignature("decimals()"));
-        if (ok && ret.length >= 32) {
-            uint256 d = abi.decode(ret, (uint256));
-            if (d <= 18) return uint8(d);
-        }
-        return 18;
-    }
-
     function _align(int24 tick, int24 spacing) internal pure returns (int24) {
         int24 rem = tick % spacing;
         if (rem < 0) rem += spacing;
@@ -609,15 +573,5 @@ contract StonkzDirectListing {
         int24 rem = tick % spacing;
         if (rem < 0) rem += spacing;
         return tick - rem;
-    }
-
-    function _sqrt(uint256 x) internal pure returns (uint256 z) {
-        if (x == 0) return 0;
-        z = x;
-        uint256 y = (x + 1) / 2;
-        while (y < z) {
-            z = y;
-            y = (x / y + y) / 2;
-        }
     }
 }
