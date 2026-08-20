@@ -2,7 +2,7 @@
 
 **Branch:** `fix/hook-fee` (from `deploy/mainnet-2026-08` @ `ecfa5ae`)  
 **Authoritative input:** `C:\Users\david\stonkz-hook-recon.md`  
-**Gate:** BROADCAST COMPLETE (FeeHook + CTOGovernor). **Safe pending:** `setHook` + `setGovernor`. Settlement deferred.
+**Gate:** SAFE CUTOVER COMPLETE. Express points at new FeeHook + CTOGovernor. Settlement still deferred.
 
 ---
 
@@ -208,28 +208,25 @@ Clean checkout of `deploy/mainnet-2026-08` @ `ecfa5ae`. Same 3 suite failures �
 
 Post-broadcast deployer nonce **63**, balance ≈0.00396 ETH.
 
-### Express factory (pre-Safe — still OLD)
+### Safe cutover (2026-08-20) — VERIFIED
 
-| Ref | Live |
+Reported Safe hashes: `0x2f997c…7fa0`, `0x3b01cb…bd7f`, `0xfafd28…0942`.
+
+On-chain: Safe `ExecutionSuccess` for safeTxHash **`0xfafd28ace9387543bc5b87d5e62459eba73a883783fecf7fc57a37e5d3430942`**
+→ eth tx **`0x03a40a10417a2c4ab994ef879bafd69d07385eef4012a31601c77ad14b88f7a4`** (block 41573106, status 1).  
+Same tx emitted Express `HookSet` + `GovernorSet`. The other two reported hashes are not eth txs / not this ExecutionSuccess (likely propose/confirm client hashes).
+
+| Ref | After Safe |
 |---|---|
-| `express.hook` | `0x4663c4c5…0088` (broken 0x088) |
-| `express.ctoGovernor` | `0x39900709…49d0` |
+| `express.hook` | **`0x4663af1beE066E1699d093EFfb61Ab53c5a880Cc`** |
+| `express.ctoGovernor` | **`0x355cCAeC798a935Cf94170cd49E9570A7cE23691`** |
 | `express.owner` | custody Safe |
 
-### Safe payloads (custody; execute to cut over new lists)
-
-| # | Call | to | calldata |
-|---|---|---|---|
-| 1 | `Express.setHook(newHook)` | `0xEe2590c39E1485ed2F9cdaA684ab7B91d284E94a` | `0x3dfd38730000000000000000000000004663af1bee066e1699d093effb61ab53c5a880cc` |
-| 2 | `Express.setGovernor(newGovernor)` | `0xEe2590c39E1485ed2F9cdaA684ab7B91d284E94a` | `0xc42cf535000000000000000000000000355ccaec798a935cf94170cd49e9570a7ce23691` |
-
-**Not this phase:** `setSettlementRef`, `adapter.setAuthorized(settlement)`.
-
-Existing lists keep the live broken hook in `PoolKey`. New lists after Safe cutover use `0x4663…80Cc`.
+**Deferred still:** LadderSettlement + `setSettlementRef` + adapter `setAuthorized`.  
+Existing lists keep broken hook `0x4663…0088` in `PoolKey`. **New Express lists use `0x4663…80Cc`.**
 
 ---
 
 ## STOP
 
-Deployer broadcast done. **Await Safe execution** of `setHook` + `setGovernor`.  
-Settlement rewire remains deferred to the ladder generation.
+Hook-fee Express cutover complete (deployer + Safe). Settlement deferred to ladder generation.
